@@ -27,6 +27,7 @@ class ModuleMetadata {
   AppDomainID app_domain_id;
   GUID module_version_id;
   std::vector<IntegrationMethod> integrations = {};
+  mdToken getTypeFromHandleToken = 0;
 
   ModuleMetadata(ComPtr<IMetaDataImport2> metadata_import,
                  ComPtr<IMetaDataEmit2> metadata_emit,
@@ -104,6 +105,7 @@ class ModuleMetadata {
     }
     return enabled;
   }
+
 };
 
 }  // namespace trace

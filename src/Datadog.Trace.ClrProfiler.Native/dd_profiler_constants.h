@@ -61,5 +61,29 @@ namespace trace {
       "ISymWrapper"_W};
 
   WSTRING managed_profiler_full_assembly_version = "Datadog.Trace.ClrProfiler.Managed, Version=1.19.3.0, Culture=neutral, PublicKeyToken=def86d061d0d2eeb"_W;
+  WSTRING managed_profiler_calltarget_type = "Datadog.Trace.ClrProfiler.CallTarget"_W;
+  WSTRING managed_profiler_calltarget_beginmethod_name = "BeginMethod"_W;
+  WSTRING managed_profiler_calltarget_beginmethod_returntype = "Datadog.Trace.ClrProfiler.CallTargetBeginReturn"_W;
+  WSTRING managed_profiler_calltarget_beginmethod_returntype_endmethod_name = "EndMethod"_W;
 
-}  // namespace trace
+  COR_SIGNATURE BeginMethodSig[] = {
+      IMAGE_CEE_CS_CALLCONV_DEFAULT,  // static call
+      0x04,                           // 4 parameters
+      ELEMENT_TYPE_OBJECT,            // Object return type
+      ELEMENT_TYPE_OBJECT,            // Type
+      ELEMENT_TYPE_OBJECT,            // Current instance
+      ELEMENT_TYPE_SZARRAY,           // Object array with the arguments
+      ELEMENT_TYPE_OBJECT,
+      ELEMENT_TYPE_U4  // Function token
+  };
+
+  COR_SIGNATURE EndMethodSig[] = {
+      IMAGE_CEE_CS_CALLCONV_DEFAULT |
+          IMAGE_CEE_CS_CALLCONV_HASTHIS,  // Instance call
+      0x02,                               // 2 parameters
+      ELEMENT_TYPE_OBJECT,                // method return value
+      ELEMENT_TYPE_OBJECT,                // method return value
+      ELEMENT_TYPE_OBJECT                 // exception object
+  };
+
+  }  // namespace trace

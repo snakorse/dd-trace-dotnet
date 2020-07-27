@@ -36,6 +36,9 @@ class CorProfiler : public CorProfilerBase {
   bool in_azure_app_services = false;
   bool is_desktop_iis = false;
 
+  // Cor assembly properties
+  AssemblyProperty corAssemblyProperty{};
+
   //
   // OpCodes helper
   //
@@ -66,9 +69,17 @@ class CorProfiler : public CorProfilerBase {
                                          const mdToken function_token,
                                          const FunctionInfo& caller,
                                          const std::vector<MethodReplacement> method_replacements);
+  HRESULT ProcessCallTargetModification(ModuleMetadata* module_metadata, 
+                                         const FunctionID function_id,
+                                         const ModuleID module_id, 
+                                         const mdToken function_token,
+                                         const FunctionInfo& caller,
+                                         const std::vector<MethodReplacement> method_replacements);
   bool ProfilerAssemblyIsLoadedIntoAppDomain(AppDomainID app_domain_id);
   std::string GetILCodes(std::string title, ILRewriter* rewriter,
                          const FunctionInfo& caller);
+  HRESULT ModifyLocalSig(ModuleMetadata* module_metadata, ILRewriter& reWriter,
+                         mdTypeRef exTypeRef, mdTypeRef methodTraceTypeRef);
   //
   // Startup methods
   //

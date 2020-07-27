@@ -54,7 +54,6 @@ class ILRewriter {
   ModuleID m_moduleId;
   mdToken m_tkMethod;
 
-  mdToken m_tkLocalVarSig;
   unsigned m_maxStack;
   unsigned m_flags;
   bool m_fGenerateTinyHeader;
@@ -83,6 +82,9 @@ class ILRewriter {
              ModuleID moduleID, mdToken tkMethod);
 
   ~ILRewriter();
+  
+  mdToken m_tkLocalVarSig;
+  ULONG cNewLocals = 3;
 
   void InitializeTiny();
 

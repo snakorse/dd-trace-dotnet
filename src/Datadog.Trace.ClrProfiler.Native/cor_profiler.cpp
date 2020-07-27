@@ -543,7 +543,7 @@ HRESULT STDMETHODCALLTYPE CorProfiler::JITCompilationStarted(
   }
 
   // get function info
-  const auto caller =
+  auto caller =
       GetFunctionInfo(module_metadata->metadata_import, function_token);
   if (!caller.IsValid()) {
     return S_OK;
@@ -636,6 +636,21 @@ HRESULT STDMETHODCALLTYPE CorProfiler::JITCompilationStarted(
 
   if (FAILED(hr)) {
     Warn("JITCompilationStarted: Call to ProcessReplacementCalls() failed for ", function_id, " ", module_id, " ", function_token);
+    return S_OK;
+  }
+
+  // Perform method call target modification
+  hr = caller.method_signature.TryParse();
+  RETURN_OK_IF_FAILED(hr);
+  hr = ProcessCallTargetModification(module_metadata,
+                                     function_id,
+                                     module_id,
+                                     function_token,
+                                     caller,
+                                     method_replacements);
+
+  if (FAILED(hr)) {
+    Warn("JITCompilationStarted: Call to ProcessCallTargetModification() failed for ", function_id, " ", module_id, " ", function_token);
     return S_OK;
   }
 
@@ -746,7 +761,7 @@ HRESULT CorProfiler::ProcessReplacementCalls(
     const FunctionID function_id,
     const ModuleID module_id,
     const mdToken function_token,
-    const trace::FunctionInfo& caller,
+    const FunctionInfo& caller,
     const std::vector<MethodReplacement> method_replacements) {
   ILRewriter rewriter(this->info_, nullptr, module_id, function_token);
   bool modified = false;
@@ -1203,6 +1218,219 @@ HRESULT CorProfiler::ProcessInsertionCalls(
   return S_OK;
 }
 
+HRESULT CorProfiler::ProcessCallTargetModification(
+    ModuleMetadata* module_metadata,
+    const FunctionID function_id,
+    const ModuleID module_id,
+    const mdToken function_token,
+    const FunctionInfo& caller,
+    const std::vector<MethodReplacement> method_replacements) {
+  ILRewriter rewriter(this->info_, nullptr, module_id, function_token);
+  bool modified = false;
+  auto hr = rewriter.Import();
+
+  if (FAILED(hr)) {
+    Warn("ProcessCallTargetModification: Call to ILRewriter.Import() failed for ",
+         module_id, " ", function_token);
+    return hr;
+  }
+
+  // Perform target modification
+  for (auto& method_replacement : method_replacements) {
+    // Exit early if the method replacement isn't actually doing a replacement
+    if (method_replacement.wrapper_method.action != "CallTargetModification"_W) {
+      continue;
+    }
+
+    const auto& wrapper_method_key =
+        method_replacement.wrapper_method.get_method_cache_key();
+    // Exit early if we previously failed to store the method ref for this
+    // wrapper_method
+    if (module_metadata->IsFailedWrapperMemberKey(wrapper_method_key)) {
+      continue;
+    }
+
+    if (method_replacement.target_method.assembly.name == module_metadata->assemblyName &&
+        method_replacement.target_method.type_name == caller.type.name &&
+        method_replacement.target_method.method_name == caller.name) {
+    
+        // return ref not support it
+        unsigned elementType;
+        auto retTypeFlags = caller.method_signature.GetRet().GetTypeFlags(elementType);
+        if (retTypeFlags & TypeFlagByRef) {
+          Warn("[UNSUPPORTED] Module: ", module_metadata->assemblyName,
+               " Type: ", caller.type.name,
+               " Method: ", caller.name);
+          return S_OK;
+        }
+
+        auto isStatic = !(caller.method_signature.CallingConvention() & IMAGE_CEE_CS_CALLCONV_HASTHIS);
+        
+        // *** Define profiler assembly
+        const AssemblyReference assemblyReference = managed_profiler_full_assembly_version;
+        ASSEMBLYMETADATA assembly_metadata{};
+
+        assembly_metadata.usMajorVersion = assemblyReference.version.major;
+        assembly_metadata.usMinorVersion = assemblyReference.version.minor;
+        assembly_metadata.usBuildNumber = assemblyReference.version.build;
+        assembly_metadata.usRevisionNumber = assemblyReference.version.revision;
+        if (assemblyReference.locale == "neutral"_W) {
+          assembly_metadata.szLocale = const_cast<WCHAR*>("\0"_W.c_str());
+          assembly_metadata.cbLocale = 0;
+        } else {
+          assembly_metadata.szLocale =
+              const_cast<WCHAR*>(assemblyReference.locale.c_str());
+          assembly_metadata.cbLocale = (DWORD)(assemblyReference.locale.size());
+        }
+
+        DWORD public_key_size = 8;
+        if (assemblyReference.public_key == trace::PublicKey()) {
+          public_key_size = 0;
+        }
+
+        mdAssemblyRef profilerAssemblyRef = mdAssemblyRefNil;
+        module_metadata->assembly_emit->DefineAssemblyRef(
+            &assemblyReference.public_key.data, public_key_size,
+            assemblyReference.name.data(), &assembly_metadata, NULL, NULL, 0,
+            &profilerAssemblyRef);
+
+        if (profilerAssemblyRef == mdAssemblyRefNil) {
+          Warn("Wrapper profilerAssemblyRef could not be defined.");
+          return S_OK;
+        }
+
+        // *** Define calltarget type and begin member ref
+        mdTypeRef callTargetTypeRef;
+        hr = module_metadata->metadata_emit->DefineTypeRefByName(
+            profilerAssemblyRef, managed_profiler_calltarget_type.data(),
+            &callTargetTypeRef);
+        if (FAILED(hr)) {
+          Warn("Wrapper callTargetTypeRef could not be defined.");
+          return S_OK;
+        }
+
+        mdMemberRef beginMemberRef;
+        hr = module_metadata->metadata_emit->DefineMemberRef(
+            callTargetTypeRef, managed_profiler_calltarget_beginmethod_name.data(), BeginMethodSig,
+            sizeof(BeginMethodSig), &beginMemberRef);
+        if (FAILED(hr)) {
+          Warn("Wrapper beginMemberRef could not be defined.");
+          return S_OK;
+        }
+
+        // *** Define calltarget return type and end member ref
+        mdTypeRef callTargetBeginReturnTypeRef;
+        hr = module_metadata->metadata_emit->DefineTypeRefByName(
+            profilerAssemblyRef, managed_profiler_calltarget_beginmethod_returntype.data(),
+            &callTargetBeginReturnTypeRef);
+        if (FAILED(hr)) {
+          Warn("Wrapper callTargetBeginReturnTypeRef could not be defined.");
+          return S_OK;
+        }
+
+        mdMemberRef endMemberRef;
+        hr = module_metadata->metadata_emit->DefineMemberRef(
+            callTargetBeginReturnTypeRef,
+            managed_profiler_calltarget_beginmethod_returntype_endmethod_name.data(), EndMethodSig,
+            sizeof(EndMethodSig), &endMemberRef);
+        if (FAILED(hr)) {
+          Warn("Wrapper endMemberRef could not be defined.");
+          return S_OK;
+        }
+
+        // *** Define corlib assembly and System.Exception type
+        mdAssemblyRef corLibAssemblyRef = mdAssemblyRefNil;
+        module_metadata->assembly_emit->DefineAssemblyRef(
+            corAssemblyProperty.ppbPublicKey, corAssemblyProperty.pcbPublicKey,
+            corAssemblyProperty.szName.data(), &corAssemblyProperty.pMetaData,
+            &corAssemblyProperty.pulHashAlgId,
+            sizeof(corAssemblyProperty.pulHashAlgId),
+            corAssemblyProperty.assemblyFlags, &corLibAssemblyRef);
+        if (profilerAssemblyRef == mdAssemblyRefNil) {
+          Warn("Wrapper corLibAssemblyRef could not be defined.");
+          return S_OK;
+        }
+
+        mdTypeRef exTypeRef;
+        hr = module_metadata->metadata_emit->DefineTypeRefByName(
+            corLibAssemblyRef, SystemException.data(), &exTypeRef);
+        if (FAILED(hr)) {
+          Warn("Wrapper exTypeRef could not be defined.");
+          return S_OK;
+        }
+
+        if (module_metadata->getTypeFromHandleToken == 0) {
+          mdTypeRef typeRef;
+          hr = module_metadata->metadata_emit->DefineTypeRefByName(corLibAssemblyRef, SystemTypeName.data(), &typeRef);
+          RETURN_OK_IF_FAILED(hr);
+
+          mdTypeRef runtimeTypeHandleRef;
+          hr = module_metadata->metadata_emit->DefineTypeRefByName(corLibAssemblyRef, RuntimeTypeHandleTypeName.data(), &runtimeTypeHandleRef);
+          RETURN_OK_IF_FAILED(hr);
+
+          unsigned runtimeTypeHandle_buffer;
+          unsigned type_buffer;
+          auto runtimeTypeHandle_size = CorSigCompressToken(runtimeTypeHandleRef, &runtimeTypeHandle_buffer);
+          auto type_size = CorSigCompressToken(typeRef, &type_buffer);
+          auto* getTypeFromHandleSig = new COR_SIGNATURE[runtimeTypeHandle_size + type_size + 4];
+          unsigned offset = 0;
+          getTypeFromHandleSig[offset++] = IMAGE_CEE_CS_CALLCONV_DEFAULT;
+          getTypeFromHandleSig[offset++] = 0x01;
+          getTypeFromHandleSig[offset++] = ELEMENT_TYPE_CLASS;
+          memcpy(&getTypeFromHandleSig[offset], &type_buffer, type_size);
+          offset += type_size;
+          getTypeFromHandleSig[offset++] = ELEMENT_TYPE_VALUETYPE;
+          memcpy(&getTypeFromHandleSig[offset], &runtimeTypeHandle_buffer, runtimeTypeHandle_size);
+          offset += runtimeTypeHandle_size;
+
+          hr = module_metadata->metadata_emit->DefineMemberRef(typeRef, GetTypeFromHandleMethodName.data(), getTypeFromHandleSig,
+              sizeof(getTypeFromHandleSig), &module_metadata->getTypeFromHandleToken);
+          RETURN_OK_IF_FAILED(hr);
+        }
+
+        Debug("Modifying locals signature");
+
+        // Modify locals signature to add returnvalue, exception, and the object with the delegate to call after the method finishes.
+        hr = ModifyLocalSig(module_metadata, rewriter, exTypeRef, callTargetBeginReturnTypeRef);
+        RETURN_OK_IF_FAILED(hr);
+
+        Debug("Signature was modified.");
+
+        // add try catch finally
+        auto pReWriter = &rewriter;
+
+        // object type ref
+        mdTypeRef objectTypeRef;
+        hr = module_metadata->metadata_emit->DefineTypeRefByName(corLibAssemblyRef, SystemObject.data(), &objectTypeRef);
+        if (FAILED(hr)) {
+          Warn("Wrapper objectTypeRef could not be defined.");
+          return S_OK;
+        }
+
+        // new local indexes
+        auto indexRet = rewriter.cNewLocals - 3;
+        auto indexEx = rewriter.cNewLocals - 2;
+        auto indexMethodTrace = rewriter.cNewLocals - 1;
+
+        Warn("Here starts the rewriting...");
+    }
+  }
+
+  if (modified) {
+    hr = rewriter.Export();
+
+    if (FAILED(hr)) {
+      Warn(
+          "ProcessCallTargetModification: Call to ILRewriter.Export() failed for "
+          "ModuleID=",
+          module_id, " ", function_token);
+      return hr;
+    }
+  }
+
+  return S_OK;
+}
+
 bool CorProfiler::GetWrapperMethodRef(
     ModuleMetadata* module_metadata,
     ModuleID module_id,
@@ -1282,14 +1510,13 @@ std::string CorProfiler::GetILCodes(std::string title, ILRewriter* rewriter,
   orig_sstream << ")" << std::endl;
   for (ILInstr* cInstr = rewriter->GetILList()->m_pNext;
        cInstr != rewriter->GetILList(); cInstr = cInstr->m_pNext) {
-    
     orig_sstream << cInstr;
     orig_sstream << ": ";
     if (cInstr->m_opcode < opcodes_names.size()) {
       orig_sstream << std::setw(10) << opcodes_names[cInstr->m_opcode];
     } else {
-       orig_sstream << "0x";
-       orig_sstream << std::setfill('0') << std::setw(2) << std::hex
+      orig_sstream << "0x";
+      orig_sstream << std::setfill('0') << std::setw(2) << std::hex
                    << cInstr->m_opcode;
     }
     if (cInstr->m_pTarget != NULL) {
@@ -1302,6 +1529,79 @@ std::string CorProfiler::GetILCodes(std::string title, ILRewriter* rewriter,
     orig_sstream << std::endl;
   }
   return orig_sstream.str();
+}
+
+// Modify the local signature of a method to add ret ex methodTrace var to locals
+HRESULT CorProfiler::ModifyLocalSig(ModuleMetadata* module_metadata,
+                                    ILRewriter& reWriter, mdTypeRef exTypeRef,
+                                    mdTypeRef methodTraceTypeRef) {
+  HRESULT hr;
+  PCCOR_SIGNATURE rgbOrigSig = NULL;
+  ULONG cbOrigSig = 0;
+  UNALIGNED INT32 temp = 0;
+
+  if (reWriter.m_tkLocalVarSig != mdTokenNil) {
+    IfFailRet(module_metadata->metadata_import->GetSigFromToken(reWriter.m_tkLocalVarSig, &rgbOrigSig, &cbOrigSig));
+
+    // Check Is ReWrite or not
+    const auto len = CorSigCompressToken(methodTraceTypeRef, &temp);
+    if (cbOrigSig - len > 0) {
+      if (rgbOrigSig[cbOrigSig - len - 1] == ELEMENT_TYPE_CLASS) {
+        if (memcmp(&rgbOrigSig[cbOrigSig - len], &temp, len) == 0)
+          return E_FAIL;
+      }
+    }
+  }
+
+  auto exTypeRefSize = CorSigCompressToken(exTypeRef, &temp);
+  auto methodTraceTypeRefSize = CorSigCompressToken(methodTraceTypeRef, &temp);
+  ULONG cbNewSize = cbOrigSig + 1 + 1 + methodTraceTypeRefSize + 1 + exTypeRefSize;
+  ULONG cOrigLocals;
+  ULONG cNewLocalsLen;
+  ULONG cbOrigLocals = 0;
+
+  if (cbOrigSig == 0) {
+    cbNewSize += 2;
+    reWriter.cNewLocals = 3;
+    cNewLocalsLen = CorSigCompressData(reWriter.cNewLocals, &temp);
+  } else {
+    cbOrigLocals = CorSigUncompressData(rgbOrigSig + 1, &cOrigLocals);
+    reWriter.cNewLocals = cOrigLocals + 3;
+    cNewLocalsLen = CorSigCompressData(reWriter.cNewLocals, &temp);
+    cbNewSize += cNewLocalsLen - cbOrigLocals;
+  }
+
+  const auto rgbNewSig = new COR_SIGNATURE[cbNewSize];
+  *rgbNewSig = IMAGE_CEE_CS_CALLCONV_LOCAL_SIG;
+
+  ULONG rgbNewSigOffset = 1;
+  memcpy(rgbNewSig + rgbNewSigOffset, &temp, cNewLocalsLen);
+  rgbNewSigOffset += cNewLocalsLen;
+
+  if (cbOrigSig > 0) {
+    const auto cbOrigCopyLen = cbOrigSig - 1 - cbOrigLocals;
+    memcpy(rgbNewSig + rgbNewSigOffset, rgbOrigSig + 1 + cbOrigLocals, cbOrigCopyLen);
+    rgbNewSigOffset += cbOrigCopyLen;
+  }
+
+  // return value
+  rgbNewSig[rgbNewSigOffset++] = ELEMENT_TYPE_OBJECT;
+
+  // exception value
+  rgbNewSig[rgbNewSigOffset++] = ELEMENT_TYPE_CLASS;
+  exTypeRefSize = CorSigCompressToken(exTypeRef, &temp);
+  memcpy(rgbNewSig + rgbNewSigOffset, &temp, exTypeRefSize);
+  rgbNewSigOffset += exTypeRefSize;
+
+  // After method call object with the delegate
+  rgbNewSig[rgbNewSigOffset++] = ELEMENT_TYPE_CLASS;
+  methodTraceTypeRefSize = CorSigCompressToken(methodTraceTypeRef, &temp);
+  memcpy(rgbNewSig + rgbNewSigOffset, &temp, methodTraceTypeRefSize);
+  rgbNewSigOffset += methodTraceTypeRefSize;
+
+  IfFailRet(module_metadata->metadata_emit->GetTokenFromSig(&rgbNewSig[0], cbNewSize, &reWriter.m_tkLocalVarSig));
+
+  return S_OK;
 }
 
 //
