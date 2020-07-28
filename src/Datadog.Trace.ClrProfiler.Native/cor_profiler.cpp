@@ -1427,6 +1427,7 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         }
 
         Debug("Starting rewriting.");
+        Info(GetILCodes("Original Code: ", &rewriter, caller));
 
         // add try catch finally
         auto pEmit = module_metadata->metadata_emit;
