@@ -20,7 +20,10 @@ namespace Datadog.Trace.ClrProfiler
     /// </summary>
     public class CallTargetBeginReturn
     {
-        private static readonly Vendors.Serilog.ILogger Log = DatadogLogging.GetLogger(typeof(CallTargetBeginReturn));
+        /// <summary>
+        /// Noop default instance
+        /// </summary>
+        public static readonly CallTargetBeginReturn NoopInstance = new CallTargetBeginReturn();
 
         private EndMethodDelegate _endMethod;
 
@@ -39,12 +42,8 @@ namespace Datadog.Trace.ClrProfiler
         /// <returns>Return value</returns>
         public object EndMethod(object returnValue, object exception)
         {
-            Log.Information($"EndMethod was called: [{returnValue}|{exception}]");
-
             if (_endMethod is null)
             {
-                Log.Information($"EndMethod delegate is null");
-
                 return returnValue;
             }
 

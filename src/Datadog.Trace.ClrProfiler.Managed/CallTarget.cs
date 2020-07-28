@@ -24,8 +24,15 @@ namespace Datadog.Trace.ClrProfiler
         /// <returns>CallTargetBeginReturn instance</returns>
         public static object BeginMethod(object type, object instance, object[] arguments, uint function_token)
         {
-            Log.Information($"BeginMethod was called: [{type}|{instance}|{arguments?.Length ?? 0}|{function_token}]");
-            return new CallTargetBeginReturn();
+            Log.Information($"BeginMethod was called: [Type:{type}|Instance:{instance}|Arguments Count:{arguments?.Length ?? 0}|FunctionToken:{function_token}]");
+
+            var endMethodObject = new CallTargetBeginReturn();
+            endMethodObject.SetDelegate((returnValue, ex) =>
+            {
+                Log.Information($"EndMethod was called: [Type:{type}|Instance:{instance}|ReturnValue:{returnValue}|Exception:{ex}]");
+                return returnValue;
+            });
+            return endMethodObject;
         }
     }
 }
