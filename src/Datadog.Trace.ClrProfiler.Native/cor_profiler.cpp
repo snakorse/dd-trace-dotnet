@@ -348,6 +348,31 @@ HRESULT STDMETHODCALLTYPE CorProfiler::ModuleLoadFinished(ModuleID module_id,
        module_info.assembly.name == "System.Private.CoreLib"_W)) {
     corlib_module_loaded = true;
     corlib_app_domain_id = app_domain_id;
+
+    ComPtr<IUnknown> metadata_interfaces;
+    auto hr = this->info_->GetModuleMetaData(module_id, ofRead | ofWrite, IID_IMetaDataImport2, metadata_interfaces.GetAddressOf());
+    // Get the IMetaDataAssemblyImport interface to get metadata from the
+    // managed assembly
+    const auto assembly_import = metadata_interfaces.As<IMetaDataAssemblyImport>(IID_IMetaDataAssemblyImport);
+    const auto assembly_metadata = GetAssemblyImportMetadata(assembly_import);
+    
+    hr = assembly_import->GetAssemblyProps(
+        assembly_metadata.assembly_token, &corAssemblyProperty.ppbPublicKey,
+        &corAssemblyProperty.pcbPublicKey, &corAssemblyProperty.pulHashAlgId,
+        NULL, 0, NULL, &corAssemblyProperty.pMetaData,
+        &corAssemblyProperty.assemblyFlags);
+
+    if (FAILED(hr)) {
+      Warn("AssemblyLoadFinished failed to get properties for COR assembly ");
+    }
+
+    corAssemblyProperty.szName = module_info.assembly.name;
+
+    Info("COR library: ", corAssemblyProperty.szName, " ",
+         corAssemblyProperty.pMetaData.usMajorVersion, ".",
+         corAssemblyProperty.pMetaData.usMinorVersion, ".",
+         corAssemblyProperty.pMetaData.usRevisionNumber);
+
     return S_OK;
   }
 
@@ -1337,6 +1362,10 @@ HRESULT CorProfiler::ProcessCallTargetModification(
           Warn("Wrapper endMemberRef could not be defined.");
           return S_OK;
         }
+        
+        Debug("Runtime is desktop: ",
+              runtime_information_.is_desktop() ? "YES" : "NO");
+        Debug("Loading CorAssembly: ", corAssemblyProperty.szName);
 
         // *** Define corlib assembly and System.Exception type
         mdAssemblyRef corLibAssemblyRef = mdAssemblyRefNil;
@@ -1392,11 +1421,16 @@ HRESULT CorProfiler::ProcessCallTargetModification(
 
         // Modify locals signature to add returnvalue, exception, and the object with the delegate to call after the method finishes.
         hr = ModifyLocalSig(module_metadata, rewriter, exTypeRef, callTargetBeginReturnTypeRef);
-        RETURN_OK_IF_FAILED(hr);
+        if (FAILED(hr)) {
+          Warn("Error modifying the locals signature.");
+          return S_OK;
+        }
 
-        Debug("Signature was modified.");
+        Debug("Starting rewriting.");
 
         // add try catch finally
+        auto pEmit = module_metadata->metadata_emit;
+        auto pImport = module_metadata->metadata_import;
         auto pReWriter = &rewriter;
 
         // object type ref
@@ -1410,9 +1444,231 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         // new local indexes
         auto indexRet = rewriter.cNewLocals - 3;
         auto indexEx = rewriter.cNewLocals - 2;
-        auto indexMethodTrace = rewriter.cNewLocals - 1;
+        auto indexEndMethod = rewriter.cNewLocals - 1;
 
-        Warn("Here starts the rewriting...");
+        // rewrites
+        ILRewriterWrapper reWriterWrapper(pReWriter);
+        ILInstr* pFirstOriginalInstr = pReWriter->GetILList()->m_pNext;
+        reWriterWrapper.SetILPosition(pFirstOriginalInstr);
+
+        // clear locals
+        reWriterWrapper.LoadNull();
+        reWriterWrapper.StLocal(indexRet);
+        reWriterWrapper.LoadNull();
+        reWriterWrapper.StLocal(indexEx);
+        reWriterWrapper.LoadNull();
+        reWriterWrapper.StLocal(indexEndMethod);
+
+        // start the try with a nop operator
+        ILInstr* pTryStartInstr = reWriterWrapper.NOP(); 
+
+        // load caller type into the stack
+        reWriterWrapper.LoadToken(caller.type.id);
+        reWriterWrapper.CallMember(module_metadata->getTypeFromHandleToken, false);
+
+        // load instance into the stack (if not static)
+        if (isStatic) {
+          reWriterWrapper.LoadNull();
+        } else {
+          reWriterWrapper.LoadArgument(0);
+        }
+
+        // create and load arguments array
+        auto argNum = caller.method_signature.NumberOfArguments();
+        if (argNum == 0) {
+          // if num of arguments is zero, we avoid to create the object array
+          reWriterWrapper.LoadNull();
+        } else {
+          reWriterWrapper.CreateArray(objectTypeRef, argNum);
+          auto arguments = caller.method_signature.GetMethodArguments();
+
+          for (unsigned i = 0; i < argNum; i++) {
+            reWriterWrapper.BeginLoadValueIntoArray(i);
+            reWriterWrapper.LoadArgument(i + (isStatic ? 0 : 1));
+            auto argTypeFlags = arguments[i].GetTypeFlags(elementType);
+            if (argTypeFlags & TypeFlagByRef) {
+              reWriterWrapper.LoadIND(elementType);
+            }
+            if (argTypeFlags & TypeFlagBoxedType) {
+              auto tok = arguments[i].GetTypeTok(pEmit, corLibAssemblyRef);
+              if (tok == mdTokenNil) {
+                return S_OK;
+              }
+              reWriterWrapper.Box(tok);
+            }
+            reWriterWrapper.EndLoadValueIntoArray();
+          }
+        }
+
+        // load function token into the stack
+        reWriterWrapper.LoadInt32((INT32)function_token);
+
+        // We call the BeginMethod and store the result to the local
+        reWriterWrapper.CallMember(beginMemberRef, false);
+        reWriterWrapper.Cast(callTargetBeginReturnTypeRef);
+        reWriterWrapper.StLocal(indexEndMethod);
+
+        // Gets if the return type of the original method is boxed
+        bool isVoidMethod = (retTypeFlags & TypeFlagVoid) > 0;
+        auto ret = caller.method_signature.GetRet();
+        bool retIsBoxedType = false;
+        mdToken retTypeTok;
+        if (!isVoidMethod) {
+          Debug("Return token name: ", ret.GetTypeTokName(pImport));
+          retTypeTok = ret.GetTypeTok(pEmit, corLibAssemblyRef);
+          if (ret.GetTypeFlags(elementType) & TypeFlagBoxedType)
+            retIsBoxedType = true;
+        }
+        Debug("Return type is boxed: ", retIsBoxedType ? "YES" : "NO");
+        Debug("Return token: ", retTypeTok);
+
+        // Create return instruction and insert it at the end
+        ILInstr* pRetInstr = pReWriter->NewILInstr();
+        pRetInstr->m_opcode = CEE_RET;
+        pReWriter->InsertAfter(pReWriter->GetILList()->m_pPrev, pRetInstr);
+        reWriterWrapper.SetILPosition(pRetInstr);
+
+        // Store exception to local
+        reWriterWrapper.StLocal(indexEx);
+        ILInstr* pRethrowInstr = reWriterWrapper.Rethrow();
+
+        // Finally handler calls the EndMethod
+        reWriterWrapper.LoadLocal(indexEndMethod);
+        reWriterWrapper.LoadLocal(indexRet);
+        reWriterWrapper.LoadLocal(indexEx);
+        reWriterWrapper.CallMember(endMemberRef, true);
+        reWriterWrapper.StLocal(indexRet);
+        ILInstr* pEndFinallyInstr = reWriterWrapper.EndFinally();
+
+        // Prepare to return the value
+        if (!isVoidMethod) {
+          reWriterWrapper.LoadLocal(indexRet);
+          if (retIsBoxedType)
+            reWriterWrapper.UnboxAny(retTypeTok);
+          else
+            reWriterWrapper.Cast(retTypeTok);
+        }
+
+        // Changes all returns to a boxing+jump
+        for (ILInstr* pInstr = pReWriter->GetILList()->m_pNext;
+             pInstr != pReWriter->GetILList(); pInstr = pInstr->m_pNext) {
+          switch (pInstr->m_opcode) {
+            case CEE_RET: {
+              if (pInstr != pRetInstr) {
+                if (!isVoidMethod) {
+                  reWriterWrapper.SetILPosition(pInstr);
+                  if (retIsBoxedType) {
+                    reWriterWrapper.Box(retTypeTok);
+                  }
+                  reWriterWrapper.StLocal(indexRet);
+                }
+                pInstr->m_opcode = CEE_LEAVE_S;
+                pInstr->m_pTarget = pEndFinallyInstr->m_pNext;
+              }
+              break;
+            }
+            default:
+              break;
+          }
+        }
+
+        EHClause exClause{};
+        exClause.m_Flags = COR_ILEXCEPTION_CLAUSE_NONE;
+        exClause.m_pTryBegin = pTryStartInstr;
+        exClause.m_pTryEnd = pRethrowInstr->m_pPrev;
+        exClause.m_pHandlerBegin = pRethrowInstr->m_pPrev;
+        exClause.m_pHandlerEnd = pRethrowInstr;
+        exClause.m_ClassToken = exTypeRef;
+
+        EHClause finallyClause{};
+        finallyClause.m_Flags = COR_ILEXCEPTION_CLAUSE_FINALLY;
+        finallyClause.m_pTryBegin = pTryStartInstr;
+        finallyClause.m_pTryEnd = pRethrowInstr->m_pNext;
+        finallyClause.m_pHandlerBegin = pRethrowInstr->m_pNext;
+        finallyClause.m_pHandlerEnd = pEndFinallyInstr;
+
+        // Copy previous clauses
+        auto m_pEHNew = new EHClause[rewriter.m_nEH + 2];
+        for (unsigned i = 0; i < rewriter.m_nEH; i++) {
+          m_pEHNew[i] = rewriter.m_pEH[i];
+        }
+
+        // add the new clauses
+        rewriter.m_nEH += 2;
+        m_pEHNew[rewriter.m_nEH - 2] = exClause;
+        m_pEHNew[rewriter.m_nEH - 1] = finallyClause;
+        rewriter.m_pEH = m_pEHNew;
+
+        modified = true;
+        Info("*** JITCompilationStarted() target modification of ", caller.type.name, ".", caller.name, "()");
+        Info(GetILCodes("Target Modification: ", &rewriter, caller));
+        /*
+        std::stringstream stream;
+        stream << "ExClause: ";
+        stream << "COR_ILEXCEPTION_CLAUSE_NONE | ";
+        stream << "0x";
+        stream << std::setw(2) << std::setfill('0') << std::hex
+               << exClause.m_pTryBegin->m_opcode;
+        if (exClause.m_pTryBegin->m_Arg64 != 0) {
+          stream << "-";
+          stream << exClause.m_pTryBegin->m_Arg64;
+        }
+        stream << " 0x";
+        stream << std::setw(2) << std::setfill('0') << std::hex
+               << exClause.m_pTryEnd->m_opcode;
+        if (exClause.m_pTryEnd->m_Arg64 != 0) {
+          stream << "-";
+          stream << exClause.m_pTryEnd->m_Arg64;
+        }
+        stream << " 0x";
+        stream << std::setw(2) << std::setfill('0') << std::hex
+               << exClause.m_pHandlerBegin->m_opcode;
+        if (exClause.m_pHandlerBegin->m_Arg64 != 0) {
+          stream << "-";
+          stream << exClause.m_pHandlerBegin->m_Arg64;
+        }
+        stream << " 0x";
+        stream << std::setw(2) << std::setfill('0') << std::hex
+               << exClause.m_pHandlerEnd->m_opcode;
+        if (exClause.m_pHandlerEnd->m_Arg64 != 0) {
+          stream << "-";
+          stream << exClause.m_pHandlerEnd->m_Arg64;
+        }
+        Info(stream.str());
+        stream = std::stringstream();
+        stream << "ExClause: ";
+        stream << "COR_ILEXCEPTION_CLAUSE_FINALLY | ";
+        stream << "0x";
+        stream << std::setw(2) << std::setfill('0') << std::hex
+               << finallyClause.m_pTryBegin->m_opcode;
+        if (finallyClause.m_pTryBegin->m_Arg64 != 0) {
+          stream << "-";
+          stream << finallyClause.m_pTryBegin->m_Arg64;
+        }
+        stream << " 0x";
+        stream << std::setw(2) << std::setfill('0') << std::hex
+               << finallyClause.m_pTryEnd->m_opcode;
+        if (finallyClause.m_pTryEnd->m_Arg64 != 0) {
+          stream << "-";
+          stream << finallyClause.m_pTryEnd->m_Arg64;
+        }
+        stream << " 0x";
+        stream << std::setw(2) << std::setfill('0') << std::hex
+               << finallyClause.m_pHandlerBegin->m_opcode;
+        if (finallyClause.m_pHandlerBegin->m_Arg64 != 0) {
+          stream << "-";
+          stream << finallyClause.m_pHandlerBegin->m_Arg64;
+        }
+        stream << " 0x";
+        stream << std::setw(2) << std::setfill('0') << std::hex
+               << finallyClause.m_pHandlerEnd->m_opcode;
+        if (finallyClause.m_pHandlerEnd->m_Arg64 != 0) {
+          stream << "-";
+          stream << finallyClause.m_pHandlerEnd->m_Arg64;
+        }
+        Info(stream.str());
+        */
+        break;
     }
   }
 
@@ -1599,9 +1855,30 @@ HRESULT CorProfiler::ModifyLocalSig(ModuleMetadata* module_metadata,
   memcpy(rgbNewSig + rgbNewSigOffset, &temp, methodTraceTypeRefSize);
   rgbNewSigOffset += methodTraceTypeRefSize;
 
-  IfFailRet(module_metadata->metadata_emit->GetTokenFromSig(&rgbNewSig[0], cbNewSize, &reWriter.m_tkLocalVarSig));
+  return module_metadata->metadata_emit->GetTokenFromSig(
+      &rgbNewSig[0], cbNewSize, &reWriter.m_tkLocalVarSig);
+}
 
-  return S_OK;
+std::string CorProfiler::GetILCodes(std::string title, ILRewriter* rewriter,
+                                    const FunctionInfo& caller) {
+  std::stringstream orig_sstream;
+  orig_sstream << title;
+  orig_sstream << ToString(caller.type.name);
+  orig_sstream << ".";
+  orig_sstream << ToString(caller.name.c_str());
+  orig_sstream << " : ";
+  for (ILInstr* cInstr = rewriter->GetILList()->m_pNext;
+       cInstr != rewriter->GetILList(); cInstr = cInstr->m_pNext) {
+    orig_sstream << "0x";
+    orig_sstream << std::setw(2) << std::setfill('0') << std::hex
+                 << cInstr->m_opcode;
+    if (cInstr->m_Arg64 != 0) {
+      orig_sstream << "-";
+      orig_sstream << cInstr->m_Arg64;
+    }
+    orig_sstream << " ";
+  }
+  return orig_sstream.str();
 }
 
 //

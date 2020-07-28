@@ -60,8 +60,6 @@ class ILRewriter {
 
   ILInstr m_IL;  // Double linked list of all il instructions
 
-  unsigned m_nEH;
-  EHClause* m_pEH;
 
   // Helper table for importing.  Sparse array that maps BYTE offset of
   // beginning of an instruction to that instruction's ILInstr*.  BYTE offsets
@@ -85,6 +83,9 @@ class ILRewriter {
   
   mdToken m_tkLocalVarSig;
   ULONG cNewLocals = 3;
+
+  unsigned m_nEH;
+  EHClause* m_pEH;
 
   void InitializeTiny();
 

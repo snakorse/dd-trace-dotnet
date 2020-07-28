@@ -31,6 +31,17 @@ class ILRewriterWrapper {
   void EndLoadValueIntoArray() const;
   bool ReplaceMethodCalls(mdMemberRef old_method_ref,
                           mdMemberRef new_method_ref) const;
+
+
+  void LoadIND(unsigned elementType) const;
+  void LoadToken(mdToken token) const;
+  void StLocal(unsigned index) const;
+  void LoadLocal(unsigned index) const;
+  void Return() const;
+  ILInstr* NOP() const;
+  ILInstr* Rethrow() const;
+  ILInstr* EndFinally() const;
+  ILInstr* CallMember0(const mdMemberRef& member_ref, bool is_virtual) const;
 };
 
 #endif  // DD_CLR_PROFILER_IL_REWRITER_WRAPPER_H_

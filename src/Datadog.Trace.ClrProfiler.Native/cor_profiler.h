@@ -80,6 +80,8 @@ class CorProfiler : public CorProfilerBase {
                          const FunctionInfo& caller);
   HRESULT ModifyLocalSig(ModuleMetadata* module_metadata, ILRewriter& reWriter,
                          mdTypeRef exTypeRef, mdTypeRef methodTraceTypeRef);
+  std::string GetILCodes(std::string title, ILRewriter* rewriter,
+                         const FunctionInfo& caller);
   //
   // Startup methods
   //
