@@ -1459,7 +1459,7 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         reWriterWrapper.StLocal(indexEx);
         reWriterWrapper.LoadNull();
         reWriterWrapper.StLocal(indexEndMethod);
-
+        
         // start the try with a nop operator
         ILInstr* pTryStartInstr = reWriterWrapper.NOP(); 
 
@@ -1512,10 +1512,12 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         // Gets if the return type of the original method is boxed
         bool isVoidMethod = (retTypeFlags & TypeFlagVoid) > 0;
         auto ret = caller.method_signature.GetRet();
+
         bool retIsBoxedType = false;
         mdToken retTypeTok;
         if (!isVoidMethod) {
           Debug("Return token name: ", ret.GetTypeTokName(pImport));
+
           retTypeTok = ret.GetTypeTok(pEmit, corLibAssemblyRef);
           if (ret.GetTypeFlags(elementType) & TypeFlagBoxedType)
             retIsBoxedType = true;
@@ -1544,10 +1546,12 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         // Prepare to return the value
         if (!isVoidMethod) {
           reWriterWrapper.LoadLocal(indexRet);
-          if (retIsBoxedType)
+          if (retIsBoxedType) {
             reWriterWrapper.UnboxAny(retTypeTok);
-          else
-            reWriterWrapper.Cast(retTypeTok);
+          } else {
+              //TODO: This is causing BadImageException when the returning type is generic
+            //reWriterWrapper.Cast(retTypeTok);
+          }
         }
 
         // Changes all returns to a boxing+jump
@@ -1603,72 +1607,6 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         modified = true;
         Info("*** JITCompilationStarted() target modification of ", caller.type.name, ".", caller.name, "()");
         Info(GetILCodes("Target Modification: ", &rewriter, caller));
-        /*
-        std::stringstream stream;
-        stream << "ExClause: ";
-        stream << "COR_ILEXCEPTION_CLAUSE_NONE | ";
-        stream << "0x";
-        stream << std::setw(2) << std::setfill('0') << std::hex
-               << exClause.m_pTryBegin->m_opcode;
-        if (exClause.m_pTryBegin->m_Arg64 != 0) {
-          stream << "-";
-          stream << exClause.m_pTryBegin->m_Arg64;
-        }
-        stream << " 0x";
-        stream << std::setw(2) << std::setfill('0') << std::hex
-               << exClause.m_pTryEnd->m_opcode;
-        if (exClause.m_pTryEnd->m_Arg64 != 0) {
-          stream << "-";
-          stream << exClause.m_pTryEnd->m_Arg64;
-        }
-        stream << " 0x";
-        stream << std::setw(2) << std::setfill('0') << std::hex
-               << exClause.m_pHandlerBegin->m_opcode;
-        if (exClause.m_pHandlerBegin->m_Arg64 != 0) {
-          stream << "-";
-          stream << exClause.m_pHandlerBegin->m_Arg64;
-        }
-        stream << " 0x";
-        stream << std::setw(2) << std::setfill('0') << std::hex
-               << exClause.m_pHandlerEnd->m_opcode;
-        if (exClause.m_pHandlerEnd->m_Arg64 != 0) {
-          stream << "-";
-          stream << exClause.m_pHandlerEnd->m_Arg64;
-        }
-        Info(stream.str());
-        stream = std::stringstream();
-        stream << "ExClause: ";
-        stream << "COR_ILEXCEPTION_CLAUSE_FINALLY | ";
-        stream << "0x";
-        stream << std::setw(2) << std::setfill('0') << std::hex
-               << finallyClause.m_pTryBegin->m_opcode;
-        if (finallyClause.m_pTryBegin->m_Arg64 != 0) {
-          stream << "-";
-          stream << finallyClause.m_pTryBegin->m_Arg64;
-        }
-        stream << " 0x";
-        stream << std::setw(2) << std::setfill('0') << std::hex
-               << finallyClause.m_pTryEnd->m_opcode;
-        if (finallyClause.m_pTryEnd->m_Arg64 != 0) {
-          stream << "-";
-          stream << finallyClause.m_pTryEnd->m_Arg64;
-        }
-        stream << " 0x";
-        stream << std::setw(2) << std::setfill('0') << std::hex
-               << finallyClause.m_pHandlerBegin->m_opcode;
-        if (finallyClause.m_pHandlerBegin->m_Arg64 != 0) {
-          stream << "-";
-          stream << finallyClause.m_pHandlerBegin->m_Arg64;
-        }
-        stream << " 0x";
-        stream << std::setw(2) << std::setfill('0') << std::hex
-               << finallyClause.m_pHandlerEnd->m_opcode;
-        if (finallyClause.m_pHandlerEnd->m_Arg64 != 0) {
-          stream << "-";
-          stream << finallyClause.m_pHandlerEnd->m_Arg64;
-        }
-        Info(stream.str());
-        */
         break;
     }
   }
