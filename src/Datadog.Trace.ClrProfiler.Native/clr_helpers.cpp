@@ -186,7 +186,6 @@ FunctionInfo GetFunctionInfo(const ComPtr<IMetaDataImport2>& metadata_import, co
 
   return {token, WSTRING(function_name), type_info,
           MethodSignature(final_signature_bytes),
-          MethodSignature(), 0,
           FunctionMethodSignature(raw_signature, raw_signature_len)};
 }
 

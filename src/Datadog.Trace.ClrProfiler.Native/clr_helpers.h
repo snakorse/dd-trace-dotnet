@@ -371,13 +371,15 @@ struct FunctionInfo {
         method_signature(method_signature) {}
 
   FunctionInfo(mdToken id, WSTRING name, TypeInfo type,
-               MethodSignature signature)
+               MethodSignature signature,
+               FunctionMethodSignature method_signature)
       : id(id),
         name(name),
         type(type),
         is_generic(false),
         signature(signature),
-        method_def_id(0) {}
+        method_def_id(0),
+        method_signature(method_signature) {}
 
   bool IsValid() const { return id != 0; }
 };
