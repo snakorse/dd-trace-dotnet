@@ -848,7 +848,7 @@
           "type": "Datadog.Trace.ClrProfiler.Integrations.HttpMessageHandlerIntegration",
           "method": "HttpClientHandler_SendAsync",
           "signature": "00 06 1C 1C 1C 1C 08 08 0A",
-          "action": "ReplaceTargetMethod"
+          "action": "CallTargetModification"
         }
       }
     ]
