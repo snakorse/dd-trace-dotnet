@@ -1378,7 +1378,6 @@ HRESULT CorProfiler::ProcessCallTargetModification(
 
         // We call the BeginMethod and store the result to the local
         reWriterWrapper.CallMember(module_metadata->beginMemberRef, false);
-        reWriterWrapper.Cast(module_metadata->callTargetStateTypeRef);
         reWriterWrapper.StLocal(indexState);
 
         // Gets if the return type of the original method is boxed
