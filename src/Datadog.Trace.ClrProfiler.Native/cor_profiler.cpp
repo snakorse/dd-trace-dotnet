@@ -1849,10 +1849,29 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
 
   // *** Ensure calltarget beginmethod member ref
   if (module_metadata->beginMemberRef == mdMemberRefNil) {
+    unsigned type_buffer;
+    auto type_size =
+        CorSigCompressToken(module_metadata->typeRef, &type_buffer);
+
+    auto signatureLength = 8 + type_size;
+    auto* signature = new COR_SIGNATURE[signatureLength];
+    unsigned offset = 0;
+
+    signature[offset++] = IMAGE_CEE_CS_CALLCONV_DEFAULT;
+    signature[offset++] = 0x04;
+    signature[offset++] = ELEMENT_TYPE_OBJECT;
+    signature[offset++] = ELEMENT_TYPE_CLASS;
+    memcpy(&signature[offset], &type_buffer, type_size);
+    offset += type_size;
+    signature[offset++] = ELEMENT_TYPE_OBJECT;
+    signature[offset++] = ELEMENT_TYPE_SZARRAY;
+    signature[offset++] = ELEMENT_TYPE_OBJECT;
+    signature[offset++] = ELEMENT_TYPE_U4;
+
     auto hr = module_metadata->metadata_emit->DefineMemberRef(
         module_metadata->callTargetTypeRef,
-        managed_profiler_calltarget_beginmethod_name.data(), BeginMethodSig,
-        sizeof(BeginMethodSig), &module_metadata->beginMemberRef);
+        managed_profiler_calltarget_beginmethod_name.data(), signature,
+        signatureLength, &module_metadata->beginMemberRef);
     if (FAILED(hr)) {
       Warn("Wrapper beginMemberRef could not be defined.");
       return hr;
