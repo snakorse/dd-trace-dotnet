@@ -82,6 +82,9 @@ class CorProfiler : public CorProfilerBase {
                          mdTypeRef exTypeRef, mdTypeRef methodTraceTypeRef);
   std::string GetILCodes(std::string title, ILRewriter* rewriter,
                          const FunctionInfo& caller);
+
+  HRESULT EnsureCallTargetRefs(ModuleMetadata* module_metadata);
+
   //
   // Startup methods
   //

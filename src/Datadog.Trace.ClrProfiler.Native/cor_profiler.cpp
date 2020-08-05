@@ -1291,136 +1291,15 @@ HRESULT CorProfiler::ProcessCallTargetModification(
 
         auto isStatic = !(caller.method_signature.CallingConvention() & IMAGE_CEE_CS_CALLCONV_HASTHIS);
         
-        // *** Define profiler assembly
-        const AssemblyReference assemblyReference = managed_profiler_full_assembly_version;
-        ASSEMBLYMETADATA assembly_metadata{};
-
-        assembly_metadata.usMajorVersion = assemblyReference.version.major;
-        assembly_metadata.usMinorVersion = assemblyReference.version.minor;
-        assembly_metadata.usBuildNumber = assemblyReference.version.build;
-        assembly_metadata.usRevisionNumber = assemblyReference.version.revision;
-        if (assemblyReference.locale == "neutral"_W) {
-          assembly_metadata.szLocale = const_cast<WCHAR*>("\0"_W.c_str());
-          assembly_metadata.cbLocale = 0;
-        } else {
-          assembly_metadata.szLocale =
-              const_cast<WCHAR*>(assemblyReference.locale.c_str());
-          assembly_metadata.cbLocale = (DWORD)(assemblyReference.locale.size());
-        }
-
-        DWORD public_key_size = 8;
-        if (assemblyReference.public_key == trace::PublicKey()) {
-          public_key_size = 0;
-        }
-
-        mdAssemblyRef profilerAssemblyRef = mdAssemblyRefNil;
-        module_metadata->assembly_emit->DefineAssemblyRef(
-            &assemblyReference.public_key.data, public_key_size,
-            assemblyReference.name.data(), &assembly_metadata, NULL, NULL, 0,
-            &profilerAssemblyRef);
-
-        if (profilerAssemblyRef == mdAssemblyRefNil) {
-          Warn("Wrapper profilerAssemblyRef could not be defined.");
-          return S_OK;
-        }
-        // ***
-
-        // *** Define calltarget type and begin member ref
-        mdTypeRef callTargetTypeRef;
-        hr = module_metadata->metadata_emit->DefineTypeRefByName(
-            profilerAssemblyRef, managed_profiler_calltarget_type.data(),
-            &callTargetTypeRef);
-        if (FAILED(hr)) {
-          Warn("Wrapper callTargetTypeRef could not be defined.");
-          return S_OK;
-        }
-
-        mdMemberRef beginMemberRef;
-        hr = module_metadata->metadata_emit->DefineMemberRef(
-            callTargetTypeRef, managed_profiler_calltarget_beginmethod_name.data(), BeginMethodSig,
-            sizeof(BeginMethodSig), &beginMemberRef);
-        if (FAILED(hr)) {
-          Warn("Wrapper beginMemberRef could not be defined.");
-          return S_OK;
-        }
-
-        mdMemberRef endMemberRef;
-        hr = module_metadata->metadata_emit->DefineMemberRef(
-            callTargetTypeRef, managed_profiler_calltarget_endmethod_name.data(), EndMethodSig, 
-            sizeof(EndMethodSig), &endMemberRef);
-        if (FAILED(hr)) {
-          Warn("Wrapper endMemberRef could not be defined.");
-          return S_OK;
-        }
-
-        mdTypeRef callTargetStateTypeRef;
-        hr = module_metadata->metadata_emit->DefineTypeRefByName(
-            profilerAssemblyRef, managed_profiler_calltarget_statetype.data(), &callTargetStateTypeRef);
-        if (FAILED(hr)) {
-          Warn("Wrapper callTargetStateTypeRef could not be defined.");
-          return S_OK;
-        }
-        // ***
+        // *** Ensure all CallTarget refs
+        EnsureCallTargetRefs(module_metadata);
         
-        Debug("Runtime is desktop: ",
-              runtime_information_.is_desktop() ? "YES" : "NO");
-        Debug("Loading CorAssembly: ", corAssemblyProperty.szName);
-
-        // *** Define corlib assembly and System.Exception type
-        mdAssemblyRef corLibAssemblyRef = mdAssemblyRefNil;
-        module_metadata->assembly_emit->DefineAssemblyRef(
-            corAssemblyProperty.ppbPublicKey, corAssemblyProperty.pcbPublicKey,
-            corAssemblyProperty.szName.data(), &corAssemblyProperty.pMetaData,
-            &corAssemblyProperty.pulHashAlgId,
-            sizeof(corAssemblyProperty.pulHashAlgId),
-            corAssemblyProperty.assemblyFlags, &corLibAssemblyRef);
-        if (profilerAssemblyRef == mdAssemblyRefNil) {
-          Warn("Wrapper corLibAssemblyRef could not be defined.");
-          return S_OK;
-        }
-
-        mdTypeRef exTypeRef;
-        hr = module_metadata->metadata_emit->DefineTypeRefByName(
-            corLibAssemblyRef, SystemException.data(), &exTypeRef);
-        if (FAILED(hr)) {
-          Warn("Wrapper exTypeRef could not be defined.");
-          return S_OK;
-        }
-        // ***
-
-        if (module_metadata->getTypeFromHandleToken == 0) {
-          mdTypeRef typeRef;
-          hr = module_metadata->metadata_emit->DefineTypeRefByName(corLibAssemblyRef, SystemTypeName.data(), &typeRef);
-          RETURN_OK_IF_FAILED(hr);
-
-          mdTypeRef runtimeTypeHandleRef;
-          hr = module_metadata->metadata_emit->DefineTypeRefByName(corLibAssemblyRef, RuntimeTypeHandleTypeName.data(), &runtimeTypeHandleRef);
-          RETURN_OK_IF_FAILED(hr);
-
-          unsigned runtimeTypeHandle_buffer;
-          unsigned type_buffer;
-          auto runtimeTypeHandle_size = CorSigCompressToken(runtimeTypeHandleRef, &runtimeTypeHandle_buffer);
-          auto type_size = CorSigCompressToken(typeRef, &type_buffer);
-          auto* getTypeFromHandleSig = new COR_SIGNATURE[runtimeTypeHandle_size + type_size + 4];
-          unsigned offset = 0;
-          getTypeFromHandleSig[offset++] = IMAGE_CEE_CS_CALLCONV_DEFAULT;
-          getTypeFromHandleSig[offset++] = 0x01;
-          getTypeFromHandleSig[offset++] = ELEMENT_TYPE_CLASS;
-          memcpy(&getTypeFromHandleSig[offset], &type_buffer, type_size);
-          offset += type_size;
-          getTypeFromHandleSig[offset++] = ELEMENT_TYPE_VALUETYPE;
-          memcpy(&getTypeFromHandleSig[offset], &runtimeTypeHandle_buffer, runtimeTypeHandle_size);
-          offset += runtimeTypeHandle_size;
-
-          hr = module_metadata->metadata_emit->DefineMemberRef(typeRef, GetTypeFromHandleMethodName.data(), getTypeFromHandleSig,
-              sizeof(getTypeFromHandleSig), &module_metadata->getTypeFromHandleToken);
-          RETURN_OK_IF_FAILED(hr);
-        }
-
         Debug("Modifying locals signature");
 
         // Modify locals signature to add returnvalue, exception, and the object with the delegate to call after the method finishes.
-        hr = ModifyLocalSig(module_metadata, rewriter, exTypeRef, callTargetStateTypeRef);
+        hr = ModifyLocalSig(module_metadata, rewriter,
+                            module_metadata->exTypeRef,
+                            module_metadata->callTargetStateTypeRef);
         if (FAILED(hr)) {
           Warn("Error modifying the locals signature.");
           return S_OK;
@@ -1433,14 +1312,6 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         auto pEmit = module_metadata->metadata_emit;
         auto pImport = module_metadata->metadata_import;
         auto pReWriter = &rewriter;
-
-        // object type ref
-        mdTypeRef objectTypeRef;
-        hr = module_metadata->metadata_emit->DefineTypeRefByName(corLibAssemblyRef, SystemObject.data(), &objectTypeRef);
-        if (FAILED(hr)) {
-          Warn("Wrapper objectTypeRef could not be defined.");
-          return S_OK;
-        }
 
         // new local indexes
         auto indexRet = rewriter.cNewLocals - 3;
@@ -1480,7 +1351,7 @@ HRESULT CorProfiler::ProcessCallTargetModification(
           // if num of arguments is zero, we avoid to create the object array
           reWriterWrapper.LoadNull();
         } else {
-          reWriterWrapper.CreateArray(objectTypeRef, argNum);
+          reWriterWrapper.CreateArray(module_metadata->objectTypeRef, argNum);
           auto arguments = caller.method_signature.GetMethodArguments();
 
           for (unsigned i = 0; i < argNum; i++) {
@@ -1491,7 +1362,8 @@ HRESULT CorProfiler::ProcessCallTargetModification(
               reWriterWrapper.LoadIND(elementType);
             }
             if (argTypeFlags & TypeFlagBoxedType) {
-              auto tok = arguments[i].GetTypeTok(pEmit, corLibAssemblyRef);
+              auto tok = arguments[i].GetTypeTok(
+                  pEmit, module_metadata->corLibAssemblyRef);
               if (tok == mdTokenNil) {
                 return S_OK;
               }
@@ -1505,8 +1377,8 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         reWriterWrapper.LoadInt32((INT32)function_token);
 
         // We call the BeginMethod and store the result to the local
-        reWriterWrapper.CallMember(beginMemberRef, false);
-        reWriterWrapper.Cast(callTargetStateTypeRef);
+        reWriterWrapper.CallMember(module_metadata->beginMemberRef, false);
+        reWriterWrapper.Cast(module_metadata->callTargetStateTypeRef);
         reWriterWrapper.StLocal(indexState);
 
         // Gets if the return type of the original method is boxed
@@ -1518,7 +1390,8 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         if (!isVoidMethod) {
           Debug("Return token name: ", ret.GetTypeTokName(pImport));
 
-          retTypeTok = ret.GetTypeTok(pEmit, corLibAssemblyRef);
+          retTypeTok =
+              ret.GetTypeTok(pEmit, module_metadata->corLibAssemblyRef);
           if (ret.GetTypeFlags(elementType) & TypeFlagBoxedType)
             retIsBoxedType = true;
         }
@@ -1539,7 +1412,7 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         reWriterWrapper.LoadLocal(indexRet);
         reWriterWrapper.LoadLocal(indexEx);
         reWriterWrapper.LoadLocal(indexState);
-        reWriterWrapper.CallMember(endMemberRef, false);
+        reWriterWrapper.CallMember(module_metadata->endMemberRef, false);
         reWriterWrapper.StLocal(indexRet);
         ILInstr* pEndFinallyInstr = reWriterWrapper.EndFinally();
 
@@ -1583,7 +1456,7 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         exClause.m_pTryEnd = pRethrowInstr->m_pPrev;
         exClause.m_pHandlerBegin = pRethrowInstr->m_pPrev;
         exClause.m_pHandlerEnd = pRethrowInstr;
-        exClause.m_ClassToken = exTypeRef;
+        exClause.m_ClassToken = module_metadata->exTypeRef;
 
         EHClause finallyClause{};
         finallyClause.m_Flags = COR_ILEXCEPTION_CLAUSE_FINALLY;
@@ -1818,6 +1691,187 @@ std::string CorProfiler::GetILCodes(std::string title, ILRewriter* rewriter,
     orig_sstream << " ";
   }
   return orig_sstream.str();
+}
+
+HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
+  Debug("Runtime is desktop: ",
+        runtime_information_.is_desktop() ? "YES" : "NO");
+  Debug("Loading CorAssembly: ", corAssemblyProperty.szName);
+
+  // *** Ensure corlib assembly ref
+  if (module_metadata->corLibAssemblyRef == mdAssemblyRefNil) {
+    auto hr = module_metadata->assembly_emit->DefineAssemblyRef(
+        corAssemblyProperty.ppbPublicKey, corAssemblyProperty.pcbPublicKey,
+        corAssemblyProperty.szName.data(), &corAssemblyProperty.pMetaData,
+        &corAssemblyProperty.pulHashAlgId,
+        sizeof(corAssemblyProperty.pulHashAlgId),
+        corAssemblyProperty.assemblyFlags, &module_metadata->corLibAssemblyRef);
+    if (module_metadata->corLibAssemblyRef == mdAssemblyRefNil) {
+      Warn("Wrapper corLibAssemblyRef could not be defined.");
+      return hr;
+    }
+  }
+
+  // *** Ensure System.Object type ref
+  if (module_metadata->objectTypeRef == mdTypeRefNil) {
+    auto hr = module_metadata->metadata_emit->DefineTypeRefByName(
+        module_metadata->corLibAssemblyRef, SystemObject.data(),
+        &module_metadata->objectTypeRef);
+    if (FAILED(hr)) {
+      Warn("Wrapper objectTypeRef could not be defined.");
+      return hr;
+    }
+  }
+
+  // *** Ensure System.Exception type ref
+  if (module_metadata->exTypeRef == mdTypeRefNil) {
+    auto hr = module_metadata->metadata_emit->DefineTypeRefByName(
+        module_metadata->corLibAssemblyRef, SystemException.data(),
+        &module_metadata->exTypeRef);
+    if (FAILED(hr)) {
+      Warn("Wrapper exTypeRef could not be defined.");
+      return hr;
+    }
+  }
+
+  // *** Ensure System.Type type ref
+  if (module_metadata->typeRef == mdTypeRefNil) {
+    auto hr = module_metadata->metadata_emit->DefineTypeRefByName(
+        module_metadata->corLibAssemblyRef, SystemTypeName.data(),
+        &module_metadata->typeRef);
+    if (FAILED(hr)) {
+      Warn("Wrapper typeRef could not be defined.");
+      return hr;
+    }
+  }
+
+  // *** Ensure System.RuntimeTypeHandle type ref
+  if (module_metadata->runtimeTypeHandleRef == mdTypeRefNil) {
+    auto hr = module_metadata->metadata_emit->DefineTypeRefByName(
+        module_metadata->corLibAssemblyRef, RuntimeTypeHandleTypeName.data(),
+        &module_metadata->runtimeTypeHandleRef);
+    if (FAILED(hr)) {
+      Warn("Wrapper runtimeTypeHandleRef could not be defined.");
+      return hr;
+    }
+  }
+
+  // *** Ensure Type.GetTypeFromHandle token
+  if (module_metadata->getTypeFromHandleToken == mdTokenNil) {
+    unsigned runtimeTypeHandle_buffer;
+    auto runtimeTypeHandle_size = CorSigCompressToken(
+        module_metadata->runtimeTypeHandleRef, &runtimeTypeHandle_buffer);
+
+    unsigned type_buffer;
+    auto type_size =
+        CorSigCompressToken(module_metadata->typeRef, &type_buffer);
+
+    auto* signature = new COR_SIGNATURE[runtimeTypeHandle_size + type_size + 4];
+    unsigned offset = 0;
+
+    signature[offset++] = IMAGE_CEE_CS_CALLCONV_DEFAULT;
+    signature[offset++] = 0x01;
+    signature[offset++] = ELEMENT_TYPE_CLASS;
+    memcpy(&signature[offset], &type_buffer, type_size);
+    offset += type_size;
+    signature[offset++] = ELEMENT_TYPE_VALUETYPE;
+    memcpy(&signature[offset], &runtimeTypeHandle_buffer,
+           runtimeTypeHandle_size);
+    offset += runtimeTypeHandle_size;
+
+    auto hr = module_metadata->metadata_emit->DefineMemberRef(
+        module_metadata->typeRef, GetTypeFromHandleMethodName.data(), signature,
+        sizeof(signature), &module_metadata->getTypeFromHandleToken);
+    if (FAILED(hr)) {
+      Warn("Wrapper getTypeFromHandleToken could not be defined.");
+      return hr;
+    }
+  }
+
+  // *** Ensure profiler assembly ref
+  if (module_metadata->profilerAssemblyRef == mdAssemblyRefNil) {
+    const AssemblyReference assemblyReference =
+        managed_profiler_full_assembly_version;
+    ASSEMBLYMETADATA assembly_metadata{};
+
+    assembly_metadata.usMajorVersion = assemblyReference.version.major;
+    assembly_metadata.usMinorVersion = assemblyReference.version.minor;
+    assembly_metadata.usBuildNumber = assemblyReference.version.build;
+    assembly_metadata.usRevisionNumber = assemblyReference.version.revision;
+    if (assemblyReference.locale == "neutral"_W) {
+      assembly_metadata.szLocale = const_cast<WCHAR*>("\0"_W.c_str());
+      assembly_metadata.cbLocale = 0;
+    } else {
+      assembly_metadata.szLocale =
+          const_cast<WCHAR*>(assemblyReference.locale.c_str());
+      assembly_metadata.cbLocale = (DWORD)(assemblyReference.locale.size());
+    }
+
+    DWORD public_key_size = 8;
+    if (assemblyReference.public_key == trace::PublicKey()) {
+      public_key_size = 0;
+    }
+
+    auto hr = module_metadata->assembly_emit->DefineAssemblyRef(
+        &assemblyReference.public_key.data, public_key_size,
+        assemblyReference.name.data(), &assembly_metadata, NULL, NULL, 0,
+        &module_metadata->profilerAssemblyRef);
+
+    if (FAILED(hr)) {
+      Warn("Wrapper profilerAssemblyRef could not be defined.");
+      return hr;
+    }
+  }
+
+  // *** Ensure calltarget type ref
+  if (module_metadata->callTargetTypeRef == mdTypeRefNil) {
+    auto hr = module_metadata->metadata_emit->DefineTypeRefByName(
+        module_metadata->profilerAssemblyRef,
+        managed_profiler_calltarget_type.data(),
+        &module_metadata->callTargetTypeRef);
+    if (FAILED(hr)) {
+      Warn("Wrapper callTargetTypeRef could not be defined.");
+      return hr;
+    }
+  }
+
+  // *** Ensure calltargetstate type ref
+  if (module_metadata->callTargetStateTypeRef == mdTypeRefNil) {
+    auto hr = module_metadata->metadata_emit->DefineTypeRefByName(
+        module_metadata->profilerAssemblyRef,
+        managed_profiler_calltarget_statetype.data(),
+        &module_metadata->callTargetStateTypeRef);
+    if (FAILED(hr)) {
+      Warn("Wrapper callTargetStateTypeRef could not be defined.");
+      return hr;
+    }
+  }
+
+  // *** Ensure calltarget beginmethod member ref
+  if (module_metadata->beginMemberRef == mdMemberRefNil) {
+    auto hr = module_metadata->metadata_emit->DefineMemberRef(
+        module_metadata->callTargetTypeRef,
+        managed_profiler_calltarget_beginmethod_name.data(), BeginMethodSig,
+        sizeof(BeginMethodSig), &module_metadata->beginMemberRef);
+    if (FAILED(hr)) {
+      Warn("Wrapper beginMemberRef could not be defined.");
+      return hr;
+    }
+  }
+
+  // *** Ensure calltarget endmethod member ref
+  if (module_metadata->endMemberRef == mdMemberRefNil) {
+    auto hr = module_metadata->metadata_emit->DefineMemberRef(
+        module_metadata->callTargetTypeRef,
+        managed_profiler_calltarget_endmethod_name.data(), EndMethodSig,
+        sizeof(EndMethodSig), &module_metadata->endMemberRef);
+    if (FAILED(hr)) {
+      Warn("Wrapper endMemberRef could not be defined.");
+      return hr;
+    }
+  }
+
+  return S_OK;
 }
 
 //

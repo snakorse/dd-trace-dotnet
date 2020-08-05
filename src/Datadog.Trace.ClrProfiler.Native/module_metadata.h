@@ -27,7 +27,21 @@ class ModuleMetadata {
   AppDomainID app_domain_id;
   GUID module_version_id;
   std::vector<IntegrationMethod> integrations = {};
-  mdToken getTypeFromHandleToken = 0;
+
+  // CorLib tokens
+  mdAssemblyRef corLibAssemblyRef = mdAssemblyRefNil;
+  mdTypeRef objectTypeRef = mdTypeRefNil;
+  mdTypeRef exTypeRef = mdTypeRefNil;
+  mdTypeRef typeRef = mdTypeRefNil;
+  mdTypeRef runtimeTypeHandleRef = mdTypeRefNil;
+  mdToken getTypeFromHandleToken = mdTokenNil;
+
+  // CallTarget tokens
+  mdAssemblyRef profilerAssemblyRef = mdAssemblyRefNil;
+  mdTypeRef callTargetTypeRef = mdTypeRefNil;
+  mdTypeRef callTargetStateTypeRef = mdTypeRefNil;
+  mdMemberRef beginMemberRef = mdMemberRefNil;
+  mdMemberRef endMemberRef = mdMemberRefNil;
 
   ModuleMetadata(ComPtr<IMetaDataImport2> metadata_import,
                  ComPtr<IMetaDataEmit2> metadata_emit,
