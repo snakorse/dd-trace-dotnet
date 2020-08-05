@@ -1279,7 +1279,7 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         method_replacement.target_method.type_name == caller.type.name &&
         method_replacement.target_method.method_name == caller.name) {
     
-        // return ref not support it
+        // return ref is not supported
         unsigned elementType;
         auto retTypeFlags = caller.method_signature.GetRet().GetTypeFlags(elementType);
         if (retTypeFlags & TypeFlagByRef) {
@@ -1323,6 +1323,7 @@ HRESULT CorProfiler::ProcessCallTargetModification(
           Warn("Wrapper profilerAssemblyRef could not be defined.");
           return S_OK;
         }
+        // ***
 
         // *** Define calltarget type and begin member ref
         mdTypeRef callTargetTypeRef;
@@ -1343,25 +1344,23 @@ HRESULT CorProfiler::ProcessCallTargetModification(
           return S_OK;
         }
 
-        // *** Define calltarget return type and end member ref
-        mdTypeRef callTargetBeginReturnTypeRef;
-        hr = module_metadata->metadata_emit->DefineTypeRefByName(
-            profilerAssemblyRef, managed_profiler_calltarget_beginmethod_returntype.data(),
-            &callTargetBeginReturnTypeRef);
-        if (FAILED(hr)) {
-          Warn("Wrapper callTargetBeginReturnTypeRef could not be defined.");
-          return S_OK;
-        }
-
         mdMemberRef endMemberRef;
         hr = module_metadata->metadata_emit->DefineMemberRef(
-            callTargetBeginReturnTypeRef,
-            managed_profiler_calltarget_beginmethod_returntype_endmethod_name.data(), EndMethodSig,
+            callTargetTypeRef, managed_profiler_calltarget_endmethod_name.data(), EndMethodSig, 
             sizeof(EndMethodSig), &endMemberRef);
         if (FAILED(hr)) {
           Warn("Wrapper endMemberRef could not be defined.");
           return S_OK;
         }
+
+        mdTypeRef callTargetStateTypeRef;
+        hr = module_metadata->metadata_emit->DefineTypeRefByName(
+            profilerAssemblyRef, managed_profiler_calltarget_statetype.data(), &callTargetStateTypeRef);
+        if (FAILED(hr)) {
+          Warn("Wrapper callTargetStateTypeRef could not be defined.");
+          return S_OK;
+        }
+        // ***
         
         Debug("Runtime is desktop: ",
               runtime_information_.is_desktop() ? "YES" : "NO");
@@ -1387,6 +1386,7 @@ HRESULT CorProfiler::ProcessCallTargetModification(
           Warn("Wrapper exTypeRef could not be defined.");
           return S_OK;
         }
+        // ***
 
         if (module_metadata->getTypeFromHandleToken == 0) {
           mdTypeRef typeRef;
@@ -1420,7 +1420,7 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         Debug("Modifying locals signature");
 
         // Modify locals signature to add returnvalue, exception, and the object with the delegate to call after the method finishes.
-        hr = ModifyLocalSig(module_metadata, rewriter, exTypeRef, callTargetBeginReturnTypeRef);
+        hr = ModifyLocalSig(module_metadata, rewriter, exTypeRef, callTargetStateTypeRef);
         if (FAILED(hr)) {
           Warn("Error modifying the locals signature.");
           return S_OK;
@@ -1445,7 +1445,7 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         // new local indexes
         auto indexRet = rewriter.cNewLocals - 3;
         auto indexEx = rewriter.cNewLocals - 2;
-        auto indexEndMethod = rewriter.cNewLocals - 1;
+        auto indexState = rewriter.cNewLocals - 1;
 
         // rewrites
         ILRewriterWrapper reWriterWrapper(pReWriter);
@@ -1458,7 +1458,7 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         reWriterWrapper.LoadNull();
         reWriterWrapper.StLocal(indexEx);
         reWriterWrapper.LoadNull();
-        reWriterWrapper.StLocal(indexEndMethod);
+        reWriterWrapper.StLocal(indexState);
         
         // start the try with a nop operator
         ILInstr* pTryStartInstr = reWriterWrapper.NOP(); 
@@ -1506,8 +1506,8 @@ HRESULT CorProfiler::ProcessCallTargetModification(
 
         // We call the BeginMethod and store the result to the local
         reWriterWrapper.CallMember(beginMemberRef, false);
-        reWriterWrapper.Cast(callTargetBeginReturnTypeRef);
-        reWriterWrapper.StLocal(indexEndMethod);
+        reWriterWrapper.Cast(callTargetStateTypeRef);
+        reWriterWrapper.StLocal(indexState);
 
         // Gets if the return type of the original method is boxed
         bool isVoidMethod = (retTypeFlags & TypeFlagVoid) > 0;
@@ -1536,10 +1536,10 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         ILInstr* pRethrowInstr = reWriterWrapper.Rethrow();
 
         // Finally handler calls the EndMethod
-        reWriterWrapper.LoadLocal(indexEndMethod);
         reWriterWrapper.LoadLocal(indexRet);
         reWriterWrapper.LoadLocal(indexEx);
-        reWriterWrapper.CallMember(endMemberRef, true);
+        reWriterWrapper.LoadLocal(indexState);
+        reWriterWrapper.CallMember(endMemberRef, false);
         reWriterWrapper.StLocal(indexRet);
         ILInstr* pEndFinallyInstr = reWriterWrapper.EndFinally();
 

@@ -28,20 +28,33 @@ namespace Datadog.Trace.ClrProfiler
         {
             var sw = Stopwatch.StartNew();
             Log.Information($"BeginMethod was called: [Type:{type}|Instance:{instance}|Arguments Count:{arguments?.Length ?? 0}|FunctionToken:{function_token}]");
+            return new SampleState { Watch = sw };
+        }
 
-            var endMethodObject = new CallTargetBeginReturn();
-            endMethodObject.SetDelegate((returnValue, ex) =>
+        /// <summary>
+        /// Call target static end method helper
+        /// </summary>
+        /// <param name="returnValue">Original method return value</param>
+        /// <param name="exception">Original method exception</param>
+        /// <param name="state">State from the BeginMethod</param>
+        /// <returns>Return value</returns>
+        public static object EndMethod(object returnValue, object exception, object state)
+        {
+            return AsyncTool.AddContinuation(returnValue, (Exception)exception, state, (rValue, ex, s) =>
             {
-                Log.Information($"EndMethod was called: [Type:{type}|Instance:{instance}|ReturnValue:{returnValue}|Exception:{ex}] ==> Using closure to calculate roundtrip: {sw.Elapsed.TotalMilliseconds}ms");
+                var sampleState = (SampleState)s;
+                Log.Information($"EndMethod continuation was completed: [State:{sampleState}|ReturnValue:{rValue}|Exception:{ex}] ==> Elapsed = {sampleState.Watch.Elapsed.TotalMilliseconds} ms");
 
-                return AsyncTool.AddContinuation(returnValue, ex, sw, (r, e, s) =>
-                {
-                    var sw = (Stopwatch)s;
-                    Log.Information($"Continuation was completed: [Type:{type}|Instance:{instance}|ReturnValue:{returnValue}|Exception:{ex}] ==> Using closure to calculate roundtrip: {sw.Elapsed.TotalMilliseconds}ms");
-                    return r;
-                });
+                return rValue;
             });
-            return endMethodObject;
+        }
+
+        private class SampleState : CallTargetState
+        {
+            /// <summary>
+            /// Gets or sets stopwatch instance
+            /// </summary>
+            public Stopwatch Watch { get; set; }
         }
     }
 }
