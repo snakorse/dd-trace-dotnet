@@ -1853,13 +1853,21 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
     auto type_size =
         CorSigCompressToken(module_metadata->typeRef, &type_buffer);
 
-    auto signatureLength = 8 + type_size;
+    unsigned callTargetState_buffer;
+    auto callTargetState_size = CorSigCompressToken(
+        module_metadata->callTargetStateTypeRef, &callTargetState_buffer);
+
+    auto signatureLength = 8 + type_size + callTargetState_size;
     auto* signature = new COR_SIGNATURE[signatureLength];
     unsigned offset = 0;
 
     signature[offset++] = IMAGE_CEE_CS_CALLCONV_DEFAULT;
     signature[offset++] = 0x04;
-    signature[offset++] = ELEMENT_TYPE_OBJECT;
+
+    signature[offset++] = ELEMENT_TYPE_CLASS;
+    memcpy(&signature[offset], &callTargetState_buffer, callTargetState_size);
+    offset += callTargetState_size;
+
     signature[offset++] = ELEMENT_TYPE_CLASS;
     memcpy(&signature[offset], &type_buffer, type_size);
     offset += type_size;
