@@ -1861,14 +1861,41 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
 
   // *** Ensure calltarget endmethod member ref
   if (module_metadata->endMemberRef == mdMemberRefNil) {
+    
+    unsigned exType_buffer;
+    auto exType_size = CorSigCompressToken(module_metadata->exTypeRef, &exType_buffer);
+
+    auto* signature = new COR_SIGNATURE[6 + exType_size];
+    unsigned offset = 0;
+
+    signature[offset++] = IMAGE_CEE_CS_CALLCONV_DEFAULT;
+    signature[offset++] = 0x03;
+    signature[offset++] = ELEMENT_TYPE_OBJECT;
+    signature[offset++] = ELEMENT_TYPE_OBJECT;
+    
+    signature[offset++] = ELEMENT_TYPE_CLASS;
+    memcpy(&signature[offset], &exType_buffer, exType_size);
+    offset += exType_size;
+
+    signature[offset++] = ELEMENT_TYPE_OBJECT;
+
     auto hr = module_metadata->metadata_emit->DefineMemberRef(
+        module_metadata->callTargetTypeRef,
+        managed_profiler_calltarget_endmethod_name.data(), signature,
+        sizeof(signature), &module_metadata->endMemberRef);
+    if (FAILED(hr)) {
+      Warn("Wrapper endMemberRef could not be defined.");
+      return hr;
+    }
+
+    /*auto hr = module_metadata->metadata_emit->DefineMemberRef(
         module_metadata->callTargetTypeRef,
         managed_profiler_calltarget_endmethod_name.data(), EndMethodSig,
         sizeof(EndMethodSig), &module_metadata->endMemberRef);
     if (FAILED(hr)) {
       Warn("Wrapper endMemberRef could not be defined.");
       return hr;
-    }
+    }*/
   }
 
   return S_OK;
