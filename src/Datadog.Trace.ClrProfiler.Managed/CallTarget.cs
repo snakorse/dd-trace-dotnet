@@ -26,8 +26,8 @@ namespace Datadog.Trace.ClrProfiler
         /// <returns>CallTargetBeginReturn instance</returns>
         public static CallTargetState BeginMethod(Type type, object instance, object[] arguments, uint function_token)
         {
-            var sw = Stopwatch.StartNew();
             Log.Information($"BeginMethod was called: [Type:{type}|Instance:{instance}|Arguments Count:{arguments?.Length ?? 0}|FunctionToken:{function_token}]");
+            var sw = Stopwatch.StartNew();
             return new SampleState { Watch = sw };
         }
 
