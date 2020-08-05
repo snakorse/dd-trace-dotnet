@@ -223,14 +223,15 @@ void ILRewriterWrapper::LoadIND(unsigned elementType) const {
   }
 }
 
-void ILRewriterWrapper::LoadToken(mdToken token) const {
+ILInstr* ILRewriterWrapper::LoadToken(mdToken token) const {
   ILInstr* pNewInstr = m_ILRewriter->NewILInstr();
   pNewInstr->m_opcode = CEE_LDTOKEN;
   pNewInstr->m_Arg32 = token;
   m_ILRewriter->InsertBefore(m_ILInstr, pNewInstr);
+  return pNewInstr;
 }
 
-void ILRewriterWrapper::StLocal(unsigned index) const {
+ILInstr* ILRewriterWrapper::StLocal(unsigned index) const {
   static const std::vector<OPCODE> opcodes = {
       CEE_STLOC_0,
       CEE_STLOC_1,
@@ -249,9 +250,10 @@ void ILRewriterWrapper::StLocal(unsigned index) const {
     pNewInstr->m_Arg16 = index;
   }
   m_ILRewriter->InsertBefore(m_ILInstr, pNewInstr);
+  return pNewInstr;
 }
 
-void ILRewriterWrapper::LoadLocal(unsigned index) const {
+ILInstr* ILRewriterWrapper::LoadLocal(unsigned index) const {
   static const std::vector<OPCODE> opcodes = {
       CEE_LDLOC_0,
       CEE_LDLOC_1,
@@ -270,12 +272,14 @@ void ILRewriterWrapper::LoadLocal(unsigned index) const {
     pNewInstr->m_Arg16 = index;
   }
   m_ILRewriter->InsertBefore(m_ILInstr, pNewInstr);
+  return pNewInstr;
 }
 
-void ILRewriterWrapper::Return() const {
+ILInstr* ILRewriterWrapper::Return() const {
   ILInstr* pNewInstr = m_ILRewriter->NewILInstr();
   pNewInstr->m_opcode = CEE_RET;
   m_ILRewriter->InsertBefore(m_ILInstr, pNewInstr);
+  return pNewInstr;
 }
 
 ILInstr* ILRewriterWrapper::Rethrow() const {
@@ -292,18 +296,16 @@ ILInstr* ILRewriterWrapper::EndFinally() const {
   return pNewInstr;
 }
 
-ILInstr* ILRewriterWrapper::CallMember0(const mdMemberRef& member_ref,
-                                        bool is_virtual) const {
+ILInstr* ILRewriterWrapper::NOP() const {
   ILInstr* pNewInstr = m_ILRewriter->NewILInstr();
-  pNewInstr->m_opcode = is_virtual ? CEE_CALLVIRT : CEE_CALL;
-  pNewInstr->m_Arg32 = member_ref;
+  pNewInstr->m_opcode = CEE_NOP;
   m_ILRewriter->InsertBefore(m_ILInstr, pNewInstr);
   return pNewInstr;
 }
 
-ILInstr* ILRewriterWrapper::NOP() const {
+ILInstr* ILRewriterWrapper::CreateInstr(unsigned opCode) const {
   ILInstr* pNewInstr = m_ILRewriter->NewILInstr();
-  pNewInstr->m_opcode = CEE_NOP;
+  pNewInstr->m_opcode = opCode;
   m_ILRewriter->InsertBefore(m_ILInstr, pNewInstr);
   return pNewInstr;
 }

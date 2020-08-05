@@ -42,6 +42,7 @@ class ModuleMetadata {
   mdTypeRef callTargetStateTypeRef = mdTypeRefNil;
   mdMemberRef beginMemberRef = mdMemberRefNil;
   mdMemberRef endMemberRef = mdMemberRefNil;
+  mdMemberRef shouldRethrowMemberRef = mdMemberRefNil;
 
   ModuleMetadata(ComPtr<IMetaDataImport2> metadata_import,
                  ComPtr<IMetaDataEmit2> metadata_emit,

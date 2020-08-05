@@ -1331,11 +1331,8 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         reWriterWrapper.LoadNull();
         reWriterWrapper.StLocal(indexState);
         
-        // start the try with a nop operator
-        ILInstr* pTryStartInstr = reWriterWrapper.NOP(); 
-
         // load caller type into the stack
-        reWriterWrapper.LoadToken(caller.type.id);
+        ILInstr* pTryStartInstr = reWriterWrapper.LoadToken(caller.type.id);
         reWriterWrapper.CallMember(module_metadata->getTypeFromHandleToken, false);
 
         // load instance into the stack (if not static)
@@ -1404,8 +1401,25 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         reWriterWrapper.SetILPosition(pRetInstr);
 
         // Store exception to local
-        reWriterWrapper.StLocal(indexEx);
-        ILInstr* pRethrowInstr = reWriterWrapper.Rethrow();
+        ILInstr* startExceptionCatch = reWriterWrapper.StLocal(indexEx);
+
+        // Check if state is not null
+        reWriterWrapper.LoadLocal(indexState);
+        ILInstr* pStateNullBranchInstr = reWriterWrapper.CreateInstr(CEE_BRFALSE_S);
+
+        // Check if should rethrow is true
+        reWriterWrapper.LoadLocal(indexState);
+        reWriterWrapper.CallMember(module_metadata->shouldRethrowMemberRef, true);
+        ILInstr* pStateShouldRethrowBranchInstr =
+            reWriterWrapper.CreateInstr(CEE_BRFALSE_S);
+
+        // Rethrow
+        reWriterWrapper.SetILPosition(pRetInstr);
+        pStateNullBranchInstr->m_pTarget = reWriterWrapper.Rethrow();
+
+        // Leave the catch
+        ILInstr* pAfterRethrowInstr = reWriterWrapper.CreateInstr(CEE_LEAVE_S);
+        pStateShouldRethrowBranchInstr->m_pTarget = pAfterRethrowInstr;
 
         // Finally handler calls the EndMethod
         reWriterWrapper.LoadLocal(indexRet);
@@ -1426,6 +1440,8 @@ HRESULT CorProfiler::ProcessCallTargetModification(
             //reWriterWrapper.Cast(retTypeTok);
           }
         }
+
+        pAfterRethrowInstr->m_pTarget = pEndFinallyInstr->m_pNext;
 
         // Changes all returns to a boxing+jump
         for (ILInstr* pInstr = pReWriter->GetILList()->m_pNext;
@@ -1453,16 +1469,16 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         EHClause exClause{};
         exClause.m_Flags = COR_ILEXCEPTION_CLAUSE_NONE;
         exClause.m_pTryBegin = pTryStartInstr;
-        exClause.m_pTryEnd = pRethrowInstr->m_pPrev;
-        exClause.m_pHandlerBegin = pRethrowInstr->m_pPrev;
-        exClause.m_pHandlerEnd = pRethrowInstr;
+        exClause.m_pTryEnd = startExceptionCatch;
+        exClause.m_pHandlerBegin = startExceptionCatch;
+        exClause.m_pHandlerEnd = pAfterRethrowInstr;
         exClause.m_ClassToken = module_metadata->exTypeRef;
 
         EHClause finallyClause{};
         finallyClause.m_Flags = COR_ILEXCEPTION_CLAUSE_FINALLY;
         finallyClause.m_pTryBegin = pTryStartInstr;
-        finallyClause.m_pTryEnd = pRethrowInstr->m_pNext;
-        finallyClause.m_pHandlerBegin = pRethrowInstr->m_pNext;
+        finallyClause.m_pTryEnd = pAfterRethrowInstr->m_pNext;
+        finallyClause.m_pHandlerBegin = pAfterRethrowInstr->m_pNext;
         finallyClause.m_pHandlerEnd = pEndFinallyInstr;
 
         // Copy previous clauses
@@ -1919,6 +1935,19 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
         signatureLength, &module_metadata->endMemberRef);
     if (FAILED(hr)) {
       Warn("Wrapper endMemberRef could not be defined.");
+      return hr;
+    }
+  }
+  
+  // *** Ensure calltargetstate shouldrethrow member ref
+  if (module_metadata->shouldRethrowMemberRef == mdMemberRefNil) {
+    auto hr = module_metadata->metadata_emit->DefineMemberRef(
+        module_metadata->callTargetStateTypeRef,
+        managed_profiler_calltarget_statetype_shouldrethrow_name.data(),
+        ShouldRethrowSig, sizeof(ShouldRethrowSig),
+        &module_metadata->shouldRethrowMemberRef);
+    if (FAILED(hr)) {
+      Warn("Wrapper shouldRethrowMemberRef could not be defined.");
       return hr;
     }
   }

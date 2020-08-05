@@ -14,7 +14,7 @@ namespace Datadog.Trace.ClrProfiler
         /// <summary>
         /// Gets or sets a value indicating whether the method should rethrow in case of an exception
         /// </summary>
-        protected bool EnableRethrow { get; set; }
+        protected bool EnableRethrow { get; set; } = true;
 
         /// <summary>
         /// Gets if the method should rethrow in case on an exception

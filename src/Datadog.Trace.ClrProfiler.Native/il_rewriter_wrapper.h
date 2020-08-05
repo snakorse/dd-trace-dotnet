@@ -34,14 +34,15 @@ class ILRewriterWrapper {
 
 
   void LoadIND(unsigned elementType) const;
-  void LoadToken(mdToken token) const;
-  void StLocal(unsigned index) const;
-  void LoadLocal(unsigned index) const;
-  void Return() const;
+  ILInstr* LoadToken(mdToken token) const;
+  ILInstr* StLocal(unsigned index) const;
+  ILInstr* LoadLocal(unsigned index) const;
+  ILInstr* Return() const;
   ILInstr* NOP() const;
   ILInstr* Rethrow() const;
   ILInstr* EndFinally() const;
-  ILInstr* CallMember0(const mdMemberRef& member_ref, bool is_virtual) const;
+
+  ILInstr* CreateInstr(unsigned opCode) const;
 };
 
 #endif  // DD_CLR_PROFILER_IL_REWRITER_WRAPPER_H_
