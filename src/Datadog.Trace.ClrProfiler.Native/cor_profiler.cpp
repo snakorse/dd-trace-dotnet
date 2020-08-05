@@ -1412,6 +1412,7 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         reWriterWrapper.LoadLocal(indexRet);
         reWriterWrapper.LoadLocal(indexEx);
         reWriterWrapper.LoadLocal(indexState);
+        reWriterWrapper.LoadInt32((INT32)function_token);
         reWriterWrapper.CallMember(module_metadata->endMemberRef, false);
         reWriterWrapper.StLocal(indexRet);
         ILInstr* pEndFinallyInstr = reWriterWrapper.EndFinally();
@@ -1895,12 +1896,12 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
     auto callTargetState_size = CorSigCompressToken(
         module_metadata->callTargetStateTypeRef, &callTargetState_buffer);
 
-    auto signatureLength = 6 + exType_size + callTargetState_size;
+    auto signatureLength = 7 + exType_size + callTargetState_size;
     auto* signature = new COR_SIGNATURE[signatureLength];
     unsigned offset = 0;
 
     signature[offset++] = IMAGE_CEE_CS_CALLCONV_DEFAULT;
-    signature[offset++] = 0x03;
+    signature[offset++] = 0x04;
     signature[offset++] = ELEMENT_TYPE_OBJECT;
     signature[offset++] = ELEMENT_TYPE_OBJECT;
     
@@ -1911,6 +1912,7 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
     signature[offset++] = ELEMENT_TYPE_CLASS;
     memcpy(&signature[offset], &callTargetState_buffer, callTargetState_size);
     offset += callTargetState_size;
+    signature[offset++] = ELEMENT_TYPE_U4;
 
     auto hr = module_metadata->metadata_emit->DefineMemberRef(
         module_metadata->callTargetTypeRef,

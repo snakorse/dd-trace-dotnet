@@ -37,13 +37,15 @@ namespace Datadog.Trace.ClrProfiler
         /// <param name="returnValue">Original method return value</param>
         /// <param name="exception">Original method exception</param>
         /// <param name="state">State from the BeginMethod</param>
+        /// <param name="function_token">Function token</param>
         /// <returns>Return value</returns>
-        public static object EndMethod(object returnValue, Exception exception, CallTargetState state)
+        public static object EndMethod(object returnValue, Exception exception, CallTargetState state, uint function_token)
         {
             return AsyncTool.AddContinuation(returnValue, exception, state, (rValue, ex, s) =>
             {
                 var sampleState = (SampleState)s;
-                Log.Information($"EndMethod continuation was completed: [State:{sampleState}|ReturnValue:{rValue}|Exception:{ex}] ==> Elapsed = {sampleState.Watch.Elapsed.TotalMilliseconds} ms");
+                Log.Information($"EndMethod continuation was completed: [State:{sampleState}|ReturnValue:{rValue}|Exception:{ex}|FunctionToken:{function_token}] " +
+                    $"==> Elapsed = {sampleState.Watch.Elapsed.TotalMilliseconds} ms");
 
                 return rValue;
             });
