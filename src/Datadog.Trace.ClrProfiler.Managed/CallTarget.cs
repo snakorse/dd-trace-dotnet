@@ -38,7 +38,7 @@ namespace Datadog.Trace.ClrProfiler
         /// <param name="exception">Original method exception</param>
         /// <param name="state">State from the BeginMethod</param>
         /// <returns>Return value</returns>
-        public static object EndMethod(object returnValue, Exception exception, object state)
+        public static object EndMethod(object returnValue, Exception exception, CallTargetState state)
         {
             return AsyncTool.AddContinuation(returnValue, exception, state, (rValue, ex, s) =>
             {
