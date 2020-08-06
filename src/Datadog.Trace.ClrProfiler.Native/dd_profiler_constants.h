@@ -62,11 +62,11 @@ namespace trace {
 
   WSTRING managed_profiler_full_assembly_version = "Datadog.Trace.ClrProfiler.Managed, Version=1.19.3.0, Culture=neutral, PublicKeyToken=def86d061d0d2eeb"_W;
 
-  WSTRING managed_profiler_calltarget_type = "Datadog.Trace.ClrProfiler.CallTarget"_W;
+  WSTRING managed_profiler_calltarget_type = "Datadog.Trace.ClrProfiler.CallTarget.CallTargetInvoker"_W;
   WSTRING managed_profiler_calltarget_beginmethod_name = "BeginMethod"_W;
   WSTRING managed_profiler_calltarget_endmethod_name = "EndMethod"_W;
 
-  WSTRING managed_profiler_calltarget_statetype = "Datadog.Trace.ClrProfiler.CallTargetState"_W;
+  WSTRING managed_profiler_calltarget_statetype = "Datadog.Trace.ClrProfiler.CallTarget.CallTargetState"_W;
   WSTRING managed_profiler_calltarget_statetype_shouldrethrow_name =
       "ShouldRethrow"_W;
 

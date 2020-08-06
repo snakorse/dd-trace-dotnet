@@ -37,6 +37,9 @@ const auto SystemException = "System.Exception"_W;
 const auto SystemTypeName = "System.Type"_W;
 const auto GetTypeFromHandleMethodName = "GetTypeFromHandle"_W;
 const auto RuntimeTypeHandleTypeName = "System.RuntimeTypeHandle"_W;
+const auto SystemReflectionMethodBaseName = "System.Reflection.MethodBase"_W;
+const auto GetMethodFromHandleMethodName = "GetMethodFromHandle"_W;
+const auto RuntimeMethodHandleTypeName = "System.RuntimeMethodHandle"_W;
 
 template <typename T>
 class EnumeratorIterator;

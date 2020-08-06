@@ -35,6 +35,8 @@ class ModuleMetadata {
   mdTypeRef typeRef = mdTypeRefNil;
   mdTypeRef runtimeTypeHandleRef = mdTypeRefNil;
   mdToken getTypeFromHandleToken = mdTokenNil;
+  mdTypeRef runtimeMethodHandleRef = mdTypeRefNil;
+
 
   // CallTarget tokens
   mdAssemblyRef profilerAssemblyRef = mdAssemblyRefNil;

@@ -56,7 +56,8 @@ class CorProfiler : public CorProfilerBase {
   bool GetWrapperMethodRef(ModuleMetadata* module_metadata,
                            ModuleID module_id,
                            const MethodReplacement& method_replacement,
-                           mdMemberRef& wrapper_method_ref);
+                           mdMemberRef& wrapper_method_ref,
+                           mdTypeRef& wrapper_type_ref);
   HRESULT ProcessReplacementCalls(ModuleMetadata* module_metadata,
                                          const FunctionID function_id,
                                          const ModuleID module_id,

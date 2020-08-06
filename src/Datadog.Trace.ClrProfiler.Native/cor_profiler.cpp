@@ -894,10 +894,12 @@ HRESULT CorProfiler::ProcessReplacementCalls(
       // to define a MethodSpec
       // Generate a method ref token for the wrapper method
       mdMemberRef wrapper_method_ref = mdMemberRefNil;
+      mdTypeRef wrapper_type_ref = mdTypeRefNil;
       auto generated_wrapper_method_ref = GetWrapperMethodRef(module_metadata,
                                                               module_id,
                                                               method_replacement,
-                                                              wrapper_method_ref);
+                                                              wrapper_method_ref, 
+                                                              wrapper_type_ref);
       if (!generated_wrapper_method_ref) {
         Warn(
           "JITCompilationStarted failed to obtain wrapper method ref for ",
@@ -1202,10 +1204,12 @@ HRESULT CorProfiler::ProcessInsertionCalls(
 
     // Generate a method ref token for the wrapper method
     mdMemberRef wrapper_method_ref = mdMemberRefNil;
+    mdTypeRef wrapper_type_ref = mdTypeRefNil;
     auto generated_wrapper_method_ref = GetWrapperMethodRef(module_metadata,
                                                             module_id,
                                                             method_replacement,
-                                                            wrapper_method_ref);
+                                                            wrapper_method_ref, 
+                                                            wrapper_type_ref);
     if (!generated_wrapper_method_ref) {
       Warn(
         "JITCompilationStarted failed to obtain wrapper method ref for ",
@@ -1293,7 +1297,12 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         
         // *** Ensure all CallTarget refs
         EnsureCallTargetRefs(module_metadata);
-        
+
+        mdMemberRef wrapper_method_ref = mdMemberRefNil;
+        mdTypeRef wrapper_type_ref = mdTypeRefNil;
+        GetWrapperMethodRef(module_metadata, module_id, method_replacement,
+                            wrapper_method_ref, wrapper_type_ref);
+
         Debug("Modifying locals signature");
 
         // Modify locals signature to add returnvalue, exception, and the object with the delegate to call after the method finishes.
@@ -1333,7 +1342,6 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         
         // load caller type into the stack
         ILInstr* pTryStartInstr = reWriterWrapper.LoadToken(caller.type.id);
-        reWriterWrapper.CallMember(module_metadata->getTypeFromHandleToken, false);
 
         // load instance into the stack (if not static)
         if (isStatic) {
@@ -1370,8 +1378,8 @@ HRESULT CorProfiler::ProcessCallTargetModification(
           }
         }
 
-        // load function token into the stack
-        reWriterWrapper.LoadInt32((INT32)function_token);
+        // load wrapper type token into the stack
+        reWriterWrapper.LoadToken(wrapper_type_ref);
 
         // We call the BeginMethod and store the result to the local
         reWriterWrapper.CallMember(module_metadata->beginMemberRef, false);
@@ -1425,7 +1433,6 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         reWriterWrapper.LoadLocal(indexRet);
         reWriterWrapper.LoadLocal(indexEx);
         reWriterWrapper.LoadLocal(indexState);
-        reWriterWrapper.LoadInt32((INT32)function_token);
         reWriterWrapper.CallMember(module_metadata->endMemberRef, false);
         reWriterWrapper.StLocal(indexRet);
         ILInstr* pEndFinallyInstr = reWriterWrapper.EndFinally();
@@ -1519,9 +1526,12 @@ bool CorProfiler::GetWrapperMethodRef(
     ModuleMetadata* module_metadata,
     ModuleID module_id,
     const MethodReplacement& method_replacement,
-    mdMemberRef& wrapper_method_ref) {
+    mdMemberRef& wrapper_method_ref,
+    mdTypeRef& wrapper_type_ref) {
   const auto& wrapper_method_key =
       method_replacement.wrapper_method.get_method_cache_key();
+  const auto& wrapper_type_key =
+      method_replacement.wrapper_method.get_type_cache_key();
 
   // Resolve the MethodRef now. If the method is generic, we'll need to use it
   // later to define a MethodSpec
@@ -1570,9 +1580,12 @@ bool CorProfiler::GetWrapperMethodRef(
     } else {
       module_metadata->TryGetWrapperMemberRef(wrapper_method_key,
                                               wrapper_method_ref);
+      module_metadata->TryGetWrapperParentTypeRef(wrapper_type_key,
+                                                  wrapper_type_ref);
     }
   }
-
+  module_metadata->TryGetWrapperParentTypeRef(wrapper_type_key,
+                                              wrapper_type_ref);
   return true;
 }
 
@@ -1771,7 +1784,7 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
       return hr;
     }
   }
-
+  
   // *** Ensure Type.GetTypeFromHandle token
   if (module_metadata->getTypeFromHandleToken == mdTokenNil) {
     unsigned runtimeTypeHandle_buffer;
@@ -1800,6 +1813,17 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
         sizeof(signature), &module_metadata->getTypeFromHandleToken);
     if (FAILED(hr)) {
       Warn("Wrapper getTypeFromHandleToken could not be defined.");
+      return hr;
+    }
+  }
+
+  // *** Ensure System.RuntimeMethodHandle type ref
+  if (module_metadata->runtimeMethodHandleRef == mdTypeRefNil) {
+    auto hr = module_metadata->metadata_emit->DefineTypeRefByName(
+        module_metadata->corLibAssemblyRef, RuntimeMethodHandleTypeName.data(),
+        &module_metadata->runtimeMethodHandleRef);
+    if (FAILED(hr)) {
+      Warn("Wrapper runtimeMethodHandleRef could not be defined.");
       return hr;
     }
   }
@@ -1865,15 +1889,16 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
 
   // *** Ensure calltarget beginmethod member ref
   if (module_metadata->beginMemberRef == mdMemberRefNil) {
-    unsigned type_buffer;
-    auto type_size =
-        CorSigCompressToken(module_metadata->typeRef, &type_buffer);
+    unsigned runtimeTypeHandle_buffer;
+    auto runtimeTypeHandle_size = CorSigCompressToken(
+        module_metadata->runtimeTypeHandleRef, &runtimeTypeHandle_buffer);
 
     unsigned callTargetState_buffer;
     auto callTargetState_size = CorSigCompressToken(
         module_metadata->callTargetStateTypeRef, &callTargetState_buffer);
 
-    auto signatureLength = 8 + type_size + callTargetState_size;
+    auto signatureLength = 9 + runtimeTypeHandle_size + runtimeTypeHandle_size +
+                           callTargetState_size;
     auto* signature = new COR_SIGNATURE[signatureLength];
     unsigned offset = 0;
 
@@ -1883,14 +1908,18 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
     signature[offset++] = ELEMENT_TYPE_CLASS;
     memcpy(&signature[offset], &callTargetState_buffer, callTargetState_size);
     offset += callTargetState_size;
-
-    signature[offset++] = ELEMENT_TYPE_CLASS;
-    memcpy(&signature[offset], &type_buffer, type_size);
-    offset += type_size;
+    
+    signature[offset++] = ELEMENT_TYPE_VALUETYPE;
+    memcpy(&signature[offset], &runtimeTypeHandle_buffer,
+           runtimeTypeHandle_size);
+    offset += runtimeTypeHandle_size;
     signature[offset++] = ELEMENT_TYPE_OBJECT;
     signature[offset++] = ELEMENT_TYPE_SZARRAY;
     signature[offset++] = ELEMENT_TYPE_OBJECT;
-    signature[offset++] = ELEMENT_TYPE_U4;
+    signature[offset++] = ELEMENT_TYPE_VALUETYPE;
+    memcpy(&signature[offset], &runtimeTypeHandle_buffer,
+           runtimeTypeHandle_size);
+    offset += runtimeTypeHandle_size;
 
     auto hr = module_metadata->metadata_emit->DefineMemberRef(
         module_metadata->callTargetTypeRef,
@@ -1911,15 +1940,15 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
     auto callTargetState_size = CorSigCompressToken(
         module_metadata->callTargetStateTypeRef, &callTargetState_buffer);
 
-    auto signatureLength = 7 + exType_size + callTargetState_size;
+    auto signatureLength = 6 + exType_size + callTargetState_size;
     auto* signature = new COR_SIGNATURE[signatureLength];
     unsigned offset = 0;
 
     signature[offset++] = IMAGE_CEE_CS_CALLCONV_DEFAULT;
-    signature[offset++] = 0x04;
+    signature[offset++] = 0x03;
     signature[offset++] = ELEMENT_TYPE_OBJECT;
+
     signature[offset++] = ELEMENT_TYPE_OBJECT;
-    
     signature[offset++] = ELEMENT_TYPE_CLASS;
     memcpy(&signature[offset], &exType_buffer, exType_size);
     offset += exType_size;
@@ -1927,7 +1956,6 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
     signature[offset++] = ELEMENT_TYPE_CLASS;
     memcpy(&signature[offset], &callTargetState_buffer, callTargetState_size);
     offset += callTargetState_size;
-    signature[offset++] = ELEMENT_TYPE_U4;
 
     auto hr = module_metadata->metadata_emit->DefineMemberRef(
         module_metadata->callTargetTypeRef,
