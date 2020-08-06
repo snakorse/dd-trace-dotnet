@@ -822,7 +822,7 @@
           "type": "Datadog.Trace.ClrProfiler.Integrations.HttpMessageHandlerIntegration",
           "method": "HttpMessageHandler_SendAsync",
           "signature": "00 06 1C 1C 1C 1C 08 08 0A",
-          "action": "ReplaceTargetMethod"
+          "action": "ReplaceTargetMethod--"
         }
       },
       {
@@ -845,7 +845,7 @@
         },
         "wrapper": {
           "assembly": "Datadog.Trace.ClrProfiler.Managed, Version=1.19.3.0, Culture=neutral, PublicKeyToken=def86d061d0d2eeb",
-          "type": "Datadog.Trace.ClrProfiler.Integrations.CallTargetSampleIntegration",
+          "type": "Datadog.Trace.ClrProfiler.Integrations.HttpClientHandlerCallTargetIntegration",
           "method": "",
           "signature": "",
           "action": "CallTargetModification"

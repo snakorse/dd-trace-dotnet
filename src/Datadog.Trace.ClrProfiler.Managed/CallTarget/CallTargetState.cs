@@ -11,9 +11,6 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
         private RuntimeTypeHandle _instanceTypeHandle;
         private Type _instanceType;
         private object _instance;
-        private IObjectPool _pool;
-
-        internal IObjectPool Pool => _pool;
 
         /// <summary>
         /// Gets or sets a value indicating whether the method should rethrow in case of an exception
@@ -47,12 +44,11 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
         /// <returns>True if the method should rethrow; otherwise, false</returns>
         public bool ShouldRethrow() => EnableRethrow;
 
-        internal void Init(RuntimeTypeHandle instanceTypeHandle, object instance, IObjectPool pool)
+        internal void Init(RuntimeTypeHandle instanceTypeHandle, object instance)
         {
             _instanceType = null;
             _instanceTypeHandle = instanceTypeHandle;
             _instance = instance;
-            _pool = pool;
         }
 
         /// <summary>

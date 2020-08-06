@@ -1,7 +1,6 @@
 using System;
-using System.Collections.Concurrent;
 using Datadog.Trace.ClrProfiler.Integrations.Testing;
-using Datadog.Trace.Util;
+using Datadog.Trace.Logging;
 
 namespace Datadog.Trace.ClrProfiler.CallTarget
 {
@@ -10,16 +9,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
     /// </summary>
     public static class CallTargetInvoker
     {
-        private static ConcurrentDictionary<RuntimeTypeHandle, IObjectPool> _wrapperPools = new ConcurrentDictionary<RuntimeTypeHandle, IObjectPool>();
-
-        private static IObjectPool GetWrapperPool(RuntimeTypeHandle wrapperTypeHandle)
-        {
-            return _wrapperPools.GetOrAdd(wrapperTypeHandle, handle =>
-            {
-                Type wrapperType = Type.GetTypeFromHandle(handle);
-                return (IObjectPool)typeof(DefaultObjectPool<>).MakeGenericType(wrapperType).GetField("Shared").GetValue(null);
-            });
-        }
+        private static readonly Vendors.Serilog.ILogger Log = DatadogLogging.GetLogger(typeof(CallTargetInvoker));
 
         /// <summary>
         /// Call target static begin method helper
@@ -31,10 +21,18 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
         /// <returns>CallTargetBeginReturn instance</returns>
         public static CallTargetState BeginMethod(RuntimeTypeHandle instanceTypeHandle, object instance, object[] arguments, RuntimeTypeHandle wrapperTypeHandle)
         {
-            var pool = GetWrapperPool(wrapperTypeHandle);
-            var state = (CallTargetState)pool.Get();
-            state.Init(instanceTypeHandle, instance, pool);
-            state.OnStartMethodCall(new ArraySegment<object>(arguments));
+            CallTargetState state = null;
+            try
+            {
+                state = (CallTargetState)Activator.CreateInstance(Type.GetTypeFromHandle(wrapperTypeHandle));
+                state.Init(instanceTypeHandle, instance);
+                state.OnStartMethodCall(new ArraySegment<object>(arguments));
+            }
+            catch (Exception ex)
+            {
+                Log.SafeLogError(ex, $"BeginMethod error: {ex.Message}");
+            }
+
             return state;
         }
 
@@ -47,16 +45,21 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
         /// <returns>Return value</returns>
         public static object EndMethod(object returnValue, Exception exception, CallTargetState state)
         {
-            returnValue = state.OnBeforeEndMethodCall(returnValue, exception);
-            return AsyncTool.AddContinuation(returnValue, exception, state, (rValue, ex, s) => EndMethodAsync(rValue, ex, s));
-        }
+            if (state is null)
+            {
+                return returnValue;
+            }
 
-        private static object EndMethodAsync(object returnValue, Exception exception, CallTargetState state)
-        {
-            returnValue = state.OnEndMethodCall(returnValue, exception);
-            var pool = state.Pool;
-            state.Init(default, null, null);
-            pool.Return(state);
+            try
+            {
+                returnValue = state.OnBeforeEndMethodCall(returnValue, exception);
+                return AsyncTool.AddContinuation(returnValue, exception, state, (rValue, ex, s) => s.OnEndMethodCall(rValue, ex));
+            }
+            catch (Exception ex)
+            {
+                Log.SafeLogError(ex, $"EndMethod error: {ex.Message}");
+            }
+
             return returnValue;
         }
     }
