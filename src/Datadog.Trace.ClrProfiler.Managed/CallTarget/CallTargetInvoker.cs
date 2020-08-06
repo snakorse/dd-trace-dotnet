@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Concurrent;
-using Datadog.Trace.ClrProfiler.Integrations;
 using Datadog.Trace.ClrProfiler.Integrations.Testing;
 using Datadog.Trace.Util;
 
