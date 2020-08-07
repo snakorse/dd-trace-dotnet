@@ -42,11 +42,10 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
         {
             try
             {
-                CallerInfo callerInfo = new CallerInfo(instanceTypeHandle, instance);
                 var onMethodBeginDelegate = BeginMethodDelegates.GetOrAdd(wrapperTypeHandle, handle => CreateMethodBeginDelegate(handle, "OnMethodBegin"));
                 if (onMethodBeginDelegate != null)
                 {
-                    return onMethodBeginDelegate(callerInfo, arguments);
+                    return onMethodBeginDelegate(new CallerInfo(instanceTypeHandle, instance), arguments);
                 }
             }
             catch (Exception ex)
