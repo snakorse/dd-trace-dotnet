@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Datadog.Trace.ClrProfiler.CallTarget;
 using Datadog.Trace.ClrProfiler.CallTarget.DuckTyping;
 using Datadog.Trace.ClrProfiler.Helpers;
@@ -12,56 +13,52 @@ using Datadog.Trace.Logging;
 
 namespace Datadog.Trace.ClrProfiler.Integrations
 {
-    /// <inheritdoc/>
-    public class HttpClientHandlerCallTargetIntegration : CallTargetState
+    public class HttpClientHandlerCallTargetIntegration
     {
         private const string IntegrationName = "HttpClientHandler";
         private static readonly Vendors.Serilog.ILogger Log = DatadogLogging.GetLogger(typeof(HttpClientHandlerCallTargetIntegration));
 
-        private Scope _currentScope = null;
-
-        /// <inheritdoc/>
-        public override void OnStartMethodCall(ArraySegment<object> args)
+        public static CallTargetState OnMethodBegin(CallerInfo caller, HttpRequestMessage requestMessage, CancellationTokenSource cancellationTokenSource)
         {
-            HttpRequestMessage requestMessage = args.Array[0].As<HttpRequestMessage>();
+            Scope scope = null;
 
-            if (!IsTracingEnabled(requestMessage.Headers))
+            if (IsTracingEnabled(requestMessage.Headers))
             {
-                return;
+                scope = ScopeFactory.CreateOutboundHttpScope(Tracer.Instance, requestMessage.Method.Method, requestMessage.RequestUri, IntegrationName);
+                if (scope != null)
+                {
+                    scope.Span.SetTag("http-client-handler-type", caller.Type.FullName);
+
+                    // add distributed tracing headers to the HTTP request
+                    SpanContextPropagator.Instance.Inject(scope.Span.Context, new ReflectionHttpHeadersCollection(requestMessage.Headers.Instance));
+                }
             }
 
-            _currentScope = ScopeFactory.CreateOutboundHttpScope(Tracer.Instance, requestMessage.Method.Method, requestMessage.RequestUri, IntegrationName);
-            if (_currentScope != null)
-            {
-                _currentScope.Span.SetTag("http-client-handler-type", InstanceType.FullName);
-
-                // add distributed tracing headers to the HTTP request
-                SpanContextPropagator.Instance.Inject(_currentScope.Span.Context, new ReflectionHttpHeadersCollection(requestMessage.Headers.Instance));
-            }
+            return new CallTargetState(scope);
         }
 
-        /// <inheritdoc/>
-        public override object OnEndMethodCall(object returnValue, Exception exception)
+        public static object OnMethodEndAsync(HttpResponseMessage responseMessage, Exception exception, CallTargetState state)
         {
-            if (_currentScope is null)
+            Scope scope = (Scope)state.State;
+
+            if (scope is null)
             {
-                Log.Information($"No scope: [ReturnValue:{returnValue}|Exception:{exception}] ");
-                return returnValue;
+                Log.Information($"No scope: [ReturnValue:{responseMessage}|Exception:{exception}] ");
+                return responseMessage;
             }
 
             if (exception is null)
             {
-                HttpResponseMessage responseMessage = returnValue.As<HttpResponseMessage>();
-                _currentScope.Span.SetTag(Tags.HttpStatusCode, responseMessage.StatusCode.ToString());
+                scope.Span.SetTag(Tags.HttpStatusCode, responseMessage.StatusCode.ToString());
             }
             else
             {
-                _currentScope.Span.SetException(exception);
+                scope.Span.SetException(exception);
             }
 
-            _currentScope.Dispose();
-            _currentScope = null;
-            return returnValue;
+            scope.Dispose();
+            scope = null;
+            return responseMessage;
         }
 
         private static bool IsTracingEnabled(RequestHeaders headers)

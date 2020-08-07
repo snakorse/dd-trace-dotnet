@@ -1,79 +1,68 @@
 using System;
-using Datadog.Trace.Util;
+using System.Runtime.InteropServices;
 
 namespace Datadog.Trace.ClrProfiler.CallTarget
 {
     /// <summary>
-    /// CallTarget state abstract base class
+    /// Call target execution state
     /// </summary>
-    public abstract class CallTargetState
+    public readonly struct CallTargetState
     {
-        private RuntimeTypeHandle _instanceTypeHandle;
-        private Type _instanceType;
-        private object _instance;
+        private readonly object _state;
+        private readonly bool _executeMethod;
+        private readonly bool _rethrowOnException;
 
         /// <summary>
-        /// Gets or sets a value indicating whether the method should rethrow in case of an exception
+        /// Initializes a new instance of the <see cref="CallTargetState"/> struct.
         /// </summary>
-        protected bool EnableRethrow { get; set; } = true;
-
-        /// <summary>
-        /// Gets the current instance type handle
-        /// </summary>
-        protected Type InstanceType
+        /// <param name="state">Object state instance</param>
+        public CallTargetState(object state)
         {
-            get
-            {
-                if (_instanceType is null)
-                {
-                    _instanceType = Type.GetTypeFromHandle(_instanceTypeHandle);
-                }
-
-                return _instanceType;
-            }
+            _state = state;
+            _executeMethod = true;
+            _rethrowOnException = true;
         }
 
         /// <summary>
-        /// Gets the current instance
+        /// Initializes a new instance of the <see cref="CallTargetState"/> struct.
         /// </summary>
-        protected object Instance => _instance;
-
-        /// <summary>
-        /// Gets if the method should rethrow in case on an exception
-        /// </summary>
-        /// <returns>True if the method should rethrow; otherwise, false</returns>
-        public bool ShouldRethrow() => EnableRethrow;
-
-        internal void Init(RuntimeTypeHandle instanceTypeHandle, object instance)
+        /// <param name="state">Object state instance</param>
+        /// <param name="executeMethod">Indicates if the method should be executed</param>
+        public CallTargetState(object state, bool executeMethod)
         {
-            _instanceType = null;
-            _instanceTypeHandle = instanceTypeHandle;
-            _instance = instance;
+            _state = state;
+            _executeMethod = executeMethod;
+            _rethrowOnException = true;
         }
 
         /// <summary>
-        /// Start method call
+        /// Initializes a new instance of the <see cref="CallTargetState"/> struct.
         /// </summary>
-        /// <param name="args">Original method arguments</param>
-        public abstract void OnStartMethodCall(ArraySegment<object> args);
-
-        /// <summary>
-        /// Before end method call continuations
-        /// </summary>
-        /// <param name="returnValue">Original return value</param>
-        /// <param name="exception">Original exception</param>
-        /// <returns>Return value</returns>
-        public virtual object OnBeforeEndMethodCall(object returnValue, Exception exception)
+        /// <param name="state">Object state instance</param>
+        /// <param name="executeMethod">Indicates if the method should be executed</param>
+        /// <param name="rethrowOnException">Indicates if the method should rethrow in case of an exception</param>
+        public CallTargetState(object state, bool executeMethod, bool rethrowOnException)
         {
-            return returnValue;
+            _state = state;
+            _executeMethod = executeMethod;
+            _rethrowOnException = rethrowOnException;
         }
 
         /// <summary>
-        /// End method call
+        /// Gets the CallTarget BeginMethod state
         /// </summary>
-        /// <param name="returnValue">Original return value</param>
-        /// <param name="exception">Original exception</param>
-        /// <returns>Return value</returns>
-        public abstract object OnEndMethodCall(object returnValue, Exception exception);
+        public object State => _state;
+
+        /// <summary>
+        /// Gets if the original method should be executed
+        /// </summary>
+        /// <returns>True if the original method should be executed; otherwise, false.</returns>
+        public bool ShouldExecuteMethod() => _executeMethod;
+
+        /// <summary>
+        /// Gets if the method should rethrow the exceptions from the original method
+        /// </summary>
+        /// <returns>True if the method should rethrow the exceptions from the original method; otherwise, false.</returns>
+        public bool ShouldRethrowOnException() => _rethrowOnException;
     }
 }

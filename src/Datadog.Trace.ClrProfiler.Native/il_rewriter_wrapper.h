@@ -37,12 +37,14 @@ class ILRewriterWrapper {
   ILInstr* LoadToken(mdToken token) const;
   ILInstr* StLocal(unsigned index) const;
   ILInstr* LoadLocal(unsigned index) const;
+  ILInstr* LoadLocalAddress(unsigned index) const;
   ILInstr* Return() const;
   ILInstr* NOP() const;
   ILInstr* Rethrow() const;
   ILInstr* EndFinally() const;
 
   ILInstr* CreateInstr(unsigned opCode) const;
+  ILInstr* InitObj(mdTypeRef type_ref) const;
 };
 
 #endif  // DD_CLR_PROFILER_IL_REWRITER_WRAPPER_H_

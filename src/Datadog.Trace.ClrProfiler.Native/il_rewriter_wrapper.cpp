@@ -275,6 +275,19 @@ ILInstr* ILRewriterWrapper::LoadLocal(unsigned index) const {
   return pNewInstr;
 }
 
+ILInstr* ILRewriterWrapper::LoadLocalAddress(unsigned index) const {
+  ILInstr* pNewInstr = m_ILRewriter->NewILInstr();
+  if (index <= 255) {
+    pNewInstr->m_opcode = CEE_LDLOCA_S;
+    pNewInstr->m_Arg8 = static_cast<UINT8>(index);
+  } else {
+    pNewInstr->m_opcode = CEE_LDLOCA;
+    pNewInstr->m_Arg16 = index;
+  }
+  m_ILRewriter->InsertBefore(m_ILInstr, pNewInstr);
+  return pNewInstr;
+}
+
 ILInstr* ILRewriterWrapper::Return() const {
   ILInstr* pNewInstr = m_ILRewriter->NewILInstr();
   pNewInstr->m_opcode = CEE_RET;
@@ -306,6 +319,13 @@ ILInstr* ILRewriterWrapper::NOP() const {
 ILInstr* ILRewriterWrapper::CreateInstr(unsigned opCode) const {
   ILInstr* pNewInstr = m_ILRewriter->NewILInstr();
   pNewInstr->m_opcode = opCode;
+  m_ILRewriter->InsertBefore(m_ILInstr, pNewInstr);
+  return pNewInstr;
+}
+ILInstr* ILRewriterWrapper::InitObj(mdTypeRef type_ref) const {
+  ILInstr* pNewInstr = m_ILRewriter->NewILInstr();
+  pNewInstr->m_opcode = CEE_INITOBJ;
+  pNewInstr->m_Arg32 = type_ref;
   m_ILRewriter->InsertBefore(m_ILInstr, pNewInstr);
   return pNewInstr;
 }

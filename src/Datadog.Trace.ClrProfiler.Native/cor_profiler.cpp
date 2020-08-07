@@ -1332,13 +1332,18 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         ILInstr* pFirstOriginalInstr = pReWriter->GetILList()->m_pNext;
         reWriterWrapper.SetILPosition(pFirstOriginalInstr);
 
+
+        //
+        // BEGINNING OF THE METHOD
+        //
+
         // clear locals
         reWriterWrapper.LoadNull();
         reWriterWrapper.StLocal(indexRet);
         reWriterWrapper.LoadNull();
         reWriterWrapper.StLocal(indexEx);
-        reWriterWrapper.LoadNull();
-        reWriterWrapper.StLocal(indexState);
+        reWriterWrapper.LoadLocalAddress(indexState);
+        reWriterWrapper.InitObj(module_metadata->callTargetStateTypeRef);
         
         // load caller type into the stack
         ILInstr* pTryStartInstr = reWriterWrapper.LoadToken(caller.type.id);
@@ -1384,6 +1389,16 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         // We call the BeginMethod and store the result to the local
         reWriterWrapper.CallMember(module_metadata->beginMemberRef, false);
         reWriterWrapper.StLocal(indexState);
+        
+        // Check if should execute method is true
+        reWriterWrapper.LoadLocalAddress(indexState);
+        reWriterWrapper.CallMember(module_metadata->shouldExecuteMethodMemberRef, true);
+        ILInstr* pStateShouldExecuteBranchInstr =reWriterWrapper.CreateInstr(CEE_BRFALSE_S);
+
+
+        // ***
+        // METHOD EXECUTION
+        // ***
 
         // Gets if the return type of the original method is boxed
         bool isVoidMethod = (retTypeFlags & TypeFlagVoid) > 0;
@@ -1402,40 +1417,61 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         Debug("Return type is boxed: ", retIsBoxedType ? "YES" : "NO");
         Debug("Return token: ", retTypeTok);
 
+        
+        //
+        // ENDING OF THE METHOD EXECUTION
+        //
+
         // Create return instruction and insert it at the end
         ILInstr* pRetInstr = pReWriter->NewILInstr();
         pRetInstr->m_opcode = CEE_RET;
         pReWriter->InsertAfter(pReWriter->GetILList()->m_pPrev, pRetInstr);
         reWriterWrapper.SetILPosition(pRetInstr);
 
+        // Resolving the should execute method branch
+        ILInstr* pAfterMethodExecutionInstr = reWriterWrapper.CreateInstr(CEE_LEAVE_S);
+        pStateShouldExecuteBranchInstr->m_pTarget = pAfterMethodExecutionInstr;
+
+
+        //
+        // EXCEPTION CATCH
+        //
+
         // Store exception to local
         ILInstr* startExceptionCatch = reWriterWrapper.StLocal(indexEx);
 
-        // Check if state is not null
-        reWriterWrapper.LoadLocal(indexState);
-        ILInstr* pStateNullBranchInstr = reWriterWrapper.CreateInstr(CEE_BRFALSE_S);
-
-        // Check if should rethrow is true
-        reWriterWrapper.LoadLocal(indexState);
-        reWriterWrapper.CallMember(module_metadata->shouldRethrowMemberRef, true);
+        // Check if should rethrow on exception is true
+        reWriterWrapper.LoadLocalAddress(indexState);
+        reWriterWrapper.CallMember(module_metadata->shouldRethrowOnExceptionMemberRef, true);
         ILInstr* pStateShouldRethrowBranchInstr =
             reWriterWrapper.CreateInstr(CEE_BRFALSE_S);
 
         // Rethrow
         reWriterWrapper.SetILPosition(pRetInstr);
-        pStateNullBranchInstr->m_pTarget = reWriterWrapper.Rethrow();
+        reWriterWrapper.Rethrow();
 
         // Leave the catch
         ILInstr* pAfterRethrowInstr = reWriterWrapper.CreateInstr(CEE_LEAVE_S);
         pStateShouldRethrowBranchInstr->m_pTarget = pAfterRethrowInstr;
+        
+
+        //
+        // EXCEPTION FINALLY
+        //
 
         // Finally handler calls the EndMethod
         reWriterWrapper.LoadLocal(indexRet);
         reWriterWrapper.LoadLocal(indexEx);
         reWriterWrapper.LoadLocal(indexState);
+        reWriterWrapper.LoadToken(wrapper_type_ref);
         reWriterWrapper.CallMember(module_metadata->endMemberRef, false);
         reWriterWrapper.StLocal(indexRet);
         ILInstr* pEndFinallyInstr = reWriterWrapper.EndFinally();
+
+
+        //
+        // METHOD RETURN
+        //
 
         // Prepare to return the value
         if (!isVoidMethod) {
@@ -1448,9 +1484,11 @@ HRESULT CorProfiler::ProcessCallTargetModification(
           }
         }
 
+        // Resolving branching to the end of the method
+        pAfterMethodExecutionInstr->m_pTarget = pEndFinallyInstr->m_pNext;
         pAfterRethrowInstr->m_pTarget = pEndFinallyInstr->m_pNext;
 
-        // Changes all returns to a boxing+jump
+        // Changes all returns to a BOX+LEAVE.S
         for (ILInstr* pInstr = pReWriter->GetILList()->m_pNext;
              pInstr != pReWriter->GetILList(); pInstr = pInstr->m_pNext) {
           switch (pInstr->m_opcode) {
@@ -1473,6 +1511,7 @@ HRESULT CorProfiler::ProcessCallTargetModification(
           }
         }
 
+        // Exception handling clauses
         EHClause exClause{};
         exClause.m_Flags = COR_ILEXCEPTION_CLAUSE_NONE;
         exClause.m_pTryBegin = pTryStartInstr;
@@ -1631,7 +1670,7 @@ std::string CorProfiler::GetILCodes(std::string title, ILRewriter* rewriter,
 // Modify the local signature of a method to add ret ex methodTrace var to locals
 HRESULT CorProfiler::ModifyLocalSig(ModuleMetadata* module_metadata,
                                     ILRewriter& reWriter, mdTypeRef exTypeRef,
-                                    mdTypeRef methodTraceTypeRef) {
+                                    mdTypeRef callTargetStateTypeRef) {
   HRESULT hr;
   PCCOR_SIGNATURE rgbOrigSig = NULL;
   ULONG cbOrigSig = 0;
@@ -1641,7 +1680,7 @@ HRESULT CorProfiler::ModifyLocalSig(ModuleMetadata* module_metadata,
     IfFailRet(module_metadata->metadata_import->GetSigFromToken(reWriter.m_tkLocalVarSig, &rgbOrigSig, &cbOrigSig));
 
     // Check Is ReWrite or not
-    const auto len = CorSigCompressToken(methodTraceTypeRef, &temp);
+    const auto len = CorSigCompressToken(callTargetStateTypeRef, &temp);
     if (cbOrigSig - len > 0) {
       if (rgbOrigSig[cbOrigSig - len - 1] == ELEMENT_TYPE_CLASS) {
         if (memcmp(&rgbOrigSig[cbOrigSig - len], &temp, len) == 0)
@@ -1651,8 +1690,9 @@ HRESULT CorProfiler::ModifyLocalSig(ModuleMetadata* module_metadata,
   }
 
   auto exTypeRefSize = CorSigCompressToken(exTypeRef, &temp);
-  auto methodTraceTypeRefSize = CorSigCompressToken(methodTraceTypeRef, &temp);
-  ULONG cbNewSize = cbOrigSig + 1 + 1 + methodTraceTypeRefSize + 1 + exTypeRefSize;
+  auto callTargetStateTypeRefSize = CorSigCompressToken(callTargetStateTypeRef, &temp);
+
+  ULONG cbNewSize = cbOrigSig + 1 + 1 + callTargetStateTypeRefSize + 1 + exTypeRefSize;
   ULONG cOrigLocals;
   ULONG cNewLocalsLen;
   ULONG cbOrigLocals = 0;
@@ -1690,11 +1730,11 @@ HRESULT CorProfiler::ModifyLocalSig(ModuleMetadata* module_metadata,
   memcpy(rgbNewSig + rgbNewSigOffset, &temp, exTypeRefSize);
   rgbNewSigOffset += exTypeRefSize;
 
-  // After method call object with the delegate
-  rgbNewSig[rgbNewSigOffset++] = ELEMENT_TYPE_CLASS;
-  methodTraceTypeRefSize = CorSigCompressToken(methodTraceTypeRef, &temp);
-  memcpy(rgbNewSig + rgbNewSigOffset, &temp, methodTraceTypeRefSize);
-  rgbNewSigOffset += methodTraceTypeRefSize;
+  // calltarget state value
+  rgbNewSig[rgbNewSigOffset++] = ELEMENT_TYPE_VALUETYPE;
+  callTargetStateTypeRefSize = CorSigCompressToken(callTargetStateTypeRef, &temp);
+  memcpy(rgbNewSig + rgbNewSigOffset, &temp, callTargetStateTypeRefSize);
+  rgbNewSigOffset += callTargetStateTypeRefSize;
 
   return module_metadata->metadata_emit->GetTokenFromSig(
       &rgbNewSig[0], cbNewSize, &reWriter.m_tkLocalVarSig);
@@ -1897,7 +1937,7 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
     auto callTargetState_size = CorSigCompressToken(
         module_metadata->callTargetStateTypeRef, &callTargetState_buffer);
 
-    auto signatureLength = 9 + runtimeTypeHandle_size + runtimeTypeHandle_size +
+    auto signatureLength = 8 + runtimeTypeHandle_size + runtimeTypeHandle_size +
                            callTargetState_size;
     auto* signature = new COR_SIGNATURE[signatureLength];
     unsigned offset = 0;
@@ -1905,10 +1945,10 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
     signature[offset++] = IMAGE_CEE_CS_CALLCONV_DEFAULT;
     signature[offset++] = 0x04;
 
-    signature[offset++] = ELEMENT_TYPE_CLASS;
+    signature[offset++] = ELEMENT_TYPE_VALUETYPE;
     memcpy(&signature[offset], &callTargetState_buffer, callTargetState_size);
     offset += callTargetState_size;
-    
+
     signature[offset++] = ELEMENT_TYPE_VALUETYPE;
     memcpy(&signature[offset], &runtimeTypeHandle_buffer,
            runtimeTypeHandle_size);
@@ -1940,12 +1980,16 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
     auto callTargetState_size = CorSigCompressToken(
         module_metadata->callTargetStateTypeRef, &callTargetState_buffer);
 
-    auto signatureLength = 6 + exType_size + callTargetState_size;
+    unsigned runtimeTypeHandle_buffer;
+    auto runtimeTypeHandle_size = CorSigCompressToken(
+        module_metadata->runtimeTypeHandleRef, &runtimeTypeHandle_buffer);
+
+    auto signatureLength = 7 + exType_size + callTargetState_size + runtimeTypeHandle_size;
     auto* signature = new COR_SIGNATURE[signatureLength];
     unsigned offset = 0;
 
     signature[offset++] = IMAGE_CEE_CS_CALLCONV_DEFAULT;
-    signature[offset++] = 0x03;
+    signature[offset++] = 0x04;
     signature[offset++] = ELEMENT_TYPE_OBJECT;
 
     signature[offset++] = ELEMENT_TYPE_OBJECT;
@@ -1953,9 +1997,13 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
     memcpy(&signature[offset], &exType_buffer, exType_size);
     offset += exType_size;
 
-    signature[offset++] = ELEMENT_TYPE_CLASS;
+    signature[offset++] = ELEMENT_TYPE_VALUETYPE;
     memcpy(&signature[offset], &callTargetState_buffer, callTargetState_size);
     offset += callTargetState_size;
+
+    signature[offset++] = ELEMENT_TYPE_VALUETYPE;
+    memcpy(&signature[offset], &runtimeTypeHandle_buffer, runtimeTypeHandle_size);
+    offset += runtimeTypeHandle_size;
 
     auto hr = module_metadata->metadata_emit->DefineMemberRef(
         module_metadata->callTargetTypeRef,
@@ -1968,14 +2016,27 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
   }
   
   // *** Ensure calltargetstate shouldrethrow member ref
-  if (module_metadata->shouldRethrowMemberRef == mdMemberRefNil) {
+  if (module_metadata->shouldRethrowOnExceptionMemberRef == mdMemberRefNil) {
     auto hr = module_metadata->metadata_emit->DefineMemberRef(
         module_metadata->callTargetStateTypeRef,
-        managed_profiler_calltarget_statetype_shouldrethrow_name.data(),
-        ShouldRethrowSig, sizeof(ShouldRethrowSig),
-        &module_metadata->shouldRethrowMemberRef);
+        managed_profiler_calltarget_statetype_shouldrethrowonexception_name.data(),
+        ShouldRethrowOnExceptionSig, sizeof(ShouldRethrowOnExceptionSig),
+        &module_metadata->shouldRethrowOnExceptionMemberRef);
     if (FAILED(hr)) {
       Warn("Wrapper shouldRethrowMemberRef could not be defined.");
+      return hr;
+    }
+  }
+
+  // *** Ensure calltargetstate shouldexecutemethod member ref
+  if (module_metadata->shouldExecuteMethodMemberRef == mdMemberRefNil) {
+    auto hr = module_metadata->metadata_emit->DefineMemberRef(
+        module_metadata->callTargetStateTypeRef,
+        managed_profiler_calltarget_statetype_shouldexecutemethod_name.data(),
+        ShouldExecuteMethodSig, sizeof(ShouldExecuteMethodSig),
+        &module_metadata->shouldExecuteMethodMemberRef);
+    if (FAILED(hr)) {
+      Warn("Wrapper shouldExecuteMethodMemberRef could not be defined.");
       return hr;
     }
   }

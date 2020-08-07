@@ -67,13 +67,21 @@ namespace trace {
   WSTRING managed_profiler_calltarget_endmethod_name = "EndMethod"_W;
 
   WSTRING managed_profiler_calltarget_statetype = "Datadog.Trace.ClrProfiler.CallTarget.CallTargetState"_W;
-  WSTRING managed_profiler_calltarget_statetype_shouldrethrow_name =
-      "ShouldRethrow"_W;
+  WSTRING managed_profiler_calltarget_statetype_shouldrethrowonexception_name = "ShouldRethrowOnException"_W;
+  WSTRING managed_profiler_calltarget_statetype_shouldexecutemethod_name = "ShouldExecuteMethod"_W;
 
-  COR_SIGNATURE ShouldRethrowSig[] = {
-      IMAGE_CEE_CS_CALLCONV_DEFAULT | IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS,  // instance call
-      0x00,                           // 0 parameters
-      ELEMENT_TYPE_BOOLEAN            // bool return type
+  COR_SIGNATURE ShouldRethrowOnExceptionSig[] = {
+      IMAGE_CEE_CS_CALLCONV_DEFAULT | 
+          IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS,  // instance call
+      0x00,                                       // 0 parameters
+      ELEMENT_TYPE_BOOLEAN                        // bool return type
+  };
+
+  COR_SIGNATURE ShouldExecuteMethodSig[] = {
+      IMAGE_CEE_CS_CALLCONV_DEFAULT |
+          IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS,  // instance call
+      0x00,                                       // 0 parameters
+      ELEMENT_TYPE_BOOLEAN                        // bool return type
   };
 
   }  // namespace trace
