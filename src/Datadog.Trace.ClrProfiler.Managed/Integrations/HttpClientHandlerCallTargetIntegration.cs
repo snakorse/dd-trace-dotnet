@@ -40,24 +40,25 @@ namespace Datadog.Trace.ClrProfiler.Integrations
         public static object OnMethodEndAsync(HttpResponseMessage responseMessage, Exception exception, CallTargetState state)
         {
             Scope scope = (Scope)state.State;
-
-            if (scope is null)
+            try
             {
-                Log.Information($"No scope: [ReturnValue:{responseMessage}|Exception:{exception}] ");
-                return responseMessage;
+                if (scope != null)
+                {
+                    if (exception is null)
+                    {
+                        scope.Span.SetTag(Tags.HttpStatusCode, responseMessage.StatusCode.ToString());
+                    }
+                    else
+                    {
+                        scope.Span.SetException(exception);
+                    }
+                }
+            }
+            finally
+            {
+                scope?.Dispose();
             }
 
-            if (exception is null)
-            {
-                scope.Span.SetTag(Tags.HttpStatusCode, responseMessage.StatusCode.ToString());
-            }
-            else
-            {
-                scope.Span.SetException(exception);
-            }
-
-            scope.Dispose();
-            scope = null;
             return responseMessage;
         }
 
