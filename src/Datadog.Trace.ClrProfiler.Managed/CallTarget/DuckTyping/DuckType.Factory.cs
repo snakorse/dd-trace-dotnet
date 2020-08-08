@@ -26,7 +26,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <typeparam name="T">Type of Duck</typeparam>
         /// <returns>Duck Type factory</returns>
         public static IDuckTypeFactory<T> GetFactoryByTypes<T>(Type instanceType)
-            where T : IDuckType
+            where T : class
         {
             var duckType = typeof(T);
             var type = GetOrCreateProxyType(duckType, instanceType);
@@ -51,7 +51,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         }
 
         private class DuckTypeFactory<T> : IDuckTypeFactory<T>, IDuckTypeFactory
-            where T : IDuckType
+            where T : class
         {
             private readonly Type _proxyType;
 
@@ -62,9 +62,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 
             public T Create(object instance)
             {
-                var inst = (T)Activator.CreateInstance(_proxyType);
+                var inst = (IDuckType)Activator.CreateInstance(_proxyType);
                 inst.SetInstance(instance);
-                return inst;
+                return inst as T;
             }
 
             IDuckType IDuckTypeFactory.Create(object instance)

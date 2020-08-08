@@ -14,7 +14,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <typeparam name="T">Interface type</typeparam>
         /// <returns>IDuckTypeFactory instance</returns>
         public static IDuckTypeFactory<T> AsFactory<T>(this Type source)
-            where T : IDuckType
+            where T : class
             => DuckType.GetFactoryByTypes<T>(source);
 
         /// <summary>

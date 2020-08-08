@@ -5,7 +5,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
     /// </summary>
     /// <typeparam name="TInterface">Type of the ducktype object</typeparam>
     public interface IDuckTypeFactory<TInterface>
-        where TInterface : IDuckType
+        where TInterface : class
     {
         /// <summary>
         /// Create duck type proxy instance
