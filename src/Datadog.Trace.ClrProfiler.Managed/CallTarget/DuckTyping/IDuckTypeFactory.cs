@@ -5,7 +5,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
     /// </summary>
     /// <typeparam name="TInterface">Type of the ducktype object</typeparam>
     public interface IDuckTypeFactory<TInterface>
-        where TInterface : class
+        where TInterface : IDuckType
     {
         /// <summary>
         /// Create duck type proxy instance
@@ -13,13 +13,6 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <param name="instance">Object instance</param>
         /// <returns>Duck type proxy instance</returns>
         TInterface Create(object instance);
-
-        /// <summary>
-        /// Rent a duck type proxy instance
-        /// </summary>
-        /// <param name="instance">Object instance</param>
-        /// <returns>DuckType leasing instance</returns>
-        DuckTypeLeasing<TInterface> Rent(object instance);
     }
 
     /// <summary>
@@ -33,12 +26,5 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <param name="instance">Object instance</param>
         /// <returns>Duck type proxy instance</returns>
         IDuckType Create(object instance);
-
-        /// <summary>
-        /// Rent a duck type proxy instance
-        /// </summary>
-        /// <param name="instance">Object instance</param>
-        /// <returns>DuckType leasing instance</returns>
-        DuckTypeLeasing<IDuckType> Rent(object instance);
     }
 }

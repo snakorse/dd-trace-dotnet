@@ -43,8 +43,8 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         {
             if (value is null)
             {
-                field = null!;
-                return field;
+                field = null;
+                return null;
             }
 
             var valueType = value.GetType();
@@ -54,7 +54,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             }
 
             field.SetInstance(value);
-            return field;
+            return (IDuckType)field;
         }
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <returns>Property value</returns>
         protected static object SetInnerDuckType(ref DuckType field, DuckType value)
         {
-            field = value!;
+            field = value;
             return field?.Instance;
         }
     }

@@ -12,7 +12,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
     /// <summary>
     /// Duck Type
     /// </summary>
-    public partial class DuckType : ISettableDuckType
+    public partial class DuckType : IDuckType
     {
         /// <summary>
         /// Current instance
@@ -92,7 +92,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             var instanceField = parentType.GetField(nameof(CurrentInstance), BindingFlags.Instance | BindingFlags.NonPublic);
             if (instanceField is null)
             {
-                interfaceTypes = new[] { typeof(ISettableDuckType) };
+                interfaceTypes = new[] { typeof(IDuckType) };
             }
 
             // Create Type
@@ -384,7 +384,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         }
 
         /// <inheritdoc/>
-        void ISettableDuckType.SetInstance(object instance)
+        void IDuckType.SetInstance(object instance)
         {
             CurrentInstance = instance;
         }
