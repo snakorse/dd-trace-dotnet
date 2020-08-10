@@ -1303,8 +1303,6 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         GetWrapperMethodRef(module_metadata, module_id, method_replacement,
                             wrapper_method_ref, wrapper_type_ref);
 
-        Debug("Modifying locals signature");
-
         // Modify locals signature to add returnvalue, exception, and the object with the delegate to call after the method finishes.
         hr = ModifyLocalSig(module_metadata, rewriter,
                             module_metadata->exTypeRef,
@@ -1314,8 +1312,10 @@ HRESULT CorProfiler::ProcessCallTargetModification(
           return S_OK;
         }
 
-        Debug("Starting rewriting.");
-        Info(GetILCodes("Original Code: ", &rewriter, caller));
+        if (debug_logging_enabled) {
+          Debug("Starting rewriting.");
+          Debug(GetILCodes("Original Code: ", &rewriter, caller));
+        }
 
         /*
             The method body will be changed to something like:
@@ -1468,7 +1468,7 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         // ***
         // METHOD EXECUTION
         // ***
-        ILInstr* beginOriginalMethod = reWriterWrapper.NOP();
+        ILInstr* beginOriginalMethod = reWriterWrapper.m_ILInstr;
         pStateLeaveToBeginOriginalMethod->m_pTarget = beginOriginalMethod;
         beginMethodCatchLeave->m_pTarget = beginOriginalMethod;
 
@@ -1480,16 +1480,19 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         bool retIsBoxedType = false;
         mdToken retTypeTok;
         if (!isVoidMethod) {
-          Debug("Return token name: ", ret.GetTypeTokName(pImport));
+          if (debug_logging_enabled) {
+            Debug("Return token name: ", ret.GetTypeTokName(pImport));
+          }
 
           retTypeTok =
               ret.GetTypeTok(pEmit, module_metadata->corLibAssemblyRef);
           if (ret.GetTypeFlags(elementType) & TypeFlagBoxedType)
             retIsBoxedType = true;
         }
-        Debug("Return type is boxed: ", retIsBoxedType ? "YES" : "NO");
-        Debug("Return token: ", retTypeTok);
-
+        if (debug_logging_enabled) {
+          Debug("Return type is boxed: ", retIsBoxedType ? "YES" : "NO");
+          Debug("Return token: ", retTypeTok);
+        }
         
         //
         // ENDING OF THE METHOD EXECUTION
@@ -1533,7 +1536,6 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         //
 
         // Finally handler calls the EndMethod
-        reWriterWrapper.NOP();
         ILInstr* endMethodTryStartInstr = reWriterWrapper.LoadLocal(indexRet);
         reWriterWrapper.LoadLocal(indexEx);
         reWriterWrapper.LoadLocal(indexState);
@@ -1634,7 +1636,9 @@ HRESULT CorProfiler::ProcessCallTargetModification(
 
         modified = true;
         Info("*** JITCompilationStarted() target modification of ", caller.type.name, ".", caller.name, "()");
-        Info(GetILCodes("Target Modification: ", &rewriter, caller));
+        if (debug_logging_enabled) {
+          Debug(GetILCodes("Target Modification: ", &rewriter, caller));
+        }
         break;
     }
   }

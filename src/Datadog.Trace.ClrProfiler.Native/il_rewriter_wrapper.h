@@ -7,9 +7,10 @@
 class ILRewriterWrapper {
  private:
   ILRewriter* const m_ILRewriter;
-  ILInstr* m_ILInstr;
 
  public:
+  ILInstr* m_ILInstr;
+
   ILRewriterWrapper(ILRewriter* const il_rewriter)
       : m_ILRewriter(il_rewriter), m_ILInstr(nullptr) {}
 
