@@ -8,6 +8,8 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
     /// </summary>
     public readonly struct CallTargetState
     {
+        private static readonly CallTargetState _default = new CallTargetState(null);
+
         private readonly object _state;
         private readonly bool _executeMethod;
         private readonly bool _rethrowOnException;
@@ -52,6 +54,12 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
         /// Gets the CallTarget BeginMethod state
         /// </summary>
         public object State => _state;
+
+        /// <summary>
+        /// Gets the default call target state
+        /// </summary>
+        /// <returns>Default call target state</returns>
+        public static CallTargetState GetDefault() => _default;
 
         /// <summary>
         /// Gets if the original method should be executed

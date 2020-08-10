@@ -65,10 +65,12 @@ namespace trace {
   WSTRING managed_profiler_calltarget_type = "Datadog.Trace.ClrProfiler.CallTarget.CallTargetInvoker"_W;
   WSTRING managed_profiler_calltarget_beginmethod_name = "BeginMethod"_W;
   WSTRING managed_profiler_calltarget_endmethod_name = "EndMethod"_W;
+  WSTRING managed_profiler_calltarget_logexception_name = "LogException"_W;
 
   WSTRING managed_profiler_calltarget_statetype = "Datadog.Trace.ClrProfiler.CallTarget.CallTargetState"_W;
   WSTRING managed_profiler_calltarget_statetype_shouldrethrowonexception_name = "ShouldRethrowOnException"_W;
   WSTRING managed_profiler_calltarget_statetype_shouldexecutemethod_name = "ShouldExecuteMethod"_W;
+  WSTRING managed_profiler_calltarget_statetype_getdefault_name = "GetDefault"_W;
 
   COR_SIGNATURE ShouldRethrowOnExceptionSig[] = {
       IMAGE_CEE_CS_CALLCONV_DEFAULT | 

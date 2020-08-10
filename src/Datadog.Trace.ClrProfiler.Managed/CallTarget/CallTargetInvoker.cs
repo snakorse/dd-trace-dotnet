@@ -23,12 +23,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
         private static readonly MethodInfo EnumToObjectMethodInfo = typeof(Enum).GetMethod("ToObject", new[] { typeof(Type), typeof(object) });
         private static readonly MethodInfo ConvertTypeMethodInfo = typeof(CallTargetInvoker).GetMethod("ConvertType", BindingFlags.NonPublic | BindingFlags.Static);
         private static readonly MethodInfo UnWrapReturnValueMethodInfo = typeof(CallTargetInvoker).GetMethod("UnWrapReturnValue", BindingFlags.NonPublic | BindingFlags.Static);
-
-        private static readonly ConcurrentDictionary<RuntimeTypeHandle, MethodBeginDelegate> BeginMethodDelegates =
-            new ConcurrentDictionary<RuntimeTypeHandle, MethodBeginDelegate>();
-
-        private static readonly ConcurrentDictionary<RuntimeTypeHandle, DuckTyping.ValueTuple<MethodEndDelegate, MethodEndDelegate>> EndMethodDelegates =
-            new ConcurrentDictionary<RuntimeTypeHandle, DuckTyping.ValueTuple<MethodEndDelegate, MethodEndDelegate>>();
+        private static readonly ConcurrentDictionary<RuntimeTypeHandle, CallTargetIntegration> Integrations = new ConcurrentDictionary<RuntimeTypeHandle, CallTargetIntegration>();
 
         /// <summary>
         /// Call target static begin method helper
@@ -40,17 +35,10 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
         /// <returns>CallTargetBeginReturn instance</returns>
         public static CallTargetState BeginMethod(RuntimeTypeHandle instanceTypeHandle, object instance, object[] arguments, RuntimeTypeHandle wrapperTypeHandle)
         {
-            try
+            var integration = GetCallTargetIntegration(wrapperTypeHandle);
+            if (integration.OnMethodBeginDelegate != null)
             {
-                var onMethodBeginDelegate = BeginMethodDelegates.GetOrAdd(wrapperTypeHandle, handle => CreateMethodBeginDelegate(handle, "OnMethodBegin"));
-                if (onMethodBeginDelegate != null)
-                {
-                    return onMethodBeginDelegate(new CallerInfo(instanceTypeHandle, instance), arguments);
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.SafeLogError(ex, $"BeginMethod error: {ex.Message}");
+                return integration.OnMethodBeginDelegate(new CallerInfo(instanceTypeHandle, instance), arguments);
             }
 
             return new CallTargetState(null);
@@ -66,32 +54,58 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
         /// <returns>Return value</returns>
         public static object EndMethod(object returnValue, Exception exception, CallTargetState state, RuntimeTypeHandle wrapperTypeHandle)
         {
-            try
+            var integration = GetCallTargetIntegration(wrapperTypeHandle);
+
+            if (integration.OnMethodEndDelegate != null)
             {
-                var endMethodDelegates = EndMethodDelegates.GetOrAdd(wrapperTypeHandle, handle => new DuckTyping.ValueTuple<MethodEndDelegate, MethodEndDelegate>(
-                    CreateMethodEndDelegate(handle, "OnMethodEnd"),
-                    CreateMethodEndDelegate(handle, "OnMethodEndAsync")));
-
-                if (endMethodDelegates.Item1 != null)
-                {
-                    returnValue = endMethodDelegates.Item1(returnValue, exception, state);
-                }
-
-                if (endMethodDelegates.Item2 != null)
-                {
-                    returnValue = returnValue = AsyncTool.AddContinuation(
-                        returnValue,
-                        exception,
-                        new DuckTyping.ValueTuple<MethodEndDelegate, CallTargetState>(endMethodDelegates.Item2, state),
-                        (rValue, ex, tuple) => tuple.Item1(rValue, ex, tuple.Item2));
-                }
+                returnValue = integration.OnMethodEndDelegate(returnValue, exception, state);
             }
-            catch (Exception ex)
+
+            if (integration.OnMethodEndAsyncDelegate != null)
             {
-                Log.SafeLogError(ex, $"EndMethod error: {ex.Message}");
+                returnValue = returnValue = AsyncTool.AddContinuation(
+                    returnValue,
+                    exception,
+                    new DuckTyping.ValueTuple<MethodEndDelegate, CallTargetState>(integration.OnMethodEndAsyncDelegate, state),
+                    (rValue, ex, tuple) =>
+                    {
+                        try
+                        {
+                            return tuple.Item1(rValue, ex, tuple.Item2);
+                        }
+                        catch (Exception cEx)
+                        {
+                            LogException(cEx);
+                        }
+
+                        return rValue;
+                    });
             }
 
             return returnValue;
+        }
+
+        /// <summary>
+        /// Logs the exception to the CallTarget Logger
+        /// </summary>
+        /// <param name="ex">Exception instance</param>
+        public static void LogException(Exception ex)
+        {
+            if (ex != null)
+            {
+                Log.SafeLogError(ex, ex.Message);
+            }
+        }
+
+        private static CallTargetIntegration GetCallTargetIntegration(RuntimeTypeHandle wrapperTypeHandle)
+        {
+            return Integrations.GetOrAdd(wrapperTypeHandle, handle =>
+            {
+                return new CallTargetIntegration(
+                    CreateMethodBeginDelegate(handle, "OnMethodBegin"),
+                    CreateMethodEndDelegate(handle, "OnMethodEnd"),
+                    CreateMethodEndDelegate(handle, "OnMethodEndAsync"));
+            });
         }
 
         private static MethodBeginDelegate CreateMethodBeginDelegate(RuntimeTypeHandle wrapperTypeHandle, string methodName)
@@ -304,6 +318,20 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
             }
 
             return returnValue;
+        }
+
+        private readonly struct CallTargetIntegration
+        {
+            public readonly MethodBeginDelegate OnMethodBeginDelegate;
+            public readonly MethodEndDelegate OnMethodEndDelegate;
+            public readonly MethodEndDelegate OnMethodEndAsyncDelegate;
+
+            public CallTargetIntegration(MethodBeginDelegate beginDelegate, MethodEndDelegate endDelegate, MethodEndDelegate endAsyncDelegate)
+            {
+                OnMethodBeginDelegate = beginDelegate;
+                OnMethodEndDelegate = endDelegate;
+                OnMethodEndAsyncDelegate = endAsyncDelegate;
+            }
         }
     }
 }

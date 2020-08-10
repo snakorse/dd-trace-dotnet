@@ -1317,7 +1317,57 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         Debug("Starting rewriting.");
         Info(GetILCodes("Original Code: ", &rewriter, caller));
 
-        // add try catch finally
+        /*
+            The method body will be changed to something like:
+
+            {
+                object returnValue = null;
+                Exception exception = null;
+                CallTargetState state = CallTargetState.GetDefault();
+                try
+                {
+                    try
+                    {
+                        state = CallTargetInvoker.BeginMethod(...); 
+                        if (!state.ShouldExecuteMethod())
+                        {
+                            return;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        CallTargetInvoker.LogException(ex);
+                    }
+                    
+                    //
+                    // [ORIGINAL METHOD BODY]
+                    //
+
+                }
+                catch (Exception globalEx)
+                {
+                    exception = globalEx;
+                    if (state.ShouldRethrowOnException()) 
+                    {
+                        throw;
+                    }
+                }
+                finally
+                {
+                    try
+                    {
+                        returnValue = CallTargetInvoker.EndMethod(...);
+                    }
+                    catch (Exception ex)
+                    {
+                        CallTargetInvoker.LogException(ex);
+                    }
+                }
+            }
+
+        */
+
+        // metadata helpers
         auto pEmit = module_metadata->metadata_emit;
         auto pImport = module_metadata->metadata_import;
         auto pReWriter = &rewriter;
@@ -1342,8 +1392,8 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         reWriterWrapper.StLocal(indexRet);
         reWriterWrapper.LoadNull();
         reWriterWrapper.StLocal(indexEx);
-        reWriterWrapper.LoadLocalAddress(indexState);
-        reWriterWrapper.InitObj(module_metadata->callTargetStateTypeRef);
+        reWriterWrapper.CallMember(module_metadata->getDefaultMemberRef, false);
+        reWriterWrapper.StLocal(indexState);
         
         // load caller type into the stack
         ILInstr* pTryStartInstr = reWriterWrapper.LoadToken(caller.type.id);
@@ -1393,12 +1443,32 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         // Check if should execute method is true
         reWriterWrapper.LoadLocalAddress(indexState);
         reWriterWrapper.CallMember(module_metadata->shouldExecuteMethodMemberRef, true);
-        ILInstr* pStateShouldExecuteBranchInstr =reWriterWrapper.CreateInstr(CEE_BRFALSE_S);
+        ILInstr* pStateShouldExecuteBranchInstr =reWriterWrapper.CreateInstr(CEE_BRTRUE_S);
+        ILInstr* pStateLeaveToEndOriginalMethod = reWriterWrapper.CreateInstr(CEE_LEAVE_S);
+        ILInstr* pStateLeaveToBeginOriginalMethod = reWriterWrapper.CreateInstr(CEE_LEAVE_S);
+        pStateShouldExecuteBranchInstr->m_pTarget = pStateLeaveToBeginOriginalMethod;
+
+        // BeginMethod call catch
+        ILInstr* beginMethodCatchFInstr = reWriterWrapper.CallMember(module_metadata->logExceptionRef, false);
+        ILInstr* beginMethodCatchLeave = reWriterWrapper.CreateInstr(CEE_LEAVE_S);
+        
+        // BeginMethod exception handling clause
+        EHClause beginMethodExClause{};
+        beginMethodExClause.m_Flags = COR_ILEXCEPTION_CLAUSE_NONE;
+        beginMethodExClause.m_pTryBegin = pTryStartInstr;
+        beginMethodExClause.m_pTryEnd = beginMethodCatchFInstr;
+        beginMethodExClause.m_pHandlerBegin = beginMethodCatchFInstr;
+        beginMethodExClause.m_pHandlerEnd = beginMethodCatchLeave;
+        beginMethodExClause.m_ClassToken = module_metadata->exTypeRef;
 
 
         // ***
         // METHOD EXECUTION
         // ***
+        ILInstr* beginOriginalMethod = reWriterWrapper.NOP();
+        pStateLeaveToBeginOriginalMethod->m_pTarget = beginOriginalMethod;
+        beginMethodCatchLeave->m_pTarget = beginOriginalMethod;
+
 
         // Gets if the return type of the original method is boxed
         bool isVoidMethod = (retTypeFlags & TypeFlagVoid) > 0;
@@ -1430,7 +1500,7 @@ HRESULT CorProfiler::ProcessCallTargetModification(
 
         // Resolving the should execute method branch
         ILInstr* pAfterMethodExecutionInstr = reWriterWrapper.CreateInstr(CEE_LEAVE_S);
-        pStateShouldExecuteBranchInstr->m_pTarget = pAfterMethodExecutionInstr;
+        pStateLeaveToEndOriginalMethod->m_pTarget = pAfterMethodExecutionInstr;
 
 
         //
@@ -1460,14 +1530,32 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         //
 
         // Finally handler calls the EndMethod
-        reWriterWrapper.LoadLocal(indexRet);
+        reWriterWrapper.NOP();
+        ILInstr* endMethodTryStartInstr = reWriterWrapper.LoadLocal(indexRet);
         reWriterWrapper.LoadLocal(indexEx);
         reWriterWrapper.LoadLocal(indexState);
         reWriterWrapper.LoadToken(wrapper_type_ref);
         reWriterWrapper.CallMember(module_metadata->endMemberRef, false);
         reWriterWrapper.StLocal(indexRet);
-        ILInstr* pEndFinallyInstr = reWriterWrapper.EndFinally();
+        ILInstr* endMethodTryLeave = reWriterWrapper.CreateInstr(CEE_LEAVE_S);
 
+        // EndMethod call catch
+        ILInstr* endMethodCatchFInstr = reWriterWrapper.CallMember(module_metadata->logExceptionRef, false);
+        ILInstr* endMethodCatchLeave = reWriterWrapper.CreateInstr(CEE_LEAVE_S);
+        
+        // EndMethod exception handling clause
+        EHClause endMethodExClause{};
+        endMethodExClause.m_Flags = COR_ILEXCEPTION_CLAUSE_NONE;
+        endMethodExClause.m_pTryBegin = endMethodTryStartInstr;
+        endMethodExClause.m_pTryEnd = endMethodCatchFInstr;
+        endMethodExClause.m_pHandlerBegin = endMethodCatchFInstr;
+        endMethodExClause.m_pHandlerEnd = endMethodCatchLeave;
+        endMethodExClause.m_ClassToken = module_metadata->exTypeRef;
+
+        // endfinally
+        ILInstr* pEndFinallyInstr = reWriterWrapper.EndFinally();
+        endMethodTryLeave->m_pTarget = pEndFinallyInstr;
+        endMethodCatchLeave->m_pTarget = pEndFinallyInstr;
 
         //
         // METHOD RETURN
@@ -1528,13 +1616,15 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         finallyClause.m_pHandlerEnd = pEndFinallyInstr;
 
         // Copy previous clauses
-        auto m_pEHNew = new EHClause[rewriter.m_nEH + 2];
+        auto m_pEHNew = new EHClause[rewriter.m_nEH + 4];
         for (unsigned i = 0; i < rewriter.m_nEH; i++) {
           m_pEHNew[i] = rewriter.m_pEH[i];
         }
 
         // add the new clauses
-        rewriter.m_nEH += 2;
+        rewriter.m_nEH += 4;
+        m_pEHNew[rewriter.m_nEH - 4] = beginMethodExClause;
+        m_pEHNew[rewriter.m_nEH - 3] = endMethodExClause;
         m_pEHNew[rewriter.m_nEH - 2] = exClause;
         m_pEHNew[rewriter.m_nEH - 1] = finallyClause;
         rewriter.m_pEH = m_pEHNew;
@@ -2015,6 +2105,34 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
     }
   }
   
+  // *** Ensure calltarget logexception member ref
+  if (module_metadata->logExceptionRef == mdMemberRefNil) {
+    unsigned exType_buffer;
+    auto exType_size =
+        CorSigCompressToken(module_metadata->exTypeRef, &exType_buffer);
+
+    auto signatureLength = 4 + exType_size;
+    auto* signature = new COR_SIGNATURE[signatureLength];
+    unsigned offset = 0;
+
+    signature[offset++] = IMAGE_CEE_CS_CALLCONV_DEFAULT;
+    signature[offset++] = 0x01;
+    signature[offset++] = ELEMENT_TYPE_VOID;
+
+    signature[offset++] = ELEMENT_TYPE_CLASS;
+    memcpy(&signature[offset], &exType_buffer, exType_size);
+    offset += exType_size;
+
+    auto hr = module_metadata->metadata_emit->DefineMemberRef(
+        module_metadata->callTargetTypeRef,
+        managed_profiler_calltarget_logexception_name.data(), signature,
+        signatureLength, &module_metadata->logExceptionRef);
+    if (FAILED(hr)) {
+      Warn("Wrapper logExceptionRef could not be defined.");
+      return hr;
+    }
+  }
+
   // *** Ensure calltargetstate shouldrethrow member ref
   if (module_metadata->shouldRethrowOnExceptionMemberRef == mdMemberRefNil) {
     auto hr = module_metadata->metadata_emit->DefineMemberRef(
@@ -2037,6 +2155,34 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
         &module_metadata->shouldExecuteMethodMemberRef);
     if (FAILED(hr)) {
       Warn("Wrapper shouldExecuteMethodMemberRef could not be defined.");
+      return hr;
+    }
+  }
+
+  // *** Ensure calltargetstate getdefault member ref
+  if (module_metadata->getDefaultMemberRef == mdMemberRefNil) {
+    unsigned callTargetState_buffer;
+    auto callTargetState_size = CorSigCompressToken(
+        module_metadata->callTargetStateTypeRef, &callTargetState_buffer);
+
+    auto signatureLength = 3 + callTargetState_size;
+    auto* signature = new COR_SIGNATURE[signatureLength];
+    unsigned offset = 0;
+
+    signature[offset++] = IMAGE_CEE_CS_CALLCONV_DEFAULT;
+    signature[offset++] = 0x00;
+
+    signature[offset++] = ELEMENT_TYPE_VALUETYPE;
+    memcpy(&signature[offset], &callTargetState_buffer, callTargetState_size);
+    offset += callTargetState_size;
+
+    auto hr = module_metadata->metadata_emit->DefineMemberRef(
+        module_metadata->callTargetStateTypeRef,
+        managed_profiler_calltarget_statetype_getdefault_name.data(), signature,
+        signatureLength,
+        &module_metadata->getDefaultMemberRef);
+    if (FAILED(hr)) {
+      Warn("Wrapper getDefaultMemberRef could not be defined.");
       return hr;
     }
   }

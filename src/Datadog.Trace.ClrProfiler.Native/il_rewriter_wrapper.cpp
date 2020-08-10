@@ -108,12 +108,13 @@ void ILRewriterWrapper::CreateArray(const mdTypeRef type_ref,
   m_ILRewriter->InsertBefore(m_ILInstr, pNewInstr);
 }
 
-void ILRewriterWrapper::CallMember(const mdMemberRef& member_ref,
+ILInstr* ILRewriterWrapper::CallMember(const mdMemberRef& member_ref,
                                    const bool is_virtual) const {
   ILInstr* pNewInstr = m_ILRewriter->NewILInstr();
   pNewInstr->m_opcode = is_virtual ? CEE_CALLVIRT : CEE_CALL;
   pNewInstr->m_Arg32 = member_ref;
   m_ILRewriter->InsertBefore(m_ILInstr, pNewInstr);
+  return pNewInstr;
 }
 
 void ILRewriterWrapper::Duplicate() const {
