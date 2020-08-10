@@ -1340,7 +1340,9 @@ HRESULT CorProfiler::ProcessCallTargetModification(
                     }
                     
                     //
-                    // [ORIGINAL METHOD BODY]
+                    // [ORIGINAL METHOD BODY] 
+                    // If the method returns a value, this will be stored to returnValue local
+                    // and then jump to the final ret instruction, to force the EndMethod call.
                     //
 
                 }
@@ -1363,6 +1365,7 @@ HRESULT CorProfiler::ProcessCallTargetModification(
                         CallTargetInvoker.LogException(ex);
                     }
                 }
+                return returnValue;
             }
 
         */
