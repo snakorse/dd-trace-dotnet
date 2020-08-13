@@ -120,6 +120,10 @@ class CorProfiler : public CorProfilerBase {
   HRESULT STDMETHODCALLTYPE
   JITCompilationStarted(FunctionID function_id, BOOL is_safe_to_block) override;
 
+  HRESULT STDMETHODCALLTYPE JITInlining(FunctionID callerId,
+                                        FunctionID calleeId,
+                                        BOOL* pfShouldInline) override;
+
   HRESULT STDMETHODCALLTYPE Shutdown() override;
 
   //
