@@ -44,6 +44,7 @@ namespace Datadog.Trace.ClrProfiler.Integrations
             {
                 if (scope != null)
                 {
+                    scope.Span.SetTag("integration", "CallTarget");
                     if (exception is null)
                     {
                         scope.Span.SetTag(Tags.HttpStatusCode, responseMessage.StatusCode.ToString());

@@ -685,7 +685,7 @@ HRESULT STDMETHODCALLTYPE CorProfiler::JITCompilationStarted(
 HRESULT STDMETHODCALLTYPE CorProfiler::JITInlining(FunctionID callerId,
                                                    FunctionID calleeId,
                                                    BOOL* pfShouldInline) {
-  
+  *pfShouldInline = true;
   return S_OK;
 }
 
