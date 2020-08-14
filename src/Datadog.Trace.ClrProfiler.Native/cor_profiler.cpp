@@ -685,6 +685,25 @@ HRESULT STDMETHODCALLTYPE CorProfiler::JITCompilationStarted(
 HRESULT STDMETHODCALLTYPE CorProfiler::JITInlining(FunctionID callerId,
                                                    FunctionID calleeId,
                                                    BOOL* pfShouldInline) {
+  if (!is_attached_) {
+    return S_OK;
+  }
+
+  ModuleID calleeId_module_id;
+  mdToken calleeId_token = mdTokenNil;
+
+  HRESULT hr = this->info_->GetFunctionInfo(
+      calleeId, nullptr, &calleeId_module_id, &calleeId_token);
+
+  if (FAILED(hr)) {
+    Warn(
+        "JITInlining: Call to ICorProfilerInfo3.JITInlining() "
+        "failed for ",
+        calleeId);
+    return S_OK;
+  }
+
+
   *pfShouldInline = true;
   return S_OK;
 }
