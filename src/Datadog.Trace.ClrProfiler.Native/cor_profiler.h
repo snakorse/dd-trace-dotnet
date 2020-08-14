@@ -80,6 +80,7 @@ class CorProfiler : public CorProfilerBase {
   std::string GetILCodes(std::string title, ILRewriter* rewriter,
                          const FunctionInfo& caller);
   HRESULT ModifyLocalSig(ModuleMetadata* module_metadata, ILRewriter& reWriter,
+                         FunctionMethodArgument* methodReturnValue,
                          mdTypeRef exTypeRef, mdTypeRef methodTraceTypeRef);
   std::string GetILCodes(std::string title, ILRewriter* rewriter,
                          const FunctionInfo& caller);

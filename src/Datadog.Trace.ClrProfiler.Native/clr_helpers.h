@@ -313,6 +313,7 @@ struct FunctionMethodArgument {
                      mdAssemblyRef corLibRef) const;
   WSTRING GetTypeTokName(ComPtr<IMetaDataImport2>& pImport) const;
   int GetTypeFlags(unsigned& elementType) const;
+  ULONG GetSignature(PCCOR_SIGNATURE& data) const;
 };
 
 struct FunctionMethodSignature {

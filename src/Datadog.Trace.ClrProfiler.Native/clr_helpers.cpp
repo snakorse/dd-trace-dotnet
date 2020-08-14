@@ -1008,7 +1008,6 @@ bool ReturnTypeIsValueTypeOrGeneric(
 
 
 // FunctionMethodArgument
-
 int FunctionMethodArgument::GetTypeFlags(unsigned& elementType) const {
   int flag = 0;
   PCCOR_SIGNATURE pbCur = &pbBase[offset];
@@ -1267,6 +1266,11 @@ WSTRING FunctionMethodArgument::GetTypeTokName(ComPtr<IMetaDataImport2>& pImport
   return GetSigTypeTokName(pbCur, pImport);
 }
 
+ULONG FunctionMethodArgument::GetSignature(PCCOR_SIGNATURE& data) const {
+  data = &pbBase[offset];
+  return length;
+}
+
 // FunctionMethodSignature
 bool ParseByte(PCCOR_SIGNATURE& pbCur, PCCOR_SIGNATURE pbEnd, unsigned char* pbOut) {
   if (pbCur < pbEnd) {
@@ -1425,7 +1429,6 @@ bool ParseType(PCCOR_SIGNATURE& pbCur, PCCOR_SIGNATURE pbEnd) {
 
     case ELEMENT_TYPE_GENERICINST:
       // GENERICINST (CLASS | VALUETYPE) TypeDefOrRefEncoded GenArgCount Type *
-
       if (!ParseByte(pbCur, pbEnd, &elem_type)) return false;
 
       if (elem_type != ELEMENT_TYPE_CLASS &&
@@ -1440,7 +1443,6 @@ bool ParseType(PCCOR_SIGNATURE& pbCur, PCCOR_SIGNATURE pbEnd) {
       for (unsigned i = 0; i < number; i++) {
         if (!ParseType(pbCur, pbEnd)) return false;
       }
-
       break;
 
     case ELEMENT_TYPE_VAR:
@@ -1480,21 +1482,25 @@ bool ParseParam(PCCOR_SIGNATURE& pbCur, PCCOR_SIGNATURE pbEnd) {
 // RetType ::= CustomMod* ( VOID | TYPEDBYREF | [BYREF] Type )
 // CustomMod* TYPEDBYREF we don't support
 bool ParseRetType(PCCOR_SIGNATURE& pbCur, PCCOR_SIGNATURE pbEnd) {
+
   if (*pbCur == ELEMENT_TYPE_CMOD_OPT || *pbCur == ELEMENT_TYPE_CMOD_REQD)
     return false;
 
-  if (pbCur >= pbEnd) return false;
+  if (pbCur >= pbEnd) 
+      return false;
 
-  if (*pbCur == ELEMENT_TYPE_TYPEDBYREF) return false;
+  if (*pbCur == ELEMENT_TYPE_TYPEDBYREF) 
+      return false;
 
-  if (*pbCur == ELEMENT_TYPE_VOID) pbCur++;
-  return true;
+  if (*pbCur == ELEMENT_TYPE_VOID) {
+    pbCur++;
+    return true;
+  }
 
-  if (*pbCur == ELEMENT_TYPE_BYREF) pbCur++;
+  if (*pbCur == ELEMENT_TYPE_BYREF) 
+      pbCur++;
 
-  if (!ParseType(pbCur, pbEnd)) return false;
-
-  return true;
+  return ParseType(pbCur, pbEnd);
 }
 
 
@@ -1504,6 +1510,7 @@ HRESULT FunctionMethodSignature::TryParse() {
   unsigned char elem_type;
 
   IfFalseRetFAIL(ParseByte(pbCur, pbEnd, &elem_type));
+
   if (elem_type & IMAGE_CEE_CS_CALLCONV_GENERIC) {
     unsigned gen_param_count;
     IfFalseRetFAIL(ParseNumber(pbCur, pbEnd, &gen_param_count));
@@ -1517,7 +1524,6 @@ HRESULT FunctionMethodSignature::TryParse() {
   const PCCOR_SIGNATURE pbRet = pbCur;
 
   IfFalseRetFAIL(ParseRetType(pbCur, pbEnd));
-
   ret.pbBase = pbBase;
   ret.length = (ULONG)(pbCur - pbRet);
   ret.offset = (ULONG)(pbCur - pbBase - ret.length);
