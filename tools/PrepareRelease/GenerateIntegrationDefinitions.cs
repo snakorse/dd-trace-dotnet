@@ -19,6 +19,60 @@ namespace PrepareRelease
             var assemblies = new List<Assembly>();
             assemblies.Add(typeof(Instrumentation).Assembly);
 
+            var callTargetIntegrations = from assembly in assemblies
+                                         from wrapperType in assembly.GetTypes()
+                                         let wrapperMethod = (MethodInfo)null
+                                         let attributes = wrapperType.GetCustomAttributes<InterceptMethodAttribute>(inherit: false)
+                                         where attributes.Any()
+                                         from attribute in attributes
+                                         let integrationName = attribute.Integration ?? GetIntegrationName(wrapperType)
+                                         orderby integrationName
+                                         group new
+                                         {
+                                             assembly,
+                                             wrapperType,
+                                             wrapperMethod,
+                                             attribute
+                                         }
+                                             by integrationName into g
+                                         select new
+                                         {
+                                             name = g.Key,
+                                             method_replacements = from item in g
+                                                                   from targetAssembly in item.attribute.TargetAssemblies
+                                                                   select new
+                                                                   {
+                                                                       caller = new
+                                                                       {
+                                                                           assembly = item.attribute.CallerAssembly,
+                                                                           type = item.attribute.CallerType,
+                                                                           method = item.attribute.CallerMethod
+                                                                       },
+                                                                       target = new
+                                                                       {
+                                                                           assembly = targetAssembly,
+                                                                           type = item.attribute.TargetType,
+                                                                           method = item.attribute.TargetMethod,
+                                                                           signature = item.attribute.TargetSignature,
+                                                                           signature_types = item.attribute.TargetSignatureTypes,
+                                                                           minimum_major = item.attribute.TargetVersionRange.MinimumMajor,
+                                                                           minimum_minor = item.attribute.TargetVersionRange.MinimumMinor,
+                                                                           minimum_patch = item.attribute.TargetVersionRange.MinimumPatch,
+                                                                           maximum_major = item.attribute.TargetVersionRange.MaximumMajor,
+                                                                           maximum_minor = item.attribute.TargetVersionRange.MaximumMinor,
+                                                                           maximum_patch = item.attribute.TargetVersionRange.MaximumPatch
+                                                                       },
+                                                                       wrapper = new
+                                                                       {
+                                                                           assembly = item.assembly.FullName,
+                                                                           type = item.wrapperType.FullName,
+                                                                           method = string.Empty,
+                                                                           signature = string.Empty,
+                                                                           action = item.attribute.MethodReplacementAction.ToString()
+                                                                       }
+                                                                   }
+                                         };
+
             // find all methods in Datadog.Trace.ClrProfiler.Managed.dll with [InterceptMethod]
             // and create objects that will generate correct JSON schema
             var integrations = from assembly in assemblies
@@ -81,7 +135,7 @@ namespace PrepareRelease
                 Formatting = Formatting.Indented
             };
 
-            var json = JsonConvert.SerializeObject(integrations, serializerSettings);
+            var json = JsonConvert.SerializeObject(callTargetIntegrations.Concat(integrations), serializerSettings);
             Console.WriteLine(json);
 
             foreach (var outputDirectory in outputDirectories)

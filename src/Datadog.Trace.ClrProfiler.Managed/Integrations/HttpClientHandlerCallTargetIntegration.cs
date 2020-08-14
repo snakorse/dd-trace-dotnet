@@ -13,9 +13,26 @@ using Datadog.Trace.Logging;
 
 namespace Datadog.Trace.ClrProfiler.Integrations
 {
+    [InterceptMethod(
+            TargetAssembly = SystemNetHttp,
+            TargetType = HttpClientHandler,
+            TargetMethod = SendAsync,
+            TargetSignatureTypes = new[] { ClrNames.HttpResponseMessageTask, ClrNames.HttpRequestMessage, ClrNames.CancellationToken },
+            TargetMinimumVersion = Major4,
+            TargetMaximumVersion = Major4,
+            MethodReplacementAction = MethodReplacementActionType.CallTargetModification)]
     public class HttpClientHandlerCallTargetIntegration
     {
-        private const string IntegrationName = "HttpClientHandler";
+        private const string IntegrationName = "HttpMessageHandler";
+        private const string SystemNetHttp = "System.Net.Http";
+        private const string Major4 = "4";
+
+        private const string HttpMessageHandlerTypeName = "HttpMessageHandler";
+        private const string HttpClientHandlerTypeName = "HttpClientHandler";
+
+        private const string HttpMessageHandler = SystemNetHttp + "." + HttpMessageHandlerTypeName;
+        private const string HttpClientHandler = SystemNetHttp + "." + HttpClientHandlerTypeName;
+        private const string SendAsync = "SendAsync";
         private static readonly Vendors.Serilog.ILogger Log = DatadogLogging.GetLogger(typeof(HttpClientHandlerCallTargetIntegration));
 
         public static CallTargetState OnMethodBegin(CallerInfo caller, HttpRequestMessage requestMessage, CancellationTokenSource cancellationTokenSource)

@@ -26,6 +26,12 @@ Users who need manual instrumentation should reference the "Datadog.Trace" packa
   <PropertyGroup Condition="'$(BuildingInsideVisualStudio)'=='true' AND ('$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'netcoreapp3.1')">
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Integrations\HttpMessageHandlerIntegration.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Integrations\HttpMessageHandlerIntegration.cs" />
+  </ItemGroup>
   
 
   <ItemGroup>
