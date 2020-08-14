@@ -1776,72 +1776,80 @@ HRESULT CorProfiler::ModifyLocalSig(ModuleMetadata* module_metadata,
                                     ILRewriter& reWriter, mdTypeRef exTypeRef,
                                     mdTypeRef callTargetStateTypeRef) {
   HRESULT hr;
-  PCCOR_SIGNATURE rgbOrigSig = NULL;
-  ULONG cbOrigSig = 0;
-  UNALIGNED INT32 temp = 0;
+  PCCOR_SIGNATURE originalSignature = NULL;
+  ULONG originalSignatureSize = 0;
 
   if (reWriter.m_tkLocalVarSig != mdTokenNil) {
-    IfFailRet(module_metadata->metadata_import->GetSigFromToken(reWriter.m_tkLocalVarSig, &rgbOrigSig, &cbOrigSig));
+    IfFailRet(module_metadata->metadata_import->GetSigFromToken(reWriter.m_tkLocalVarSig, &originalSignature, &originalSignatureSize));
 
-    // Check Is ReWrite or not
+    // Check if the localvarsig has been already rewritten
+    unsigned temp = 0;
     const auto len = CorSigCompressToken(callTargetStateTypeRef, &temp);
-    if (cbOrigSig - len > 0) {
-      if (rgbOrigSig[cbOrigSig - len - 1] == ELEMENT_TYPE_CLASS) {
-        if (memcmp(&rgbOrigSig[cbOrigSig - len], &temp, len) == 0)
+    if (originalSignatureSize - len > 0) {
+      if (originalSignature[originalSignatureSize - len - 1] == ELEMENT_TYPE_CLASS) {
+        if (memcmp(&originalSignature[originalSignatureSize - len], &temp, len) == 0)
           return E_FAIL;
       }
     }
   }
 
-  auto exTypeRefSize = CorSigCompressToken(exTypeRef, &temp);
-  auto callTargetStateTypeRefSize = CorSigCompressToken(callTargetStateTypeRef, &temp);
+  unsigned exTypeRefBuffer;
+  auto exTypeRefSize = CorSigCompressToken(exTypeRef, &exTypeRefBuffer);
 
-  ULONG cbNewSize = cbOrigSig + 1 + 1 + callTargetStateTypeRefSize + 1 + exTypeRefSize;
+  unsigned callTargetStateTypeRefBuffer;
+  auto callTargetStateTypeRefSize = CorSigCompressToken(callTargetStateTypeRef, &callTargetStateTypeRefBuffer);
+
+  ULONG newSignatureSize = originalSignatureSize + 1 + 1 + callTargetStateTypeRefSize + 1 + exTypeRefSize;
   ULONG cOrigLocals;
-  ULONG cNewLocalsLen;
   ULONG cbOrigLocals = 0;
+  unsigned cNewLocalsBuffer;
+  ULONG cNewLocalsLen;
 
-  if (cbOrigSig == 0) {
-    cbNewSize += 2;
+  // Calculate the new locals count
+  if (originalSignatureSize == 0) {
+    newSignatureSize += 2;
     reWriter.cNewLocals = 3;
-    cNewLocalsLen = CorSigCompressData(reWriter.cNewLocals, &temp);
-  } else {
-    cbOrigLocals = CorSigUncompressData(rgbOrigSig + 1, &cOrigLocals);
+    cNewLocalsLen = CorSigCompressData(reWriter.cNewLocals, &cNewLocalsBuffer);
+  } 
+  else {
+    cbOrigLocals = CorSigUncompressData(originalSignature + 1, &cOrigLocals);
     reWriter.cNewLocals = cOrigLocals + 3;
-    cNewLocalsLen = CorSigCompressData(reWriter.cNewLocals, &temp);
-    cbNewSize += cNewLocalsLen - cbOrigLocals;
+    cNewLocalsLen = CorSigCompressData(reWriter.cNewLocals, &cNewLocalsBuffer);
+    newSignatureSize += cNewLocalsLen - cbOrigLocals;
   }
 
-  const auto rgbNewSig = new COR_SIGNATURE[cbNewSize];
+  const auto rgbNewSig = new COR_SIGNATURE[newSignatureSize];
   *rgbNewSig = IMAGE_CEE_CS_CALLCONV_LOCAL_SIG;
 
+  // Change the locals count
   ULONG rgbNewSigOffset = 1;
-  memcpy(rgbNewSig + rgbNewSigOffset, &temp, cNewLocalsLen);
+  memcpy(rgbNewSig + rgbNewSigOffset, &cNewLocalsBuffer, cNewLocalsLen);
   rgbNewSigOffset += cNewLocalsLen;
 
-  if (cbOrigSig > 0) {
-    const auto cbOrigCopyLen = cbOrigSig - 1 - cbOrigLocals;
-    memcpy(rgbNewSig + rgbNewSigOffset, rgbOrigSig + 1 + cbOrigLocals, cbOrigCopyLen);
+  // Copy previous locals to the signature
+  if (originalSignatureSize > 0) {
+    const auto cbOrigCopyLen = originalSignatureSize - 1 - cbOrigLocals;
+    memcpy(rgbNewSig + rgbNewSigOffset, originalSignature + 1 + cbOrigLocals, cbOrigCopyLen);
     rgbNewSigOffset += cbOrigCopyLen;
   }
+
+  // Add new locals
 
   // return value
   rgbNewSig[rgbNewSigOffset++] = ELEMENT_TYPE_OBJECT;
 
   // exception value
   rgbNewSig[rgbNewSigOffset++] = ELEMENT_TYPE_CLASS;
-  exTypeRefSize = CorSigCompressToken(exTypeRef, &temp);
-  memcpy(rgbNewSig + rgbNewSigOffset, &temp, exTypeRefSize);
+  memcpy(rgbNewSig + rgbNewSigOffset, &exTypeRefBuffer, exTypeRefSize);
   rgbNewSigOffset += exTypeRefSize;
 
   // calltarget state value
   rgbNewSig[rgbNewSigOffset++] = ELEMENT_TYPE_VALUETYPE;
-  callTargetStateTypeRefSize = CorSigCompressToken(callTargetStateTypeRef, &temp);
-  memcpy(rgbNewSig + rgbNewSigOffset, &temp, callTargetStateTypeRefSize);
+  memcpy(rgbNewSig + rgbNewSigOffset, &callTargetStateTypeRefBuffer, callTargetStateTypeRefSize);
   rgbNewSigOffset += callTargetStateTypeRefSize;
 
   return module_metadata->metadata_emit->GetTokenFromSig(
-      &rgbNewSig[0], cbNewSize, &reWriter.m_tkLocalVarSig);
+      &rgbNewSig[0], newSignatureSize, &reWriter.m_tkLocalVarSig);
 }
 
 std::string CorProfiler::GetILCodes(std::string title, ILRewriter* rewriter,
