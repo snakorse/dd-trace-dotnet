@@ -72,8 +72,6 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <exception cref="NullReferenceException">In case the CurrentInstance field is not found</exception>
         private static Type CreateProxyType(Type duckType, Type instanceType)
         {
-            var typeSignature = $"{duckType.Name}-ProxyTo->{instanceType.Name}";
-
             // Define parent type, interface types
             Type parentType;
             Type[] interfaceTypes;
@@ -92,15 +90,29 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             var instanceField = parentType.GetField(nameof(CurrentInstance), BindingFlags.Instance | BindingFlags.NonPublic);
             if (instanceField is null)
             {
-                interfaceTypes = new[] { typeof(IDuckType) };
+                interfaceTypes = DefaultInterfaceTypes;
             }
 
+            // Ensures the module builder
+            if (_moduleBuilder is null)
+            {
+                lock (_locker)
+                {
+                    if (_moduleBuilder is null)
+                    {
+                        var an = new AssemblyName("DuckTypeAssembly");
+                        _assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(an, AssemblyBuilderAccess.Run);
+                        _moduleBuilder = _assemblyBuilder.DefineDynamicModule("MainModule");
+                    }
+                }
+            }
+
+            // Adds the attribute to ingore the access checks
+            _assemblyBuilder.SetCustomAttribute(new CustomAttributeBuilder(IgnoresAccessChecksToAttributeCtor, new object[] { duckType.Assembly.GetName().Name }));
+
             // Create Type
-            var an = new AssemblyName(typeSignature + "Assembly");
-            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(an, AssemblyBuilderAccess.Run);
-            var moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
-            var typeBuilder = moduleBuilder.DefineType(
-                typeSignature,
+            var typeBuilder = _moduleBuilder.DefineType(
+                $"{duckType.Name}->{instanceType.Name}",
                 TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.AutoClass | TypeAttributes.AnsiClass | TypeAttributes.BeforeFieldInit | TypeAttributes.AutoLayout | TypeAttributes.Sealed,
                 parentType,
                 interfaceTypes);

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -67,7 +66,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
             try
             {
                 Log.Information($"Creating MethodBegin Delegate: {methodName} in {wrapperType.FullName}");
-                MethodInfo onMethodBeginMethodInfo = wrapperType.GetMethod(methodName);
+                MethodInfo onMethodBeginMethodInfo = wrapperType.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
                 if (onMethodBeginMethodInfo is null)
                 {
                     Log.Warning($"Couldn't find the method: {methodName} in type: {wrapperType.FullName}");
@@ -153,7 +152,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
             try
             {
                 Log.Information($"Creating MethodEnd Delegate: {methodName} in {wrapperType.FullName}");
-                MethodInfo onMethodEndMethodInfo = wrapperType.GetMethod(methodName);
+                MethodInfo onMethodEndMethodInfo = wrapperType.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
                 if (onMethodEndMethodInfo is null)
                 {
                     Log.Warning($"Couldn't find the method: {methodName} in type: {wrapperType.FullName}");
@@ -247,7 +246,8 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
                 return Convert.ChangeType(value, conversionType, CultureInfo.CurrentCulture);
             }
 
-            return value.As(conversionType);
+            // Finally we try to duck type
+            return DuckType.Create(conversionType, value);
         }
 
         private static object UnWrapReturnValue(object returnValue)

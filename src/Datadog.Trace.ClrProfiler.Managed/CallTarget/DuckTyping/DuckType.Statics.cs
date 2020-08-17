@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 
 namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 {
@@ -11,6 +12,12 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
     /// </summary>
     public partial class DuckType
     {
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private static readonly object _locker = new object();
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private static readonly Type[] DefaultInterfaceTypes = new[] { typeof(IDuckType) };
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private static readonly ConstructorInfo IgnoresAccessChecksToAttributeCtor = typeof(IgnoresAccessChecksToAttribute).GetConstructor(new Type[] { typeof(string) });
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static readonly MethodInfo GetTypeFromHandleMethodInfo = typeof(Type).GetMethod("GetTypeFromHandle");
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -25,6 +32,10 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         private static readonly MethodInfo SetInnerDuckTypeMethodInfo = typeof(DuckType).GetMethod("SetInnerDuckType", BindingFlags.Static | BindingFlags.NonPublic);
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static readonly ConcurrentDictionary<ValueTuple<string, TypeBuilder>, FieldInfo> DynamicFields = new ConcurrentDictionary<ValueTuple<string, TypeBuilder>, FieldInfo>();
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private static AssemblyBuilder _assemblyBuilder = null;
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private static ModuleBuilder _moduleBuilder = null;
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static Func<DynamicMethod, RuntimeMethodHandle> _dynamicGetMethodDescriptor;
 
