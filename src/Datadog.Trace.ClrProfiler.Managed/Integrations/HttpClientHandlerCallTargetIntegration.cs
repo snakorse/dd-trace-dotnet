@@ -35,7 +35,7 @@ namespace Datadog.Trace.ClrProfiler.Integrations
         private const string SendAsync = "SendAsync";
         private static readonly Vendors.Serilog.ILogger Log = DatadogLogging.GetLogger(typeof(HttpClientHandlerCallTargetIntegration));
 
-        public static CallTargetState OnMethodBegin(CallerInfo caller, HttpRequestMessage requestMessage, CancellationTokenSource cancellationTokenSource)
+        public static CallTargetState OnMethodBegin(CallerInfo caller, HttpRequestMessage requestMessage, CancellationToken cancellationToken)
         {
             Scope scope = null;
 

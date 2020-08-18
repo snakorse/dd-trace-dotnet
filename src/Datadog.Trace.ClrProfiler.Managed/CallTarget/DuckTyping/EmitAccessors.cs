@@ -10,10 +10,6 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
     /// </summary>
     public static class EmitAccessors
     {
-        private static readonly MethodInfo GetTypeFromHandleMethodInfo = typeof(Type).GetMethod("GetTypeFromHandle");
-        private static readonly MethodInfo EnumToObjectMethodInfo = typeof(Enum).GetMethod("ToObject", new[] { typeof(Type), typeof(object) });
-        private static readonly MethodInfo ConvertTypeMethodInfo = typeof(Util).GetMethod("ConvertType");
-
         /// <summary>
         /// Build a get accessor from a property info
         /// </summary>
@@ -21,7 +17,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <returns>Delegate to the get accessor</returns>
         public static Func<object, object> BuildGetAccessor(PropertyInfo property)
         {
-            var method = new DynamicMethod($"GetProp+{property.DeclaringType!.Name}.{property.Name}", typeof(object), new[] { typeof(object) }, typeof(EmitAccessors).Module);
+            var method = new DynamicMethod($"GetProp+{property.DeclaringType.Name}.{property.Name}", typeof(object), new[] { typeof(object) }, typeof(EmitAccessors).Module);
             CreateGetAccessor(method.GetILGenerator(), property, typeof(object), typeof(object));
             return (Func<object, object>)method.CreateDelegate(typeof(Func<object, object>));
         }
@@ -301,7 +297,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                 if (rType.IsEnum)
                 {
                     il.Emit(OpCodes.Ldtoken, rType);
-                    il.EmitCall(OpCodes.Call, GetTypeFromHandleMethodInfo, null);
+                    il.EmitCall(OpCodes.Call, Util.GetTypeFromHandleMethodInfo, null);
                     callEnum = true;
                 }
 
@@ -311,13 +307,13 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 
                 if (callEnum)
                 {
-                    il.EmitCall(OpCodes.Call, EnumToObjectMethodInfo, null);
+                    il.EmitCall(OpCodes.Call, Util.EnumToObjectMethodInfo, null);
                 }
                 else if (!strict && pType != typeof(object))
                 {
                     il.Emit(OpCodes.Ldtoken, rType);
-                    il.EmitCall(OpCodes.Call, GetTypeFromHandleMethodInfo, null);
-                    il.EmitCall(OpCodes.Call, ConvertTypeMethodInfo, null);
+                    il.EmitCall(OpCodes.Call, Util.GetTypeFromHandleMethodInfo, null);
+                    il.EmitCall(OpCodes.Call, Util.ConvertTypeMethodInfo, null);
                 }
 
                 if (pType.IsValueType)

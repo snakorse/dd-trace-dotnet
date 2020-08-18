@@ -13,7 +13,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// Initializes a new instance of the <see cref="DuckTypePropertyCantBeReadException"/> class.
         /// </summary>
         public DuckTypePropertyCantBeReadException()
-            : base("The property can't be read, you should remove the getter from the interface.")
+            : base("The property can't be read, you should remove the getter from the base type class or interface.")
         {
         }
     }
@@ -27,7 +27,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// Initializes a new instance of the <see cref="DuckTypePropertyCantBeWrittenException"/> class.
         /// </summary>
         public DuckTypePropertyCantBeWrittenException()
-            : base("The property can't be written, you should remove the setter from the interface.")
+            : base("The property can't be written, you should remove the setter from the base type class or interface.")
         {
         }
     }
@@ -41,7 +41,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// Initializes a new instance of the <see cref="DuckTypeFieldIsReadonlyException"/> class.
         /// </summary>
         public DuckTypeFieldIsReadonlyException()
-            : base("The field is marked as readonly, you should remove the setter from the interface.")
+            : base("The field is marked as readonly, you should remove the setter from the base type class or interface.")
         {
         }
     }

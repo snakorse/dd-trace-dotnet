@@ -4,8 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-#pragma warning disable SA1306 // Field names must begin with lower-case letter
-#pragma warning disable SA1401 // Fields must be private
 
 namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 {
@@ -18,7 +16,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// Current instance
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        protected object CurrentInstance;
+#pragma warning disable SA1401 // Fields must be private
+        protected object _currentInstance;
+#pragma warning restore SA1401 // Fields must be private
 
         /// <summary>
         /// Instance type
@@ -42,34 +42,39 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <summary>
         /// Gets instance
         /// </summary>
-        public object Instance => CurrentInstance;
+        public object Instance => _currentInstance;
 
         /// <summary>
         /// Gets instance Type
         /// </summary>
-        public Type Type => _type ??= CurrentInstance?.GetType();
+        public Type Type => _type ??= _currentInstance?.GetType();
 
         /// <summary>
         /// Gets assembly version
         /// </summary>
         public Version AssemblyVersion => _version ??= Type?.Assembly?.GetName().Version;
 
-        /// <summary>
-        /// Get or creates a proxy type implementing the interface type to access the given instance type
-        /// </summary>
-        /// <param name="duckType">Duck type</param>
-        /// <param name="instanceType">Instance type</param>
-        /// <returns>Proxy type</returns>
         private static Type GetOrCreateProxyType(Type duckType, Type instanceType)
-            => DuckTypeCache.GetOrAdd(new ValueTuple<Type, Type>(duckType, instanceType), types => CreateProxyType(types.Item1, types.Item2));
+        {
+            VTuple<Type, Type> key = new VTuple<Type, Type>(duckType, instanceType);
 
-        /// <summary>
-        /// Creates a proxy type implementing the interface type to access the given instance type
-        /// </summary>
-        /// <param name="duckType">Duck type</param>
-        /// <param name="instanceType">Instance type</param>
-        /// <returns>Proxy type</returns>
-        /// <exception cref="NullReferenceException">In case the CurrentInstance field is not found</exception>
+            if (DuckTypeCache.TryGetValue(key, out Type proxyType))
+            {
+                return proxyType;
+            }
+
+            lock (DuckTypeCache)
+            {
+                if (!DuckTypeCache.TryGetValue(key, out proxyType))
+                {
+                    proxyType = CreateProxyType(duckType, instanceType);
+                    DuckTypeCache[key] = proxyType;
+                }
+
+                return proxyType;
+            }
+        }
+
         private static Type CreateProxyType(Type duckType, Type instanceType)
         {
             // Define parent type, interface types
@@ -87,7 +92,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             }
 
             // Gets the current instance field info
-            var instanceField = parentType.GetField(nameof(CurrentInstance), BindingFlags.Instance | BindingFlags.NonPublic);
+            FieldInfo instanceField = parentType.GetField(nameof(_currentInstance), BindingFlags.Instance | BindingFlags.NonPublic);
             if (instanceField is null)
             {
                 interfaceTypes = DefaultInterfaceTypes;
@@ -100,19 +105,19 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                 {
                     if (_moduleBuilder is null)
                     {
-                        var an = new AssemblyName("DuckTypeAssembly");
-                        _assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(an, AssemblyBuilderAccess.Run);
-                        _moduleBuilder = _assemblyBuilder.DefineDynamicModule("MainModule");
+                        AssemblyName aName = new AssemblyName("DuckTypeAssembly");
+                        AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(aName, AssemblyBuilderAccess.Run);
+                        _moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
                     }
                 }
             }
 
-            // Adds the attribute to ingore the access checks
-            _assemblyBuilder.SetCustomAttribute(new CustomAttributeBuilder(IgnoresAccessChecksToAttributeCtor, new object[] { duckType.Assembly.GetName().Name }));
+            string proxyTypeName = $"{duckType.FullName}->{instanceType.FullName}";
+            Log.Information("Creating duck type proxy: " + proxyTypeName);
 
             // Create Type
-            var typeBuilder = _moduleBuilder.DefineType(
-                $"{duckType.Name}->{instanceType.Name}",
+            TypeBuilder typeBuilder = _moduleBuilder.DefineType(
+                proxyTypeName,
                 TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.AutoClass | TypeAttributes.AnsiClass | TypeAttributes.BeforeFieldInit | TypeAttributes.AutoLayout | TypeAttributes.Sealed,
                 parentType,
                 interfaceTypes);
@@ -133,10 +138,10 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 
         private static FieldInfo CreateInstanceField(TypeBuilder typeBuilder)
         {
-            var instanceField = typeBuilder.DefineField(nameof(CurrentInstance), typeof(object), FieldAttributes.Family);
+            var instanceField = typeBuilder.DefineField(nameof(_currentInstance), typeof(object), FieldAttributes.Family);
 
             var setInstance = typeBuilder.DefineMethod(
-                "SetInstance",
+                nameof(SetInstance),
                 MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot,
                 typeof(void),
                 new[] { typeof(object) });
@@ -146,9 +151,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             il.Emit(OpCodes.Stfld, instanceField);
             il.Emit(OpCodes.Ret);
 
-            var propInstance = typeBuilder.DefineProperty("Instance", PropertyAttributes.None, typeof(object), null);
+            var propInstance = typeBuilder.DefineProperty(nameof(Instance), PropertyAttributes.None, typeof(object), null);
             var getPropInstance = typeBuilder.DefineMethod(
-                "get_Instance",
+                $"get_{nameof(Instance)}",
                 MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot,
                 typeof(object),
                 Type.EmptyTypes);
@@ -158,9 +163,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             il.Emit(OpCodes.Ret);
             propInstance.SetGetMethod(getPropInstance);
 
-            var propType = typeBuilder.DefineProperty("Type", PropertyAttributes.None, typeof(Type), null);
+            var propType = typeBuilder.DefineProperty(nameof(Type), PropertyAttributes.None, typeof(Type), null);
             var getPropType = typeBuilder.DefineMethod(
-                "get_Type",
+                $"get_{nameof(Type)}",
                 MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot,
                 typeof(Type),
                 Type.EmptyTypes);
@@ -171,9 +176,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             il.Emit(OpCodes.Ret);
             propType.SetGetMethod(getPropType);
 
-            var propVersion = typeBuilder.DefineProperty("AssemblyVersion", PropertyAttributes.None, typeof(Version), null);
+            var propVersion = typeBuilder.DefineProperty(nameof(AssemblyVersion), PropertyAttributes.None, typeof(Version), null);
             var getPropVersion = typeBuilder.DefineMethod(
-                "get_AssemblyVersion",
+                $"get_{nameof(AssemblyVersion)}",
                 MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot,
                 typeof(Version),
                 Type.EmptyTypes);
@@ -231,16 +236,20 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         private static void CreateProperties(Type baseType, Type instanceType, FieldInfo instanceField, TypeBuilder typeBuilder)
         {
             var asmVersion = instanceType.Assembly.GetName().Version;
+            // Gets all properties to be implemented
             var selectedProperties = GetProperties(baseType);
-            foreach (var iProperty in selectedProperties)
+
+            foreach (var property in selectedProperties)
             {
                 PropertyBuilder propertyBuilder = null;
-                if ((iProperty.CanRead && iProperty.GetMethod.IsAbstract) || (iProperty.CanWrite && iProperty.SetMethod.IsAbstract))
+
+                // If the property is abstract or interface we make sure that we have the property defined in the new class
+                if ((property.CanRead && property.GetMethod.IsAbstract) || (property.CanWrite && property.SetMethod.IsAbstract))
                 {
-                    propertyBuilder = typeBuilder.DefineProperty(iProperty.Name, PropertyAttributes.None, iProperty.PropertyType, null);
+                    propertyBuilder = typeBuilder.DefineProperty(property.Name, PropertyAttributes.None, property.PropertyType, null);
                 }
 
-                var duckAttrs = new List<DuckAttribute>(iProperty.GetCustomAttributes<DuckAttribute>(true));
+                var duckAttrs = new List<DuckAttribute>(property.GetCustomAttributes<DuckAttribute>(true));
                 if (duckAttrs.Count == 0)
                 {
                     duckAttrs.Add(new DuckAttribute());
@@ -268,7 +277,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                         continue;
                     }
 
-                    duckAttr.Name ??= iProperty.Name;
+                    duckAttr.Name ??= property.Name;
 
                     switch (duckAttr.Kind)
                     {
@@ -279,16 +288,16 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                                 continue;
                             }
 
-                            propertyBuilder ??= typeBuilder.DefineProperty(iProperty.Name, PropertyAttributes.None, iProperty.PropertyType, null);
+                            propertyBuilder ??= typeBuilder.DefineProperty(property.Name, PropertyAttributes.None, property.PropertyType, null);
 
-                            if (iProperty.CanRead)
+                            if (property.CanRead)
                             {
-                                propertyBuilder.SetGetMethod(GetPropertyGetMethod(instanceType, typeBuilder, iProperty, prop, instanceField));
+                                propertyBuilder.SetGetMethod(GetPropertyGetMethod(instanceType, typeBuilder, property, prop, instanceField));
                             }
 
-                            if (iProperty.CanWrite)
+                            if (property.CanWrite)
                             {
-                                propertyBuilder.SetSetMethod(GetPropertySetMethod(instanceType, typeBuilder, iProperty, prop, instanceField));
+                                propertyBuilder.SetSetMethod(GetPropertySetMethod(instanceType, typeBuilder, property, prop, instanceField));
                             }
 
                             break;
@@ -300,16 +309,16 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                                 continue;
                             }
 
-                            propertyBuilder ??= typeBuilder.DefineProperty(iProperty.Name, PropertyAttributes.None, iProperty.PropertyType, null);
+                            propertyBuilder ??= typeBuilder.DefineProperty(property.Name, PropertyAttributes.None, property.PropertyType, null);
 
-                            if (iProperty.CanRead)
+                            if (property.CanRead)
                             {
-                                propertyBuilder.SetGetMethod(GetFieldGetMethod(instanceType, typeBuilder, iProperty, field, instanceField));
+                                propertyBuilder.SetGetMethod(GetFieldGetMethod(instanceType, typeBuilder, property, field, instanceField));
                             }
 
-                            if (iProperty.CanWrite)
+                            if (property.CanWrite)
                             {
-                                propertyBuilder.SetSetMethod(GetFieldSetMethod(instanceType, typeBuilder, iProperty, field, instanceField));
+                                propertyBuilder.SetSetMethod(GetFieldSetMethod(instanceType, typeBuilder, property, field, instanceField));
                             }
 
                             break;
@@ -323,22 +332,22 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                     continue;
                 }
 
-                if (iProperty.CanRead && propertyBuilder.GetMethod is null)
+                if (property.CanRead && propertyBuilder.GetMethod is null)
                 {
-                    propertyBuilder.SetGetMethod(GetNotFoundGetMethod(instanceType, typeBuilder, iProperty));
+                    propertyBuilder.SetGetMethod(GetNotFoundGetMethod(instanceType, typeBuilder, property));
                 }
 
-                if (iProperty.CanWrite && propertyBuilder.SetMethod is null)
+                if (property.CanWrite && propertyBuilder.SetMethod is null)
                 {
-                    propertyBuilder.SetSetMethod(GetNotFoundSetMethod(instanceType, typeBuilder, iProperty));
+                    propertyBuilder.SetSetMethod(GetNotFoundSetMethod(instanceType, typeBuilder, property));
                 }
             }
         }
 
-        private static MethodBuilder GetNotFoundGetMethod(Type instanceType, TypeBuilder typeBuilder, PropertyInfo iProperty)
+        private static MethodBuilder GetNotFoundGetMethod(Type instanceType, TypeBuilder typeBuilder, PropertyInfo duckTypeProperty)
         {
             Type[] parameterTypes;
-            var idxParams = iProperty.GetIndexParameters();
+            var idxParams = duckTypeProperty.GetIndexParameters();
             if (idxParams.Length > 0)
             {
                 parameterTypes = new Type[idxParams.Length];
@@ -353,9 +362,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             }
 
             var method = typeBuilder.DefineMethod(
-                "get_" + iProperty.Name,
+                $"get_{duckTypeProperty.Name}",
                 MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Virtual,
-                iProperty.PropertyType,
+                duckTypeProperty.PropertyType,
                 parameterTypes);
 
             var il = method.GetILGenerator();
@@ -364,10 +373,10 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             return method;
         }
 
-        private static MethodBuilder GetNotFoundSetMethod(Type instanceType, TypeBuilder typeBuilder, PropertyInfo iProperty)
+        private static MethodBuilder GetNotFoundSetMethod(Type instanceType, TypeBuilder typeBuilder, PropertyInfo duckTypeProperty)
         {
             Type[] parameterTypes;
-            var idxParams = iProperty.GetIndexParameters();
+            var idxParams = duckTypeProperty.GetIndexParameters();
             if (idxParams.Length > 0)
             {
                 parameterTypes = new Type[idxParams.Length + 1];
@@ -376,15 +385,15 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                     parameterTypes[i] = idxParams[i].ParameterType;
                 }
 
-                parameterTypes[idxParams.Length] = iProperty.PropertyType;
+                parameterTypes[idxParams.Length] = duckTypeProperty.PropertyType;
             }
             else
             {
-                parameterTypes = new[] { iProperty.PropertyType };
+                parameterTypes = new[] { duckTypeProperty.PropertyType };
             }
 
             var method = typeBuilder.DefineMethod(
-                "set_" + iProperty.Name,
+                "set_" + duckTypeProperty.Name,
                 MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Virtual,
                 typeof(void),
                 parameterTypes);
@@ -398,12 +407,12 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <inheritdoc/>
         void IDuckType.SetInstance(object instance)
         {
-            CurrentInstance = instance;
+            _currentInstance = instance;
         }
 
         private void SetInstance(object instance)
         {
-            CurrentInstance = instance;
+            _currentInstance = instance;
         }
     }
 }

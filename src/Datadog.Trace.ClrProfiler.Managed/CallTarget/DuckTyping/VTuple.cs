@@ -4,11 +4,11 @@ using System.Collections.Generic;
 namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 {
     /// <summary>
-    /// ValueTuple
+    /// Value Tuple struct
     /// </summary>
     /// <typeparam name="T1">Type of the item 1</typeparam>
     /// <typeparam name="T2">Type of the item 2</typeparam>
-    internal readonly struct ValueTuple<T1, T2> : IEquatable<ValueTuple<T1, T2>>
+    internal readonly struct VTuple<T1, T2> : IEquatable<VTuple<T1, T2>>
     {
         /// <summary>
         /// Item 1
@@ -21,11 +21,11 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         public readonly T2 Item2;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ValueTuple{T1, T2}"/> struct.
+        /// Initializes a new instance of the <see cref="VTuple{T1, T2}"/> struct.
         /// </summary>
         /// <param name="item1">Item 1</param>
         /// <param name="item2">Item 2</param>
-        public ValueTuple(T1 item1, T2 item2)
+        public VTuple(T1 item1, T2 item2)
         {
             Item1 = item1;
             Item2 = item2;
@@ -47,13 +47,13 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <returns>True if both are equals; otherwise, false.</returns>
         public override bool Equals(object obj)
         {
-            return obj is ValueTuple<T1, T2> vTuple &&
+            return obj is VTuple<T1, T2> vTuple &&
                    EqualityComparer<T1>.Default.Equals(Item1, vTuple.Item1) &&
                    EqualityComparer<T2>.Default.Equals(Item2, vTuple.Item2);
         }
 
         /// <inheritdoc />
-        public bool Equals(ValueTuple<T1, T2> other)
+        public bool Equals(VTuple<T1, T2> other)
         {
             return EqualityComparer<T1>.Default.Equals(Item1, other.Item1) &&
                    EqualityComparer<T2>.Default.Equals(Item2, other.Item2);

@@ -8,7 +8,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
     public partial class DuckType
     {
         /// <summary>
-        /// Create duck type proxy from an interface
+        /// Create duck type proxy using a base type
         /// </summary>
         /// <param name="instance">Instance object</param>
         /// <typeparam name="T">Duck type</typeparam>
@@ -19,13 +19,14 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         }
 
         /// <summary>
-        /// Create duck type proxy from an interface type
+        /// Create duck type proxy using a base type
         /// </summary>
         /// <param name="duckType">Duck type</param>
         /// <param name="instance">Instance object</param>
         /// <returns>Duck Type proxy</returns>
-        public static object Create(Type duckType, object instance)
+        public static IDuckType Create(Type duckType, object instance)
         {
+            // Validate arguments
             EnsureArguments(duckType, instance);
 
             // Create Type
@@ -38,15 +39,14 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         }
 
         /// <summary>
-        /// Create a duck type proxy from an interface type
+        /// Create a duck type proxy using a base type
         /// </summary>
         /// <param name="duckType">Duck type</param>
         /// <param name="instanceType">Instance type</param>
         /// <returns>Duck Type proxy</returns>
-        public static object Create(Type duckType, Type instanceType)
+        public static IDuckType Create(Type duckType, Type instanceType)
         {
-            var type = GetOrCreateProxyType(duckType, instanceType);
-            return Activator.CreateInstance(type);
+            return (IDuckType)Activator.CreateInstance(GetOrCreateProxyType(duckType, instanceType));
         }
     }
 }

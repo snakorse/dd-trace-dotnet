@@ -108,7 +108,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                     !iMethod.ReturnType.IsGenericParameter && !method.ReturnType.IsGenericParameter)
                 {
                     il.Emit(OpCodes.Ldtoken, iMethod.ReturnType);
-                    il.EmitCall(OpCodes.Call, GetTypeFromHandleMethodInfo, null);
+                    il.EmitCall(OpCodes.Call, Util.GetTypeFromHandleMethodInfo, null);
                     innerDuck = true;
                 }
 
@@ -161,7 +161,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                         if (innerDuck)
                         {
                             ILHelpers.TypeConversion(il, method.ReturnType, typeof(object));
-                            il.EmitCall(OpCodes.Call, DuckTypeCreate, null);
+                            il.EmitCall(OpCodes.Call, DuckTypeCreateMethodInfo, null);
                         }
                         else if (method.ReturnType != iMethod.ReturnType)
                         {
@@ -212,7 +212,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                     {
                         if (innerDuck)
                         {
-                            il.EmitCall(OpCodes.Call, DuckTypeCreate, null);
+                            il.EmitCall(OpCodes.Call, DuckTypeCreateMethodInfo, null);
                         }
                         else if (iMethod.ReturnType != typeof(object))
                         {
@@ -229,10 +229,10 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             }
         }
 
-        private static MethodInfo SelectMethod(Type instanceType, MethodInfo iMethod, ParameterInfo[] parameters, Type[] parametersTypes)
+        private static MethodInfo SelectMethod(Type instanceType, MethodInfo duckTypeMethod, ParameterInfo[] parameters, Type[] parametersTypes)
         {
             var asmVersion = instanceType.Assembly.GetName().Version;
-            var duckAttrs = iMethod.GetCustomAttributes<DuckAttribute>(true).ToList();
+            var duckAttrs = duckTypeMethod.GetCustomAttributes<DuckAttribute>(true).ToList();
             if (duckAttrs.Count == 0)
             {
                 duckAttrs.Add(new DuckAttribute());
@@ -252,7 +252,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 
                 return x.Version.CompareTo(y.Version);
             });
-            var iMethodString = iMethod.ToString();
+            var iMethodString = duckTypeMethod.ToString();
             MethodAttributesSelector[] allMethods = null!;
             foreach (var duckAttr in duckAttrs)
             {
@@ -261,7 +261,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                     continue;
                 }
 
-                duckAttr.Name ??= iMethod.Name;
+                duckAttr.Name ??= duckTypeMethod.Name;
 
                 // We select the method to call
                 var method = instanceType.GetMethod(duckAttr.Name, duckAttr.BindingFlags, null, parametersTypes, null);
@@ -356,7 +356,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                 }
 
                 // Trying to select the ones with the same return type
-                var sameReturnType = remaining.Where(ma => ma.Method.ReturnType == iMethod.ReturnType).ToList();
+                var sameReturnType = remaining.Where(ma => ma.Method.ReturnType == duckTypeMethod.ReturnType).ToList();
                 if (sameReturnType.Count == 1)
                 {
                     return sameReturnType[0].Method;
@@ -367,7 +367,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                     remaining = sameReturnType;
                 }
 
-                if (iMethod.ReturnType.IsInterface && iMethod.ReturnType.GetInterface(iMethod.ReturnType.FullName) == null)
+                if (duckTypeMethod.ReturnType.IsInterface && duckTypeMethod.ReturnType.GetInterface(duckTypeMethod.ReturnType.FullName) == null)
                 {
                     var duckReturnType = remaining.Where(ma => !ma.Method.ReturnType.IsValueType).ToList();
                     if (duckReturnType.Count == 1)

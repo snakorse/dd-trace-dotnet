@@ -24,6 +24,11 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             {
                 throw new ArgumentNullException(nameof(instance), "The object instance can't be null");
             }
+
+            if (!duckType.IsPublic && !duckType.IsNestedPublic)
+            {
+                throw new DuckTypeTypeIsNotPublicException(duckType, nameof(duckType));
+            }
         }
 
         /// <summary>
@@ -48,7 +53,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             }
 
             field.SetInstance(value);
-            return (IDuckType)field;
+            return field;
         }
 
         /// <summary>

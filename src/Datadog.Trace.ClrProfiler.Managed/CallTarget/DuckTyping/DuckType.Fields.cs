@@ -9,12 +9,12 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
     /// </summary>
     public partial class DuckType
     {
-        private static MethodBuilder GetFieldGetMethod(Type instanceType, TypeBuilder typeBuilder, PropertyInfo iProperty, FieldInfo field, FieldInfo instanceField)
+        private static MethodBuilder GetFieldGetMethod(Type instanceType, TypeBuilder typeBuilder, PropertyInfo duckTypeProperty, FieldInfo field, FieldInfo instanceField)
         {
             var method = typeBuilder.DefineMethod(
-                "get_" + iProperty.Name,
+                "get_" + duckTypeProperty.Name,
                 MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.Virtual,
-                iProperty.PropertyType,
+                duckTypeProperty.PropertyType,
                 Type.EmptyTypes);
 
             var il = method.GetILGenerator();
@@ -22,30 +22,30 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             var returnType = field.FieldType;
 
             var innerDuck = false;
-            var iPropTypeInterface = iProperty.PropertyType;
+            var iPropTypeInterface = duckTypeProperty.PropertyType;
             if (iPropTypeInterface.IsGenericType)
             {
                 iPropTypeInterface = iPropTypeInterface.GetGenericTypeDefinition();
             }
 
-            if (iProperty.PropertyType != field.FieldType && !iProperty.PropertyType.IsValueType && !iProperty.PropertyType.IsAssignableFrom(field.FieldType))
+            if (duckTypeProperty.PropertyType != field.FieldType && !duckTypeProperty.PropertyType.IsValueType && !duckTypeProperty.PropertyType.IsAssignableFrom(field.FieldType))
             {
                 if (field.IsStatic)
                 {
-                    var innerField = DynamicFields.GetOrAdd(new ValueTuple<string, TypeBuilder>("_dtStatic" + iProperty.Name, typeBuilder), tuple =>
+                    var innerField = DynamicFields.GetOrAdd(new VTuple<string, TypeBuilder>("_dtStatic" + duckTypeProperty.Name, typeBuilder), tuple =>
                         tuple.Item2.DefineField(tuple.Item1, typeof(DuckType), FieldAttributes.Private | FieldAttributes.Static));
                     il.Emit(OpCodes.Ldsflda, innerField);
                 }
                 else
                 {
-                    var innerField = DynamicFields.GetOrAdd(new ValueTuple<string, TypeBuilder>("_dt" + iProperty.Name, typeBuilder), tuple =>
+                    var innerField = DynamicFields.GetOrAdd(new VTuple<string, TypeBuilder>("_dt" + duckTypeProperty.Name, typeBuilder), tuple =>
                         tuple.Item2.DefineField(tuple.Item1, typeof(DuckType), FieldAttributes.Private));
                     il.Emit(OpCodes.Ldarg_0);
                     il.Emit(OpCodes.Ldflda, innerField);
                 }
 
-                il.Emit(OpCodes.Ldtoken, iProperty.PropertyType);
-                il.EmitCall(OpCodes.Call, GetTypeFromHandleMethodInfo, null);
+                il.Emit(OpCodes.Ldtoken, duckTypeProperty.PropertyType);
+                il.EmitCall(OpCodes.Call, Util.GetTypeFromHandleMethodInfo, null);
                 innerDuck = true;
             }
 
@@ -94,22 +94,22 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                 ILHelpers.TypeConversion(il, returnType, typeof(object));
                 il.EmitCall(OpCodes.Call, GetInnerDuckTypeMethodInfo, null);
             }
-            else if (returnType != iProperty.PropertyType)
+            else if (returnType != duckTypeProperty.PropertyType)
             {
-                ILHelpers.TypeConversion(il, returnType, iProperty.PropertyType);
+                ILHelpers.TypeConversion(il, returnType, duckTypeProperty.PropertyType);
             }
 
             il.Emit(OpCodes.Ret);
             return method;
         }
 
-        private static MethodBuilder GetFieldSetMethod(Type instanceType, TypeBuilder typeBuilder, PropertyInfo iProperty, FieldInfo field, FieldInfo instanceField)
+        private static MethodBuilder GetFieldSetMethod(Type instanceType, TypeBuilder typeBuilder, PropertyInfo duckTypeProperty, FieldInfo field, FieldInfo instanceField)
         {
             var method = typeBuilder.DefineMethod(
-                "set_" + iProperty.Name,
+                "set_" + duckTypeProperty.Name,
                 MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.Virtual,
                 typeof(void),
-                new[] { iProperty.PropertyType });
+                new[] { duckTypeProperty.PropertyType });
 
             var il = method.GetILGenerator();
             var isPublicInstance = instanceType.IsPublic || instanceType.IsNestedPublic;
@@ -140,23 +140,23 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             }
 
             // Check if a duck type object
-            var iPropTypeInterface = iProperty.PropertyType;
+            var iPropTypeInterface = duckTypeProperty.PropertyType;
             if (iPropTypeInterface.IsGenericType)
             {
                 iPropTypeInterface = iPropTypeInterface.GetGenericTypeDefinition();
             }
 
-            if (iProperty.PropertyType != field.FieldType && !iProperty.PropertyType.IsValueType && !iProperty.PropertyType.IsAssignableFrom(field.FieldType))
+            if (duckTypeProperty.PropertyType != field.FieldType && !duckTypeProperty.PropertyType.IsValueType && !duckTypeProperty.PropertyType.IsAssignableFrom(field.FieldType))
             {
                 if (field.IsStatic)
                 {
-                    var innerField = DynamicFields.GetOrAdd(new ValueTuple<string, TypeBuilder>("_dtStatic" + iProperty.Name, typeBuilder), tuple =>
+                    var innerField = DynamicFields.GetOrAdd(new VTuple<string, TypeBuilder>("_dtStatic" + duckTypeProperty.Name, typeBuilder), tuple =>
                         tuple.Item2.DefineField(tuple.Item1, typeof(DuckType), FieldAttributes.Private | FieldAttributes.Static));
                     il.Emit(OpCodes.Ldsflda, innerField);
                 }
                 else
                 {
-                    var innerField = DynamicFields.GetOrAdd(new ValueTuple<string, TypeBuilder>("_dt" + iProperty.Name, typeBuilder), tuple =>
+                    var innerField = DynamicFields.GetOrAdd(new VTuple<string, TypeBuilder>("_dt" + duckTypeProperty.Name, typeBuilder), tuple =>
                         tuple.Item2.DefineField(tuple.Item1, typeof(DuckType), FieldAttributes.Private));
                     il.Emit(OpCodes.Ldarg_0);
                     il.Emit(OpCodes.Ldflda, innerField);
@@ -177,7 +177,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             if (isPublicInstance && field.IsPublic)
             {
                 var fieldRootType = Util.GetRootType(field.FieldType);
-                var iPropRootType = Util.GetRootType(iProperty.PropertyType);
+                var iPropRootType = Util.GetRootType(duckTypeProperty.PropertyType);
                 ILHelpers.TypeConversion(il, iPropRootType, fieldRootType);
 
                 il.Emit(field.IsStatic ? OpCodes.Stsfld : OpCodes.Stfld, field);
@@ -190,7 +190,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                     dynValueType = field.FieldType;
                 }
 
-                var iPropRootType = Util.GetRootType(iProperty.PropertyType);
+                var iPropRootType = Util.GetRootType(duckTypeProperty.PropertyType);
                 ILHelpers.TypeConversion(il, iPropRootType, dynValueType);
 
                 var dynParameters = new[] { typeof(object), dynValueType };

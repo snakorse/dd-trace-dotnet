@@ -18,10 +18,8 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
     public static class CallTargetInvoker
     {
         private static readonly Vendors.Serilog.ILogger Log = DatadogLogging.GetLogger(typeof(CallTargetInvoker));
-        private static readonly MethodInfo GetTypeFromHandleMethodInfo = typeof(Type).GetMethod("GetTypeFromHandle");
-        private static readonly MethodInfo EnumToObjectMethodInfo = typeof(Enum).GetMethod("ToObject", new[] { typeof(Type), typeof(object) });
-        private static readonly MethodInfo ConvertTypeMethodInfo = typeof(CallTargetInvoker).GetMethod("ConvertType", BindingFlags.NonPublic | BindingFlags.Static);
-        private static readonly MethodInfo UnWrapReturnValueMethodInfo = typeof(CallTargetInvoker).GetMethod("UnWrapReturnValue", BindingFlags.NonPublic | BindingFlags.Static);
+        private static readonly MethodInfo ConvertTypeMethodInfo = typeof(CallTargetInvoker).GetMethod(nameof(CallTargetInvoker.ConvertType), BindingFlags.NonPublic | BindingFlags.Static);
+        private static readonly MethodInfo UnWrapReturnValueMethodInfo = typeof(CallTargetInvoker).GetMethod(nameof(CallTargetInvoker.UnWrapReturnValue), BindingFlags.NonPublic | BindingFlags.Static);
 
         /// <summary>
         /// Call target static begin method helper
@@ -104,7 +102,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
                     if (rType.IsEnum)
                     {
                         ilWriter.Emit(OpCodes.Ldtoken, rType);
-                        ilWriter.EmitCall(OpCodes.Call, GetTypeFromHandleMethodInfo, null);
+                        ilWriter.EmitCall(OpCodes.Call, DuckTyping.Util.GetTypeFromHandleMethodInfo, null);
                         callEnum = true;
                     }
 
@@ -114,12 +112,12 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
 
                     if (callEnum)
                     {
-                        ilWriter.EmitCall(OpCodes.Call, EnumToObjectMethodInfo, null);
+                        ilWriter.EmitCall(OpCodes.Call, DuckTyping.Util.EnumToObjectMethodInfo, null);
                     }
                     else
                     {
                         ilWriter.Emit(OpCodes.Ldtoken, rType);
-                        ilWriter.EmitCall(OpCodes.Call, GetTypeFromHandleMethodInfo, null);
+                        ilWriter.EmitCall(OpCodes.Call, DuckTyping.Util.GetTypeFromHandleMethodInfo, null);
                         ilWriter.EmitCall(OpCodes.Call, ConvertTypeMethodInfo, null);
                     }
 
@@ -180,19 +178,19 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
                 if (rType.IsEnum)
                 {
                     ilWriter.Emit(OpCodes.Ldtoken, rType);
-                    ilWriter.EmitCall(OpCodes.Call, GetTypeFromHandleMethodInfo, null);
+                    ilWriter.EmitCall(OpCodes.Call, DuckTyping.Util.GetTypeFromHandleMethodInfo, null);
                     callEnum = true;
                 }
 
                 ILHelpers.WriteLoadArgument(0, ilWriter, true);
                 if (callEnum)
                 {
-                    ilWriter.EmitCall(OpCodes.Call, EnumToObjectMethodInfo, null);
+                    ilWriter.EmitCall(OpCodes.Call, DuckTyping.Util.EnumToObjectMethodInfo, null);
                 }
                 else
                 {
                     ilWriter.Emit(OpCodes.Ldtoken, rType);
-                    ilWriter.EmitCall(OpCodes.Call, GetTypeFromHandleMethodInfo, null);
+                    ilWriter.EmitCall(OpCodes.Call, DuckTyping.Util.GetTypeFromHandleMethodInfo, null);
                     ilWriter.EmitCall(OpCodes.Call, ConvertTypeMethodInfo, null);
                 }
 
@@ -296,7 +294,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
                     returnValue = returnValue = AsyncTool.AddContinuation(
                         returnValue,
                         exception,
-                        new DuckTyping.ValueTuple<MethodEndDelegate, CallTargetState>(_onMethodEndAsyncDelegate, state),
+                        new VTuple<MethodEndDelegate, CallTargetState>(_onMethodEndAsyncDelegate, state),
                         (rValue, ex, tuple) =>
                         {
                             try

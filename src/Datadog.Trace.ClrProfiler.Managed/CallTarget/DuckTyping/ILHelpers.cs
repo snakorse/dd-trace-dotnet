@@ -10,9 +10,6 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
     /// </summary>
     internal static class ILHelpers
     {
-        private static readonly MethodInfo GetTypeFromHandleMethodInfo = typeof(Type).GetMethod("GetTypeFromHandle");
-        private static readonly MethodInfo ConvertTypeMethodInfo = typeof(Util).GetMethod("ConvertType");
-
         /// <summary>
         /// Conversion OpCodes
         /// </summary>
@@ -203,8 +200,8 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                 if (expectedType.IsValueType)
                 {
                     il.Emit(OpCodes.Ldtoken, expectedUnderlyingType);
-                    il.EmitCall(OpCodes.Call, GetTypeFromHandleMethodInfo, null);
-                    il.EmitCall(OpCodes.Call, ConvertTypeMethodInfo, null);
+                    il.EmitCall(OpCodes.Call, Util.GetTypeFromHandleMethodInfo, null);
+                    il.EmitCall(OpCodes.Call, Util.ConvertTypeMethodInfo, null);
                     il.Emit(OpCodes.Unbox_Any, expectedType);
                 }
                 else
