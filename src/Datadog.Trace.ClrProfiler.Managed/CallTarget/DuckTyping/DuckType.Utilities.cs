@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 
 namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 {
@@ -38,7 +39,8 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <param name="duckType">Duck type</param>
         /// <param name="value">Property value</param>
         /// <returns>DuckType instance</returns>
-        protected static IDuckType GetInnerDuckType(ref DuckType field, Type duckType, object value)
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static IDuckType GetInnerDuckType(ref IDuckType field, Type duckType, object value)
         {
             if (value is null)
             {
@@ -49,7 +51,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             var valueType = value.GetType();
             if (field is null || field.Type != valueType)
             {
-                field = (DuckType)Activator.CreateInstance(GetOrCreateProxyType(duckType, valueType));
+                field = (IDuckType)Activator.CreateInstance(GetOrCreateProxyType(duckType, valueType));
             }
 
             field.SetInstance(value);
@@ -62,7 +64,8 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <param name="field">Field reference</param>
         /// <param name="value">DuckType instance</param>
         /// <returns>Property value</returns>
-        protected static object SetInnerDuckType(ref DuckType field, DuckType value)
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static object SetInnerDuckType(ref IDuckType field, DuckType value)
         {
             field = value;
             return field?.Instance;

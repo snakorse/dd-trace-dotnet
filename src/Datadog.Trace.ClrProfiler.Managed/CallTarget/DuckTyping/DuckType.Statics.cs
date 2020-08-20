@@ -28,9 +28,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static readonly MethodInfo DuckTypeCreateMethodInfo = typeof(DuckType).GetMethod(nameof(DuckType.Create), BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Type), typeof(object) }, null);
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private static readonly MethodInfo GetInnerDuckTypeMethodInfo = typeof(DuckType).GetMethod(nameof(GetInnerDuckType), BindingFlags.Static | BindingFlags.NonPublic);
+        private static readonly MethodInfo GetInnerDuckTypeMethodInfo = typeof(DuckType).GetMethod(nameof(GetInnerDuckType), BindingFlags.Static | BindingFlags.Public);
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private static readonly MethodInfo SetInnerDuckTypeMethodInfo = typeof(DuckType).GetMethod(nameof(SetInnerDuckType), BindingFlags.Static | BindingFlags.NonPublic);
+        private static readonly MethodInfo SetInnerDuckTypeMethodInfo = typeof(DuckType).GetMethod(nameof(SetInnerDuckType), BindingFlags.Static | BindingFlags.Public);
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static ModuleBuilder _moduleBuilder = null;
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]

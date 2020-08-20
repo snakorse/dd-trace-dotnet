@@ -250,7 +250,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
 
         private static object UnWrapReturnValue(object returnValue)
         {
-            if (returnValue is DuckType dType)
+            if (returnValue is IDuckType dType)
             {
                 return dType.Instance;
             }

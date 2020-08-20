@@ -1509,9 +1509,6 @@ HRESULT CorProfiler::ProcessCallTargetModification(
             Warn("Error creating begin method spec");
             return S_OK;
           }
-          Info("MethodSpec signature: ",
-               HexStr(signature, signatureSize));
-          Info("MethodSpec ", beginMemberRefSpec);
         }
 
         // Call the BeginMethod and store the result to the local
@@ -1613,8 +1610,6 @@ HRESULT CorProfiler::ProcessCallTargetModification(
             Warn("Error creating end method spec");
             return S_OK;
           }
-          Info("MethodSpec signature: ", HexStr(signature, signatureSize));
-          Info("MethodSpec ", endMemberRefSpec);
         }
         
         // Call the EndMethod and store the result to the local

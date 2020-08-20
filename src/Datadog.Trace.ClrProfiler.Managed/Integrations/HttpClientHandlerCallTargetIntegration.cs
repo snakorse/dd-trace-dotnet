@@ -47,7 +47,7 @@ namespace Datadog.Trace.ClrProfiler.Integrations
                     scope.Span.SetTag("http-client-handler-type", caller.Type.FullName);
 
                     // add distributed tracing headers to the HTTP request
-                    SpanContextPropagator.Instance.Inject(scope.Span.Context, new ReflectionHttpHeadersCollection(requestMessage.Headers.Instance));
+                    SpanContextPropagator.Instance.Inject(scope.Span.Context, new ReflectionHttpHeadersCollection(((IDuckType)requestMessage.Headers).Instance));
                 }
             }
 
@@ -95,7 +95,7 @@ namespace Datadog.Trace.ClrProfiler.Integrations
             return true;
         }
 
-        public class HttpRequestMessage : DuckType
+        public class HttpRequestMessage
         {
             public virtual HttpMethod Method { get; }
 
@@ -106,12 +106,12 @@ namespace Datadog.Trace.ClrProfiler.Integrations
             public virtual RequestHeaders Headers { get; }
         }
 
-        public class HttpMethod : DuckType
+        public class HttpMethod
         {
             public virtual string Method { get; }
         }
 
-        public class Version : DuckType
+        public class Version
         {
             public virtual int Major { get; }
 
@@ -120,14 +120,14 @@ namespace Datadog.Trace.ClrProfiler.Integrations
             public virtual int Build { get; }
         }
 
-        public class RequestHeaders : DuckType
+        public class RequestHeaders
         {
             public virtual bool Contains(string name) => true;
 
             public virtual IEnumerable<string> GetValues(string name) => Enumerable.Empty<string>();
         }
 
-        public class HttpResponseMessage : DuckType
+        public class HttpResponseMessage
         {
             public int StatusCode { get; }
         }
