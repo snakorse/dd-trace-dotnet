@@ -12,8 +12,8 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// </summary>
         /// <param name="source">Source type</param>
         /// <typeparam name="T">Base type</typeparam>
-        /// <returns>IDuckTypeFactory instance</returns>
-        public static IDuckTypeFactory<T> GetDuckTypeFactory<T>(this Type source)
+        /// <returns>DuckTypeFactory instance</returns>
+        public static DuckTypeFactory<T> GetDuckTypeFactory<T>(this Type source)
             where T : class
             => DuckType.GetFactoryFor<T>(source);
 
@@ -22,8 +22,8 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// </summary>
         /// <param name="source">Source type</param>
         /// <param name="baseType">Base type</param>
-        /// <returns>IDuckTypeFactory instance</returns>
-        public static IDuckTypeFactory GetDuckTypeFactory(this Type source, Type baseType)
+        /// <returns>DuckTypeFactory instance</returns>
+        public static DuckTypeFactory GetDuckTypeFactory(this Type source, Type baseType)
             => DuckType.GetFactoryFor(baseType, source);
 
         /// <summary>

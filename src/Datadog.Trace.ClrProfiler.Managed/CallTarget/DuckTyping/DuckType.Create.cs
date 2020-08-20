@@ -37,16 +37,5 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             objInstance.SetInstance(instance);
             return objInstance;
         }
-
-        /// <summary>
-        /// Create a duck type proxy using a base type
-        /// </summary>
-        /// <param name="duckType">Duck type</param>
-        /// <param name="instanceType">Instance type</param>
-        /// <returns>Duck Type proxy</returns>
-        public static IDuckType Create(Type duckType, Type instanceType)
-        {
-            return (IDuckType)Activator.CreateInstance(GetOrCreateProxyType(duckType, instanceType));
-        }
     }
 }

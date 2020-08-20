@@ -113,7 +113,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             }
 
             string proxyTypeName = $"{duckType.FullName}->{instanceType.FullName}";
-            Log.Information("Creating duck type proxy: " + proxyTypeName);
+            Log.Information("Creating type proxy: " + proxyTypeName);
 
             // Create Type
             TypeBuilder typeBuilder = _moduleBuilder.DefineType(
