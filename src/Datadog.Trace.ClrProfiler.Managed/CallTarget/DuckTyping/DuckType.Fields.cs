@@ -87,7 +87,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                 // Create dynamic method
                 returnType = field.FieldType.IsPublic || field.FieldType.IsNestedPublic ? field.FieldType : typeof(object);
                 var dynParameters = new[] { typeof(object) };
-                dynMethod = new DynamicMethod($"_getNonPublicField+{field.DeclaringType.Name}.{field.Name}", returnType, dynParameters, typeof(EmitAccessors).Module);
+                dynMethod = new DynamicMethod($"_getNonPublicField+{field.DeclaringType.Name}.{field.Name}", returnType, dynParameters, typeof(EmitAccessors).Module, true);
                 EmitAccessors.CreateGetAccessor(dynMethod.GetILGenerator(), field, typeof(object), returnType);
                 DynamicMethods.Add(dynMethod);
 
@@ -216,7 +216,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 
                 // Create dynamic method
                 var dynParameters = new[] { typeof(object), dynValueType };
-                var dynMethod = new DynamicMethod($"_setField+{field.DeclaringType.Name}.{field.Name}", typeof(void), dynParameters, typeof(EmitAccessors).Module);
+                var dynMethod = new DynamicMethod($"_setField+{field.DeclaringType.Name}.{field.Name}", typeof(void), dynParameters, typeof(EmitAccessors).Module, true);
                 EmitAccessors.CreateSetAccessor(dynMethod.GetILGenerator(), field, dynParameters[0], dynParameters[1]);
                 DynamicMethods.Add(dynMethod);
 

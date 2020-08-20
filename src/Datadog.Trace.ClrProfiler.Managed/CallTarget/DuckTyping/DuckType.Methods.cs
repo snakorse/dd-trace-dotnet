@@ -198,7 +198,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                     }
 
                     var dynParameters = new[] { typeof(object), typeof(object[]) };
-                    var dynMethod = new DynamicMethod("callDyn_" + method.Name, typeof(object), dynParameters, typeof(EmitAccessors).Module);
+                    var dynMethod = new DynamicMethod("callDyn_" + method.Name, typeof(object), dynParameters, typeof(EmitAccessors).Module, true);
                     EmitAccessors.CreateMethodAccessor(dynMethod.GetILGenerator(), method, false);
                     var handle = GetRuntimeHandle(dynMethod);
 

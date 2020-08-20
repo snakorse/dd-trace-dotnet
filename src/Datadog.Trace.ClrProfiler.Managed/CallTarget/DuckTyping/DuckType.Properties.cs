@@ -145,7 +145,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                     dynReturnType = prop.PropertyType;
                 }
 
-                var dynMethod = new DynamicMethod("getDyn_" + prop.Name, dynReturnType, dynParameters, typeof(EmitAccessors).Module);
+                var dynMethod = new DynamicMethod("getDyn_" + prop.Name, dynReturnType, dynParameters, typeof(EmitAccessors).Module, true);
                 EmitAccessors.CreateGetAccessor(dynMethod.GetILGenerator(), prop, typeof(object), dynReturnType);
                 var handle = GetRuntimeHandle(dynMethod);
 
@@ -273,7 +273,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                 }
 
                 var dynParameters = new[] { typeof(object), dynValueType };
-                var dynMethod = new DynamicMethod("setDyn_" + prop.Name, typeof(void), dynParameters, typeof(EmitAccessors).Module);
+                var dynMethod = new DynamicMethod("setDyn_" + prop.Name, typeof(void), dynParameters, typeof(EmitAccessors).Module, true);
                 EmitAccessors.CreateSetAccessor(dynMethod.GetILGenerator(), prop, dynParameters[0], dynParameters[1]);
                 var handle = GetRuntimeHandle(dynMethod);
 
