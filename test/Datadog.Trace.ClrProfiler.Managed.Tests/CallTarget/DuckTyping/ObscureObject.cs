@@ -14,11 +14,15 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
 {
     public class ObscureObject
     {
-        public static object GetFieldPublicObject() => new FieldPublicObject();
+        private static FieldPublicObject fieldPublicObject = new FieldPublicObject();
+        private static FieldInternalObject fieldInternalObject = new FieldInternalObject();
+        private static FieldPrivateObject fieldPrivateObject = new FieldPrivateObject();
 
-        public static object GetFieldInternalObject() => new FieldInternalObject();
+        public static object GetFieldPublicObject() => fieldPublicObject;
 
-        public static object GetFieldPrivateObject() => new FieldPrivateObject();
+        public static object GetFieldInternalObject() => fieldInternalObject;
+
+        public static object GetFieldPrivateObject() => fieldPrivateObject;
 
         public class FieldPublicObject
         {
@@ -66,25 +70,25 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
 
             // ***
 
-            public static readonly FieldPublicObject _publicStaticReadonlySelfTypeField = null;
-            internal static readonly FieldPublicObject _internalStaticReadonlySelfTypeField = null;
-            protected static readonly FieldPublicObject _protectedStaticReadonlySelfTypeField = null;
-            private static readonly FieldPublicObject _privateStaticReadonlySelfTypeField = null;
+            public static readonly FieldPublicObject _publicStaticReadonlySelfTypeField = fieldPublicObject;
+            internal static readonly FieldPublicObject _internalStaticReadonlySelfTypeField = fieldPublicObject;
+            protected static readonly FieldPublicObject _protectedStaticReadonlySelfTypeField = fieldPublicObject;
+            private static readonly FieldPublicObject _privateStaticReadonlySelfTypeField = fieldPublicObject;
 
-            public static FieldPublicObject _publicStaticSelfTypeField = null;
-            internal static FieldPublicObject _internalStaticSelfTypeField = null;
-            protected static FieldPublicObject _protectedStaticSelfTypeField = null;
-            private static FieldPublicObject _privateStaticSelfTypeField = null;
+            public static FieldPublicObject _publicStaticSelfTypeField = fieldPublicObject;
+            internal static FieldPublicObject _internalStaticSelfTypeField = fieldPublicObject;
+            protected static FieldPublicObject _protectedStaticSelfTypeField = fieldPublicObject;
+            private static FieldPublicObject _privateStaticSelfTypeField = fieldPublicObject;
 
-            public readonly FieldPublicObject _publicReadonlySelfTypeField = null;
-            internal readonly FieldPublicObject _internalReadonlySelfTypeField = null;
-            protected readonly FieldPublicObject _protectedReadonlySelfTypeField = null;
-            private readonly FieldPublicObject _privateReadonlySelfTypeField = null;
+            public readonly FieldPublicObject _publicReadonlySelfTypeField = fieldPublicObject;
+            internal readonly FieldPublicObject _internalReadonlySelfTypeField = fieldPublicObject;
+            protected readonly FieldPublicObject _protectedReadonlySelfTypeField = fieldPublicObject;
+            private readonly FieldPublicObject _privateReadonlySelfTypeField = fieldPublicObject;
 
-            public FieldPublicObject _publicSelfTypeField = null;
-            internal FieldPublicObject _internalSelfTypeField = null;
-            protected FieldPublicObject _protectedSelfTypeField = null;
-            private FieldPublicObject _privateSelfTypeField = null;
+            public FieldPublicObject _publicSelfTypeField = fieldPublicObject;
+            internal FieldPublicObject _internalSelfTypeField = fieldPublicObject;
+            protected FieldPublicObject _protectedSelfTypeField = fieldPublicObject;
+            private FieldPublicObject _privateSelfTypeField = fieldPublicObject;
         }
 
         internal class FieldInternalObject
@@ -133,25 +137,25 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
 
             // ***
 
-            public static readonly FieldPublicObject _publicStaticReadonlySelfTypeField = null;
-            internal static readonly FieldPublicObject _internalStaticReadonlySelfTypeField = null;
-            protected static readonly FieldPublicObject _protectedStaticReadonlySelfTypeField = null;
-            private static readonly FieldPublicObject _privateStaticReadonlySelfTypeField = null;
+            public static readonly FieldInternalObject _publicStaticReadonlySelfTypeField = fieldInternalObject;
+            internal static readonly FieldInternalObject _internalStaticReadonlySelfTypeField = fieldInternalObject;
+            protected static readonly FieldInternalObject _protectedStaticReadonlySelfTypeField = fieldInternalObject;
+            private static readonly FieldInternalObject _privateStaticReadonlySelfTypeField = fieldInternalObject;
 
-            public static FieldPublicObject _publicStaticSelfTypeField = null;
-            internal static FieldPublicObject _internalStaticSelfTypeField = null;
-            protected static FieldPublicObject _protectedStaticSelfTypeField = null;
-            private static FieldPublicObject _privateStaticSelfTypeField = null;
+            public static FieldInternalObject _publicStaticSelfTypeField = fieldInternalObject;
+            internal static FieldInternalObject _internalStaticSelfTypeField = fieldInternalObject;
+            protected static FieldInternalObject _protectedStaticSelfTypeField = fieldInternalObject;
+            private static FieldInternalObject _privateStaticSelfTypeField = fieldInternalObject;
 
-            public readonly FieldPublicObject _publicReadonlySelfTypeField = null;
-            internal readonly FieldPublicObject _internalReadonlySelfTypeField = null;
-            protected readonly FieldPublicObject _protectedReadonlySelfTypeField = null;
-            private readonly FieldPublicObject _privateReadonlySelfTypeField = null;
+            public readonly FieldInternalObject _publicReadonlySelfTypeField = fieldInternalObject;
+            internal readonly FieldInternalObject _internalReadonlySelfTypeField = fieldInternalObject;
+            protected readonly FieldInternalObject _protectedReadonlySelfTypeField = fieldInternalObject;
+            private readonly FieldInternalObject _privateReadonlySelfTypeField = fieldInternalObject;
 
-            public FieldPublicObject _publicSelfTypeField = null;
-            internal FieldPublicObject _internalSelfTypeField = null;
-            protected FieldPublicObject _protectedSelfTypeField = null;
-            private FieldPublicObject _privateSelfTypeField = null;
+            public FieldInternalObject _publicSelfTypeField = fieldInternalObject;
+            internal FieldInternalObject _internalSelfTypeField = fieldInternalObject;
+            protected FieldInternalObject _protectedSelfTypeField = fieldInternalObject;
+            private FieldInternalObject _privateSelfTypeField = fieldInternalObject;
         }
 
         private class FieldPrivateObject
@@ -200,25 +204,25 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
 
             // ***
 
-            public static readonly FieldPublicObject _publicStaticReadonlySelfTypeField = null;
-            internal static readonly FieldPublicObject _internalStaticReadonlySelfTypeField = null;
-            protected static readonly FieldPublicObject _protectedStaticReadonlySelfTypeField = null;
-            private static readonly FieldPublicObject _privateStaticReadonlySelfTypeField = null;
+            public static readonly FieldPrivateObject _publicStaticReadonlySelfTypeField = fieldPrivateObject;
+            internal static readonly FieldPrivateObject _internalStaticReadonlySelfTypeField = fieldPrivateObject;
+            protected static readonly FieldPrivateObject _protectedStaticReadonlySelfTypeField = fieldPrivateObject;
+            private static readonly FieldPrivateObject _privateStaticReadonlySelfTypeField = fieldPrivateObject;
 
-            public static FieldPublicObject _publicStaticSelfTypeField = null;
-            internal static FieldPublicObject _internalStaticSelfTypeField = null;
-            protected static FieldPublicObject _protectedStaticSelfTypeField = null;
-            private static FieldPublicObject _privateStaticSelfTypeField = null;
+            public static FieldPrivateObject _publicStaticSelfTypeField = fieldPrivateObject;
+            internal static FieldPrivateObject _internalStaticSelfTypeField = fieldPrivateObject;
+            protected static FieldPrivateObject _protectedStaticSelfTypeField = fieldPrivateObject;
+            private static FieldPrivateObject _privateStaticSelfTypeField = fieldPrivateObject;
 
-            public readonly FieldPublicObject _publicReadonlySelfTypeField = null;
-            internal readonly FieldPublicObject _internalReadonlySelfTypeField = null;
-            protected readonly FieldPublicObject _protectedReadonlySelfTypeField = null;
-            private readonly FieldPublicObject _privateReadonlySelfTypeField = null;
+            public readonly FieldPrivateObject _publicReadonlySelfTypeField = fieldPrivateObject;
+            internal readonly FieldPrivateObject _internalReadonlySelfTypeField = fieldPrivateObject;
+            protected readonly FieldPrivateObject _protectedReadonlySelfTypeField = fieldPrivateObject;
+            private readonly FieldPrivateObject _privateReadonlySelfTypeField = fieldPrivateObject;
 
-            public FieldPublicObject _publicSelfTypeField = null;
-            internal FieldPublicObject _internalSelfTypeField = null;
-            protected FieldPublicObject _protectedSelfTypeField = null;
-            private FieldPublicObject _privateSelfTypeField = null;
+            public FieldPrivateObject _publicSelfTypeField = fieldPrivateObject;
+            internal FieldPrivateObject _internalSelfTypeField = fieldPrivateObject;
+            protected FieldPrivateObject _protectedSelfTypeField = fieldPrivateObject;
+            private FieldPrivateObject _privateSelfTypeField = fieldPrivateObject;
         }
     }
 }
