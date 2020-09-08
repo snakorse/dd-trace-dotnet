@@ -11,19 +11,19 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
     {
         private static MethodBuilder GetFieldGetMethod(Type instanceType, TypeBuilder typeBuilder, PropertyInfo duckTypeProperty, FieldInfo field, FieldInfo instanceField)
         {
-            var method = typeBuilder.DefineMethod(
+            MethodBuilder method = typeBuilder.DefineMethod(
                 "get_" + duckTypeProperty.Name,
                 MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.Virtual,
                 duckTypeProperty.PropertyType,
                 Type.EmptyTypes);
 
-            var il = method.GetILGenerator();
-            var isPublicInstance = instanceType.IsPublic || instanceType.IsNestedPublic;
-            var returnType = field.FieldType;
+            ILGenerator il = method.GetILGenerator();
+            bool isPublicInstance = instanceType.IsPublic || instanceType.IsNestedPublic;
+            Type returnType = field.FieldType;
 
             // Validate property return value
-            var duckChaining = false;
-            var duckTypePropertyType = duckTypeProperty.PropertyType;
+            bool duckChaining = false;
+            Type duckTypePropertyType = duckTypeProperty.PropertyType;
             if (duckTypePropertyType.IsGenericType)
             {
                 duckTypePropertyType = duckTypePropertyType.GetGenericTypeDefinition();
@@ -35,14 +35,14 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                 // Create and load the duck type field reference to the stack
                 if (field.IsStatic)
                 {
-                    var innerDuckField = DynamicFields.GetOrAdd(
+                    FieldInfo innerDuckField = DynamicFields.GetOrAdd(
                         new VTuple<string, TypeBuilder>("_duckStatic_" + duckTypeProperty.Name, typeBuilder),
                         tuple => tuple.Item2.DefineField(tuple.Item1, typeof(DuckType), FieldAttributes.Private | FieldAttributes.Static));
                     il.Emit(OpCodes.Ldsflda, innerDuckField);
                 }
                 else
                 {
-                    var innerDuckField = DynamicFields.GetOrAdd(
+                    FieldInfo innerDuckField = DynamicFields.GetOrAdd(
                         new VTuple<string, TypeBuilder>("_duck_" + duckTypeProperty.Name, typeBuilder),
                         tuple => tuple.Item2.DefineField(tuple.Item1, typeof(DuckType), FieldAttributes.Private));
                     il.Emit(OpCodes.Ldarg_0);
@@ -72,26 +72,38 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             else
             {
                 // If the instance or the field are non public we need to create a Dynamic method to overpass the visibility checks
+                // we can't access non public types so we have to cast to object type (in the instance object and the return type).
 
-                DynamicMethod dynMethod = null;
-
-                if (field.IsStatic)
-                {
-                    il.Emit(OpCodes.Ldnull);
-                }
-                else
-                {
-                    ILHelpers.LoadInstance(il, instanceField, instanceType);
-                }
-
-                // Create dynamic method
+                string dynMethodName = $"_getNonPublicField+{field.DeclaringType.Name}.{field.Name}";
                 returnType = field.FieldType.IsPublic || field.FieldType.IsNestedPublic ? field.FieldType : typeof(object);
-                var dynParameters = new[] { typeof(object) };
-                dynMethod = new DynamicMethod($"_getNonPublicField+{field.DeclaringType.Name}.{field.Name}", returnType, dynParameters, typeof(EmitAccessors).Module, true);
-                EmitAccessors.CreateGetAccessor(dynMethod.GetILGenerator(), field, typeof(object), returnType);
+
+                // We create the dynamic method
+                Type[] dynParameters = field.IsStatic ? Type.EmptyTypes : TypeObjectArray;
+                DynamicMethod dynMethod = new DynamicMethod(dynMethodName, returnType, dynParameters, typeof(DuckType).Module, true);
+
+                // We store the dynamic method in a bag to avoid getting collected by the GC.
                 DynamicMethods.Add(dynMethod);
 
-                // Emit the Call to the dynamic method
+                ILGenerator dynIL = dynMethod.GetILGenerator();
+
+                if (!field.IsStatic)
+                {
+                    ILHelpers.LoadInstance(il, instanceField, instanceType);
+
+                    // Emit the instance load
+                    dynIL.Emit(OpCodes.Ldarg_0);
+                    if (field.DeclaringType != typeof(object))
+                    {
+                        dynIL.Emit(field.DeclaringType!.IsValueType ? OpCodes.Unbox : OpCodes.Castclass, field.DeclaringType);
+                    }
+                }
+
+                // Emit the field and convert before returning (in case of boxing)
+                dynIL.Emit(field.IsStatic ? OpCodes.Ldsfld : OpCodes.Ldfld, field);
+                ILHelpers.TypeConversion(dynIL, field.FieldType, returnType);
+                dynIL.Emit(OpCodes.Ret);
+
+                // Emit the Call to the dynamic method pointer [Calli]
                 il.Emit(OpCodes.Ldc_I8, (long)GetRuntimeHandle(dynMethod).GetFunctionPointer());
                 il.Emit(OpCodes.Conv_I);
                 il.EmitCalli(OpCodes.Calli, dynMethod.CallingConvention, returnType, dynParameters, null);
@@ -117,14 +129,14 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 
         private static MethodBuilder GetFieldSetMethod(Type instanceType, TypeBuilder typeBuilder, PropertyInfo duckTypeProperty, FieldInfo field, FieldInfo instanceField)
         {
-            var method = typeBuilder.DefineMethod(
+            MethodBuilder method = typeBuilder.DefineMethod(
                 "set_" + duckTypeProperty.Name,
                 MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.Virtual,
                 typeof(void),
                 new[] { duckTypeProperty.PropertyType });
 
-            var il = method.GetILGenerator();
-            var isPublicInstance = instanceType.IsPublic || instanceType.IsNestedPublic;
+            ILGenerator il = method.GetILGenerator();
+            bool isPublicInstance = instanceType.IsPublic || instanceType.IsNestedPublic;
 
             // Check if the field is marked as InitOnly (readonly) and throw an exception in that case
             if ((field.Attributes & FieldAttributes.InitOnly) != 0)
@@ -155,7 +167,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             }
 
             // Check if a duck type object
-            var duckTypePropertyType = duckTypeProperty.PropertyType;
+            Type duckTypePropertyType = duckTypeProperty.PropertyType;
             if (duckTypePropertyType.IsGenericType)
             {
                 duckTypePropertyType = duckTypePropertyType.GetGenericTypeDefinition();
@@ -167,14 +179,14 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                 // Create and load the duck type field reference to the stack
                 if (field.IsStatic)
                 {
-                    var innerDuckField = DynamicFields.GetOrAdd(
+                    FieldInfo innerDuckField = DynamicFields.GetOrAdd(
                         new VTuple<string, TypeBuilder>("_duckStatic_" + duckTypeProperty.Name, typeBuilder),
                         tuple => tuple.Item2.DefineField(tuple.Item1, typeof(DuckType), FieldAttributes.Private | FieldAttributes.Static));
                     il.Emit(OpCodes.Ldsflda, innerDuckField);
                 }
                 else
                 {
-                    var innerDuckField = DynamicFields.GetOrAdd(
+                    FieldInfo innerDuckField = DynamicFields.GetOrAdd(
                         new VTuple<string, TypeBuilder>("_duck_" + duckTypeProperty.Name, typeBuilder),
                         tuple => tuple.Item2.DefineField(tuple.Item1, typeof(DuckType), FieldAttributes.Private));
                     il.Emit(OpCodes.Ldarg_0);
@@ -199,8 +211,8 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             if (isPublicInstance && field.IsPublic)
             {
                 // If the instance and the field are public then is easy to set.
-                var fieldRootType = Util.GetRootType(field.FieldType);
-                var dPropRootType = Util.GetRootType(duckTypeProperty.PropertyType);
+                Type fieldRootType = Util.GetRootType(field.FieldType);
+                Type dPropRootType = Util.GetRootType(duckTypeProperty.PropertyType);
                 ILHelpers.TypeConversion(il, dPropRootType, fieldRootType);
 
                 il.Emit(field.IsStatic ? OpCodes.Stsfld : OpCodes.Stfld, field);
@@ -210,13 +222,13 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                 // If the instance or the field are non public we need to create a Dynamic method to overpass the visibility checks
 
                 // Convert the field type for the dynamic method
-                var dynValueType = field.FieldType.IsPublic || field.FieldType.IsNestedPublic ? field.FieldType : typeof(object);
-                var dPropRootType = Util.GetRootType(duckTypeProperty.PropertyType);
+                Type dynValueType = field.FieldType.IsPublic || field.FieldType.IsNestedPublic ? field.FieldType : typeof(object);
+                Type dPropRootType = Util.GetRootType(duckTypeProperty.PropertyType);
                 ILHelpers.TypeConversion(il, dPropRootType, dynValueType);
 
                 // Create dynamic method
-                var dynParameters = new[] { typeof(object), dynValueType };
-                var dynMethod = new DynamicMethod($"_setField+{field.DeclaringType.Name}.{field.Name}", typeof(void), dynParameters, typeof(EmitAccessors).Module, true);
+                Type[] dynParameters = new[] { typeof(object), dynValueType };
+                DynamicMethod dynMethod = new DynamicMethod($"_setField+{field.DeclaringType.Name}.{field.Name}", typeof(void), dynParameters, typeof(EmitAccessors).Module, true);
                 EmitAccessors.CreateSetAccessor(dynMethod.GetILGenerator(), field, dynParameters[0], dynParameters[1]);
                 DynamicMethods.Add(dynMethod);
 
