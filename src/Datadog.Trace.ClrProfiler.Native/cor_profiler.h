@@ -76,17 +76,13 @@ class CorProfiler : public CorProfilerBase {
                                          const mdToken function_token,
                                          const FunctionInfo& caller,
                                          const std::vector<MethodReplacement> method_replacements);
-  bool ProfilerAssemblyIsLoadedIntoAppDomain(AppDomainID app_domain_id);
-  std::string GetILCodes(std::string title, ILRewriter* rewriter,
-                         const FunctionInfo& caller);
   HRESULT ModifyLocalSig(ModuleMetadata* module_metadata, ILRewriter& reWriter,
                          FunctionMethodArgument* methodReturnValue,
                          mdTypeRef exTypeRef, mdTypeRef methodTraceTypeRef);
+  HRESULT EnsureCallTargetRefs(ModuleMetadata* module_metadata);
+  bool ProfilerAssemblyIsLoadedIntoAppDomain(AppDomainID app_domain_id);
   std::string GetILCodes(std::string title, ILRewriter* rewriter,
                          const FunctionInfo& caller);
-
-  HRESULT EnsureCallTargetRefs(ModuleMetadata* module_metadata);
-
   //
   // Startup methods
   //

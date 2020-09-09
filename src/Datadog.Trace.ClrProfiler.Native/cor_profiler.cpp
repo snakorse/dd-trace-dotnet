@@ -1798,45 +1798,6 @@ bool CorProfiler::GetWrapperMethodRef(
   return true;
 }
 
-bool CorProfiler::ProfilerAssemblyIsLoadedIntoAppDomain(AppDomainID app_domain_id) {
-  return managed_profiler_loaded_domain_neutral ||
-         managed_profiler_loaded_app_domains.find(app_domain_id) !=
-             managed_profiler_loaded_app_domains.end();
-}
-
-std::string CorProfiler::GetILCodes(std::string title, ILRewriter* rewriter,
-                                    const FunctionInfo& caller) {
-  std::stringstream orig_sstream;
-  orig_sstream << title;
-  orig_sstream << ToString(caller.type.name);
-  orig_sstream << ".";
-  orig_sstream << ToString(caller.name.c_str());
-  orig_sstream << " => (max_stack: ";
-  orig_sstream << rewriter->GetMaxStackValue();
-  orig_sstream << ")" << std::endl;
-  for (ILInstr* cInstr = rewriter->GetILList()->m_pNext;
-       cInstr != rewriter->GetILList(); cInstr = cInstr->m_pNext) {
-    orig_sstream << cInstr;
-    orig_sstream << ": ";
-    if (cInstr->m_opcode < opcodes_names.size()) {
-      orig_sstream << std::setw(10) << opcodes_names[cInstr->m_opcode];
-    } else {
-      orig_sstream << "0x";
-      orig_sstream << std::setfill('0') << std::setw(2) << std::hex
-                   << cInstr->m_opcode;
-    }
-    if (cInstr->m_pTarget != NULL) {
-      orig_sstream << " ";
-      orig_sstream << cInstr->m_pTarget;
-    } else if (cInstr->m_Arg64 != 0) {
-      orig_sstream << " ";
-      orig_sstream << cInstr->m_Arg64;
-    }
-    orig_sstream << std::endl;
-  }
-  return orig_sstream.str();
-}
-
 // Modify the local signature of a method to add ret ex methodTrace var to locals
 HRESULT CorProfiler::ModifyLocalSig(ModuleMetadata* module_metadata,
                                     ILRewriter& reWriter, 
@@ -1938,28 +1899,6 @@ HRESULT CorProfiler::ModifyLocalSig(ModuleMetadata* module_metadata,
 
   return module_metadata->metadata_emit->GetTokenFromSig(
       rgbNewSig, newSignatureSize, &reWriter.m_tkLocalVarSig);
-}
-
-std::string CorProfiler::GetILCodes(std::string title, ILRewriter* rewriter,
-                                    const FunctionInfo& caller) {
-  std::stringstream orig_sstream;
-  orig_sstream << title;
-  orig_sstream << ToString(caller.type.name);
-  orig_sstream << ".";
-  orig_sstream << ToString(caller.name.c_str());
-  orig_sstream << " : ";
-  for (ILInstr* cInstr = rewriter->GetILList()->m_pNext;
-       cInstr != rewriter->GetILList(); cInstr = cInstr->m_pNext) {
-    orig_sstream << "0x";
-    orig_sstream << std::setw(2) << std::setfill('0') << std::hex
-                 << cInstr->m_opcode;
-    if (cInstr->m_Arg64 != 0) {
-      orig_sstream << "-";
-      orig_sstream << cInstr->m_Arg64;
-    }
-    orig_sstream << " ";
-  }
-  return orig_sstream.str();
 }
 
 HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
@@ -2290,6 +2229,46 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
   }
 
   return S_OK;
+}
+
+bool CorProfiler::ProfilerAssemblyIsLoadedIntoAppDomain(
+    AppDomainID app_domain_id) {
+  return managed_profiler_loaded_domain_neutral ||
+         managed_profiler_loaded_app_domains.find(app_domain_id) !=
+             managed_profiler_loaded_app_domains.end();
+}
+
+std::string CorProfiler::GetILCodes(std::string title, ILRewriter* rewriter,
+                                    const FunctionInfo& caller) {
+  std::stringstream orig_sstream;
+  orig_sstream << title;
+  orig_sstream << ToString(caller.type.name);
+  orig_sstream << ".";
+  orig_sstream << ToString(caller.name.c_str());
+  orig_sstream << " => (max_stack: ";
+  orig_sstream << rewriter->GetMaxStackValue();
+  orig_sstream << ")" << std::endl;
+  for (ILInstr* cInstr = rewriter->GetILList()->m_pNext;
+       cInstr != rewriter->GetILList(); cInstr = cInstr->m_pNext) {
+    orig_sstream << cInstr;
+    orig_sstream << ": ";
+    if (cInstr->m_opcode < opcodes_names.size()) {
+      orig_sstream << std::setw(10) << opcodes_names[cInstr->m_opcode];
+    } else {
+      orig_sstream << "0x";
+      orig_sstream << std::setfill('0') << std::setw(2) << std::hex
+                   << cInstr->m_opcode;
+    }
+    if (cInstr->m_pTarget != NULL) {
+      orig_sstream << " ";
+      orig_sstream << cInstr->m_pTarget;
+    } else if (cInstr->m_Arg64 != 0) {
+      orig_sstream << " ";
+      orig_sstream << cInstr->m_Arg64;
+    }
+    orig_sstream << std::endl;
+  }
+  return orig_sstream.str();
 }
 
 //
