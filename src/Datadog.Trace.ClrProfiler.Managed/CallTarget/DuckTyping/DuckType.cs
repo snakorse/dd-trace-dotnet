@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 
 namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 {
@@ -54,86 +56,93 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// </summary>
         public Version AssemblyVersion => _version ??= Type?.Assembly?.GetName().Version;
 
-        private static Type GetOrCreateProxyType(Type duckType, Type instanceType)
+        private static CreateTypeResult GetOrCreateProxyType(Type duckType, Type instanceType)
         {
             VTuple<Type, Type> key = new VTuple<Type, Type>(duckType, instanceType);
 
-            if (DuckTypeCache.TryGetValue(key, out Type proxyType))
+            if (DuckTypeCache.TryGetValue(key, out CreateTypeResult proxyTypeResult))
             {
-                return proxyType;
+                return proxyTypeResult;
             }
 
             lock (DuckTypeCache)
             {
-                if (!DuckTypeCache.TryGetValue(key, out proxyType))
+                if (!DuckTypeCache.TryGetValue(key, out proxyTypeResult))
                 {
-                    proxyType = CreateProxyType(duckType, instanceType);
-                    DuckTypeCache[key] = proxyType;
+                    proxyTypeResult = CreateProxyType(duckType, instanceType);
+                    DuckTypeCache[key] = proxyTypeResult;
                 }
 
-                return proxyType;
+                return proxyTypeResult;
             }
         }
 
-        private static Type CreateProxyType(Type duckType, Type instanceType)
+        private static CreateTypeResult CreateProxyType(Type duckType, Type instanceType)
         {
-            // Define parent type, interface types
-            Type parentType;
-            Type[] interfaceTypes;
-            if (duckType.IsInterface)
+            try
             {
-                parentType = typeof(DuckType);
-                interfaceTypes = new[] { duckType };
-            }
-            else
-            {
-                parentType = duckType;
-                interfaceTypes = Type.EmptyTypes;
-            }
-
-            // Gets the current instance field info
-            FieldInfo instanceField = parentType.GetField(nameof(_currentInstance), BindingFlags.Instance | BindingFlags.NonPublic);
-            if (instanceField is null)
-            {
-                interfaceTypes = DefaultInterfaceTypes;
-            }
-
-            // Ensures the module builder
-            if (_moduleBuilder is null)
-            {
-                lock (_locker)
+                // Define parent type, interface types
+                Type parentType;
+                Type[] interfaceTypes;
+                if (duckType.IsInterface)
                 {
-                    if (_moduleBuilder is null)
+                    parentType = typeof(DuckType);
+                    interfaceTypes = new[] { duckType };
+                }
+                else
+                {
+                    parentType = duckType;
+                    interfaceTypes = Type.EmptyTypes;
+                }
+
+                // Gets the current instance field info
+                FieldInfo instanceField = parentType.GetField(nameof(_currentInstance), BindingFlags.Instance | BindingFlags.NonPublic);
+                if (instanceField is null)
+                {
+                    interfaceTypes = DefaultInterfaceTypes;
+                }
+
+                // Ensures the module builder
+                if (_moduleBuilder is null)
+                {
+                    lock (_locker)
                     {
-                        AssemblyName aName = new AssemblyName("DuckTypeAssembly");
-                        AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(aName, AssemblyBuilderAccess.Run);
-                        _moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
+                        if (_moduleBuilder is null)
+                        {
+                            AssemblyName aName = new AssemblyName("DuckTypeAssembly");
+                            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(aName, AssemblyBuilderAccess.Run);
+                            _moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
+                        }
                     }
                 }
+
+                string proxyTypeName = $"{duckType.FullName}->{instanceType.FullName}";
+                Log.Information("Creating type proxy: " + proxyTypeName);
+
+                // Create Type
+                TypeBuilder typeBuilder = _moduleBuilder.DefineType(
+                    proxyTypeName,
+                    TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.AutoClass | TypeAttributes.AnsiClass | TypeAttributes.BeforeFieldInit | TypeAttributes.AutoLayout | TypeAttributes.Sealed,
+                    parentType,
+                    interfaceTypes);
+
+                // Define .ctor
+                typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+
+                // Create instance field if is null
+                instanceField ??= CreateInstanceField(typeBuilder);
+
+                // Create Members
+                CreateProperties(duckType, instanceType, instanceField, typeBuilder);
+                CreateMethods(duckType, instanceType, instanceField, typeBuilder);
+
+                // Create Type
+                return new CreateTypeResult(typeBuilder.CreateTypeInfo().AsType(), null);
             }
-
-            string proxyTypeName = $"{duckType.FullName}->{instanceType.FullName}";
-            Log.Information("Creating type proxy: " + proxyTypeName);
-
-            // Create Type
-            TypeBuilder typeBuilder = _moduleBuilder.DefineType(
-                proxyTypeName,
-                TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.AutoClass | TypeAttributes.AnsiClass | TypeAttributes.BeforeFieldInit | TypeAttributes.AutoLayout | TypeAttributes.Sealed,
-                parentType,
-                interfaceTypes);
-
-            // Define .ctor
-            typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
-
-            // Create instance field if is null
-            instanceField ??= CreateInstanceField(typeBuilder);
-
-            // Create Members
-            CreateProperties(duckType, instanceType, instanceField, typeBuilder);
-            CreateMethods(duckType, instanceType, instanceField, typeBuilder);
-
-            // Create Type
-            return typeBuilder.CreateTypeInfo().AsType();
+            catch (Exception ex)
+            {
+                return new CreateTypeResult(null, ExceptionDispatchInfo.Capture(ex));
+            }
         }
 
         private static FieldInfo CreateInstanceField(TypeBuilder typeBuilder)
@@ -413,6 +422,20 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         private void SetInstance(object instance)
         {
             _currentInstance = instance;
+        }
+
+        private readonly struct CreateTypeResult
+        {
+            public readonly Type Type;
+            public readonly ExceptionDispatchInfo ExceptionInfo;
+            public readonly bool Success;
+
+            public CreateTypeResult(Type type, ExceptionDispatchInfo exceptionInfo)
+            {
+                Type = type;
+                ExceptionInfo = exceptionInfo;
+                Success = type != null && exceptionInfo == null;
+            }
         }
     }
 }

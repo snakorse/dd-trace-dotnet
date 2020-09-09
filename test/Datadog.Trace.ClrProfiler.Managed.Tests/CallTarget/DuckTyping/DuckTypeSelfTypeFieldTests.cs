@@ -20,91 +20,71 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
 
         [Theory]
         [MemberData(nameof(Data))]
+        public void StaticReadonlyFieldsSetException(object obscureObject)
+        {
+            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
+            {
+                obscureObject.As<IObscureStaticReadonlyErrorDuckType>();
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(Data))]
+        public void ReadonlyFieldsSetException(object obscureObject)
+        {
+            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
+            {
+                obscureObject.As<IObscureReadonlyErrorDuckType>();
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(Data))]
         public void StaticReadonlyFields(object obscureObject)
         {
             var duckInterface = obscureObject.As<IObscureDuckType>();
             var duckAbstract = obscureObject.As<ObscureDuckTypeAbstractClass>();
             var duckVirtual = obscureObject.As<ObscureDuckType>();
 
-            /*
+            // *
+
+            Assert.Equal(42, duckInterface.PublicStaticReadonlySelfTypeField.MagicNumber);
+            Assert.Equal(42, duckAbstract.PublicStaticReadonlySelfTypeField.MagicNumber);
+            Assert.Equal(42, duckVirtual.PublicStaticReadonlySelfTypeField.MagicNumber);
+
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.PublicStaticReadonlySelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.PublicStaticReadonlySelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.PublicStaticReadonlySelfTypeField).Instance);
 
             // *
-            Assert.NotEqual(duckInterface, duckInterface.PublicStaticReadonlySelfTypeField);
-            Assert.NotEqual(duckAbstract, duckAbstract.PublicStaticReadonlySelfTypeField);
-            Assert.NotEqual(duckVirtual, duckVirtual.PublicStaticReadonlySelfTypeField);
 
-            Assert.NotNull(((IDuckType)duckInterface.PublicStaticReadonlySelfTypeField));
+            Assert.Equal(42, duckInterface.InternalStaticReadonlySelfTypeField.MagicNumber);
+            Assert.Equal(42, duckAbstract.InternalStaticReadonlySelfTypeField.MagicNumber);
+            Assert.Equal(42, duckVirtual.InternalStaticReadonlySelfTypeField.MagicNumber);
 
-            Assert.Equal(((IDuckType)duckInterface).Instance, ((IDuckType)duckInterface.PublicStaticReadonlySelfTypeField).Instance);
-            Assert.Equal(((IDuckType)duckAbstract).Instance, ((IDuckType)duckAbstract.PublicStaticReadonlySelfTypeField).Instance);
-            Assert.Equal(((IDuckType)duckVirtual).Instance, ((IDuckType)duckVirtual.PublicStaticReadonlySelfTypeField).Instance);
-
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckInterface.PublicStaticReadonlySelfTypeField = null;
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckAbstract.PublicStaticReadonlySelfTypeField = null;
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckVirtual.PublicStaticReadonlySelfTypeField = null;
-            });
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.InternalStaticReadonlySelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.InternalStaticReadonlySelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.InternalStaticReadonlySelfTypeField).Instance);
 
             // *
-            Assert.NotEqual(duckInterface, duckInterface.InternalStaticReadonlySelfTypeField);
-            Assert.NotEqual(duckAbstract, duckAbstract.InternalStaticReadonlySelfTypeField);
-            Assert.NotEqual(duckVirtual, duckVirtual.InternalStaticReadonlySelfTypeField);
 
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckInterface.InternalStaticReadonlySelfTypeField = null;
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckAbstract.InternalStaticReadonlySelfTypeField = null;
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckVirtual.InternalStaticReadonlySelfTypeField = null;
-            });
+            Assert.Equal(42, duckInterface.ProtectedStaticReadonlySelfTypeField.MagicNumber);
+            Assert.Equal(42, duckAbstract.ProtectedStaticReadonlySelfTypeField.MagicNumber);
+            Assert.Equal(42, duckVirtual.ProtectedStaticReadonlySelfTypeField.MagicNumber);
+
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.ProtectedStaticReadonlySelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.ProtectedStaticReadonlySelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.ProtectedStaticReadonlySelfTypeField).Instance);
 
             // *
-            Assert.NotEqual(duckInterface, duckInterface.ProtectedStaticReadonlySelfTypeField);
-            Assert.NotEqual(duckAbstract, duckAbstract.ProtectedStaticReadonlySelfTypeField);
-            Assert.NotEqual(duckVirtual, duckVirtual.ProtectedStaticReadonlySelfTypeField);
 
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckInterface.ProtectedStaticReadonlySelfTypeField = null;
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckAbstract.ProtectedStaticReadonlySelfTypeField = null;
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckVirtual.ProtectedStaticReadonlySelfTypeField = null;
-            });
+            Assert.Equal(42, duckInterface.PrivateStaticReadonlySelfTypeField.MagicNumber);
+            Assert.Equal(42, duckAbstract.PrivateStaticReadonlySelfTypeField.MagicNumber);
+            Assert.Equal(42, duckVirtual.PrivateStaticReadonlySelfTypeField.MagicNumber);
 
-            // *
-            Assert.NotEqual(duckInterface, duckInterface.PrivateStaticReadonlySelfTypeField);
-            Assert.NotEqual(duckAbstract, duckAbstract.PrivateStaticReadonlySelfTypeField);
-            Assert.NotEqual(duckVirtual, duckVirtual.PrivateStaticReadonlySelfTypeField);
-
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckInterface.PrivateStaticReadonlySelfTypeField = null;
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckAbstract.PrivateStaticReadonlySelfTypeField = null;
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckVirtual.PrivateStaticReadonlySelfTypeField = null;
-            });*/
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.PrivateStaticReadonlySelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.PrivateStaticReadonlySelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.PrivateStaticReadonlySelfTypeField).Instance);
         }
 
         [Theory]
@@ -115,88 +95,45 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             var duckAbstract = obscureObject.As<ObscureDuckTypeAbstractClass>();
             var duckVirtual = obscureObject.As<ObscureDuckType>();
 
-/*
-            Assert.NotEqual(duckInterface, duckInterface.PublicStaticSelfTypeField);
-            Assert.NotEqual(duckAbstract, duckAbstract.PublicStaticSelfTypeField);
-            Assert.NotEqual(duckVirtual, duckVirtual.PublicStaticSelfTypeField);
+            // *
 
-            duckInterface.PublicStaticSelfTypeField = "42";
-            Assert.Equal("42", duckInterface.PublicStaticSelfTypeField);
-            Assert.Equal("42", duckAbstract.PublicStaticSelfTypeField);
-            Assert.Equal("42", duckVirtual.PublicStaticSelfTypeField);
+            Assert.Equal(42, duckInterface.PublicStaticSelfTypeField.MagicNumber);
+            Assert.Equal(42, duckAbstract.PublicStaticSelfTypeField.MagicNumber);
+            Assert.Equal(42, duckVirtual.PublicStaticSelfTypeField.MagicNumber);
 
-            duckAbstract.PublicStaticSelfTypeField = "50";
-            Assert.Equal("50", duckInterface.PublicStaticSelfTypeField);
-            Assert.Equal("50", duckAbstract.PublicStaticSelfTypeField);
-            Assert.Equal("50", duckVirtual.PublicStaticSelfTypeField);
-
-            duckVirtual.PublicStaticSelfTypeField = "60";
-            Assert.Equal("60", duckInterface.PublicStaticSelfTypeField);
-            Assert.Equal("60", duckAbstract.PublicStaticSelfTypeField);
-            Assert.Equal("60", duckVirtual.PublicStaticSelfTypeField);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.PublicStaticSelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.PublicStaticSelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.PublicStaticSelfTypeField).Instance);
 
             // *
 
-            Assert.Equal("21", duckInterface.InternalStaticSelfTypeField);
-            Assert.Equal("21", duckAbstract.InternalStaticSelfTypeField);
-            Assert.Equal("21", duckVirtual.InternalStaticSelfTypeField);
+            Assert.Equal(42, duckInterface.InternalStaticSelfTypeField.MagicNumber);
+            Assert.Equal(42, duckAbstract.InternalStaticSelfTypeField.MagicNumber);
+            Assert.Equal(42, duckVirtual.InternalStaticSelfTypeField.MagicNumber);
 
-            duckInterface.InternalStaticSelfTypeField = "42";
-            Assert.Equal("42", duckInterface.InternalStaticSelfTypeField);
-            Assert.Equal("42", duckAbstract.InternalStaticSelfTypeField);
-            Assert.Equal("42", duckVirtual.InternalStaticSelfTypeField);
-
-            duckAbstract.InternalStaticSelfTypeField = "50";
-            Assert.Equal("50", duckInterface.InternalStaticSelfTypeField);
-            Assert.Equal("50", duckAbstract.InternalStaticSelfTypeField);
-            Assert.Equal("50", duckVirtual.InternalStaticSelfTypeField);
-
-            duckVirtual.InternalStaticSelfTypeField = "60";
-            Assert.Equal("60", duckInterface.InternalStaticSelfTypeField);
-            Assert.Equal("60", duckAbstract.InternalStaticSelfTypeField);
-            Assert.Equal("60", duckVirtual.InternalStaticSelfTypeField);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.InternalStaticSelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.InternalStaticSelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.InternalStaticSelfTypeField).Instance);
 
             // *
 
-            Assert.Equal("22", duckInterface.ProtectedStaticSelfTypeField);
-            Assert.Equal("22", duckAbstract.ProtectedStaticSelfTypeField);
-            Assert.Equal("22", duckVirtual.ProtectedStaticSelfTypeField);
+            Assert.Equal(42, duckInterface.ProtectedStaticSelfTypeField.MagicNumber);
+            Assert.Equal(42, duckAbstract.ProtectedStaticSelfTypeField.MagicNumber);
+            Assert.Equal(42, duckVirtual.ProtectedStaticSelfTypeField.MagicNumber);
 
-            duckInterface.ProtectedStaticSelfTypeField = "42";
-            Assert.Equal("42", duckInterface.ProtectedStaticSelfTypeField);
-            Assert.Equal("42", duckAbstract.ProtectedStaticSelfTypeField);
-            Assert.Equal("42", duckVirtual.ProtectedStaticSelfTypeField);
-
-            duckAbstract.ProtectedStaticSelfTypeField = "50";
-            Assert.Equal("50", duckInterface.ProtectedStaticSelfTypeField);
-            Assert.Equal("50", duckAbstract.ProtectedStaticSelfTypeField);
-            Assert.Equal("50", duckVirtual.ProtectedStaticSelfTypeField);
-
-            duckVirtual.ProtectedStaticSelfTypeField = "60";
-            Assert.Equal("60", duckInterface.ProtectedStaticSelfTypeField);
-            Assert.Equal("60", duckAbstract.ProtectedStaticSelfTypeField);
-            Assert.Equal("60", duckVirtual.ProtectedStaticSelfTypeField);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.ProtectedStaticSelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.ProtectedStaticSelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.ProtectedStaticSelfTypeField).Instance);
 
             // *
 
-            Assert.Equal("23", duckInterface.PrivateStaticSelfTypeField);
-            Assert.Equal("23", duckAbstract.PrivateStaticSelfTypeField);
-            Assert.Equal("23", duckVirtual.PrivateStaticSelfTypeField);
+            Assert.Equal(42, duckInterface.PrivateStaticSelfTypeField.MagicNumber);
+            Assert.Equal(42, duckAbstract.PrivateStaticSelfTypeField.MagicNumber);
+            Assert.Equal(42, duckVirtual.PrivateStaticSelfTypeField.MagicNumber);
 
-            duckInterface.PrivateStaticSelfTypeField = "42";
-            Assert.Equal("42", duckInterface.PrivateStaticSelfTypeField);
-            Assert.Equal("42", duckAbstract.PrivateStaticSelfTypeField);
-            Assert.Equal("42", duckVirtual.PrivateStaticSelfTypeField);
-
-            duckAbstract.PrivateStaticSelfTypeField = "50";
-            Assert.Equal("50", duckInterface.PrivateStaticSelfTypeField);
-            Assert.Equal("50", duckAbstract.PrivateStaticSelfTypeField);
-            Assert.Equal("50", duckVirtual.PrivateStaticSelfTypeField);
-
-            duckVirtual.PrivateStaticSelfTypeField = "60";
-            Assert.Equal("60", duckInterface.PrivateStaticSelfTypeField);
-            Assert.Equal("60", duckAbstract.PrivateStaticSelfTypeField);
-            Assert.Equal("60", duckVirtual.PrivateStaticSelfTypeField);*/
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.PrivateStaticSelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.PrivateStaticSelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.PrivateStaticSelfTypeField).Instance);
         }
 
         [Theory]
@@ -206,78 +143,46 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             var duckInterface = obscureObject.As<IObscureDuckType>();
             var duckAbstract = obscureObject.As<ObscureDuckTypeAbstractClass>();
             var duckVirtual = obscureObject.As<ObscureDuckType>();
-/*
-            // *
-            Assert.Equal("30", duckInterface.PublicReadonlySelfTypeField);
-            Assert.Equal("30", duckAbstract.PublicReadonlySelfTypeField);
-            Assert.Equal("30", duckVirtual.PublicReadonlySelfTypeField);
-
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckInterface.PublicReadonlySelfTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckAbstract.PublicReadonlySelfTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckVirtual.PublicReadonlySelfTypeField = "99";
-            });
 
             // *
-            Assert.Equal("31", duckInterface.InternalReadonlySelfTypeField);
-            Assert.Equal("31", duckAbstract.InternalReadonlySelfTypeField);
-            Assert.Equal("31", duckVirtual.InternalReadonlySelfTypeField);
 
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckInterface.InternalReadonlySelfTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckAbstract.InternalReadonlySelfTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckVirtual.InternalReadonlySelfTypeField = "99";
-            });
+            Assert.Equal(42, duckInterface.PublicReadonlySelfTypeField.MagicNumber);
+            Assert.Equal(42, duckAbstract.PublicReadonlySelfTypeField.MagicNumber);
+            Assert.Equal(42, duckVirtual.PublicReadonlySelfTypeField.MagicNumber);
+
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.PublicReadonlySelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.PublicReadonlySelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.PublicReadonlySelfTypeField).Instance);
 
             // *
-            Assert.Equal("32", duckInterface.ProtectedReadonlySelfTypeField);
-            Assert.Equal("32", duckAbstract.ProtectedReadonlySelfTypeField);
-            Assert.Equal("32", duckVirtual.ProtectedReadonlySelfTypeField);
 
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckInterface.ProtectedReadonlySelfTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckAbstract.ProtectedReadonlySelfTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckVirtual.ProtectedReadonlySelfTypeField = "99";
-            });
+            Assert.Equal(42, duckInterface.InternalReadonlySelfTypeField.MagicNumber);
+            Assert.Equal(42, duckAbstract.InternalReadonlySelfTypeField.MagicNumber);
+            Assert.Equal(42, duckVirtual.InternalReadonlySelfTypeField.MagicNumber);
+
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.InternalReadonlySelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.InternalReadonlySelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.InternalReadonlySelfTypeField).Instance);
 
             // *
-            Assert.Equal("33", duckInterface.PrivateReadonlySelfTypeField);
-            Assert.Equal("33", duckAbstract.PrivateReadonlySelfTypeField);
-            Assert.Equal("33", duckVirtual.PrivateReadonlySelfTypeField);
 
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckInterface.PrivateReadonlySelfTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckAbstract.PrivateReadonlySelfTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckVirtual.PrivateReadonlySelfTypeField = "99";
-            });*/
+            Assert.Equal(42, duckInterface.ProtectedReadonlySelfTypeField.MagicNumber);
+            Assert.Equal(42, duckAbstract.ProtectedReadonlySelfTypeField.MagicNumber);
+            Assert.Equal(42, duckVirtual.ProtectedReadonlySelfTypeField.MagicNumber);
+
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.ProtectedReadonlySelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.ProtectedReadonlySelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.ProtectedReadonlySelfTypeField).Instance);
+
+            // *
+
+            Assert.Equal(42, duckInterface.PrivateReadonlySelfTypeField.MagicNumber);
+            Assert.Equal(42, duckAbstract.PrivateReadonlySelfTypeField.MagicNumber);
+            Assert.Equal(42, duckVirtual.PrivateReadonlySelfTypeField.MagicNumber);
+
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.PrivateReadonlySelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.PrivateReadonlySelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.PrivateReadonlySelfTypeField).Instance);
         }
 
         [Theory]
@@ -287,104 +192,61 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             var duckInterface = obscureObject.As<IObscureDuckType>();
             var duckAbstract = obscureObject.As<ObscureDuckTypeAbstractClass>();
             var duckVirtual = obscureObject.As<ObscureDuckType>();
-            /*
-
-            Assert.Equal("40", duckInterface.PublicSelfTypeField);
-            Assert.Equal("40", duckAbstract.PublicSelfTypeField);
-            Assert.Equal("40", duckVirtual.PublicSelfTypeField);
-
-            duckInterface.PublicSelfTypeField = "42";
-            Assert.Equal("42", duckInterface.PublicSelfTypeField);
-            Assert.Equal("42", duckAbstract.PublicSelfTypeField);
-            Assert.Equal("42", duckVirtual.PublicSelfTypeField);
-
-            duckAbstract.PublicSelfTypeField = "50";
-            Assert.Equal("50", duckInterface.PublicSelfTypeField);
-            Assert.Equal("50", duckAbstract.PublicSelfTypeField);
-            Assert.Equal("50", duckVirtual.PublicSelfTypeField);
-
-            duckVirtual.PublicSelfTypeField = "60";
-            Assert.Equal("60", duckInterface.PublicSelfTypeField);
-            Assert.Equal("60", duckAbstract.PublicSelfTypeField);
-            Assert.Equal("60", duckVirtual.PublicSelfTypeField);
 
             // *
 
-            Assert.Equal("41", duckInterface.InternalSelfTypeField);
-            Assert.Equal("41", duckAbstract.InternalSelfTypeField);
-            Assert.Equal("41", duckVirtual.InternalSelfTypeField);
+            Assert.Equal(42, duckInterface.PublicSelfTypeField.MagicNumber);
+            Assert.Equal(42, duckAbstract.PublicSelfTypeField.MagicNumber);
+            Assert.Equal(42, duckVirtual.PublicSelfTypeField.MagicNumber);
 
-            duckInterface.InternalSelfTypeField = "42";
-            Assert.Equal("42", duckInterface.InternalSelfTypeField);
-            Assert.Equal("42", duckAbstract.InternalSelfTypeField);
-            Assert.Equal("42", duckVirtual.InternalSelfTypeField);
-
-            duckAbstract.InternalSelfTypeField = "50";
-            Assert.Equal("50", duckInterface.InternalSelfTypeField);
-            Assert.Equal("50", duckAbstract.InternalSelfTypeField);
-            Assert.Equal("50", duckVirtual.InternalSelfTypeField);
-
-            duckVirtual.InternalSelfTypeField = "60";
-            Assert.Equal("60", duckInterface.InternalSelfTypeField);
-            Assert.Equal("60", duckAbstract.InternalSelfTypeField);
-            Assert.Equal("60", duckVirtual.InternalSelfTypeField);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.PublicSelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.PublicSelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.PublicSelfTypeField).Instance);
 
             // *
 
-            Assert.Equal("42", duckInterface.ProtectedSelfTypeField);
-            Assert.Equal("42", duckAbstract.ProtectedSelfTypeField);
-            Assert.Equal("42", duckVirtual.ProtectedSelfTypeField);
+            Assert.Equal(42, duckInterface.InternalSelfTypeField.MagicNumber);
+            Assert.Equal(42, duckAbstract.InternalSelfTypeField.MagicNumber);
+            Assert.Equal(42, duckVirtual.InternalSelfTypeField.MagicNumber);
 
-            duckInterface.ProtectedSelfTypeField = "45";
-            Assert.Equal("45", duckInterface.ProtectedSelfTypeField);
-            Assert.Equal("45", duckAbstract.ProtectedSelfTypeField);
-            Assert.Equal("45", duckVirtual.ProtectedSelfTypeField);
-
-            duckAbstract.ProtectedSelfTypeField = "50";
-            Assert.Equal("50", duckInterface.ProtectedSelfTypeField);
-            Assert.Equal("50", duckAbstract.ProtectedSelfTypeField);
-            Assert.Equal("50", duckVirtual.ProtectedSelfTypeField);
-
-            duckVirtual.ProtectedSelfTypeField = "60";
-            Assert.Equal("60", duckInterface.ProtectedSelfTypeField);
-            Assert.Equal("60", duckAbstract.ProtectedSelfTypeField);
-            Assert.Equal("60", duckVirtual.ProtectedSelfTypeField);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.InternalSelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.InternalSelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.InternalSelfTypeField).Instance);
 
             // *
 
-            Assert.Equal("43", duckInterface.PrivateSelfTypeField);
-            Assert.Equal("43", duckAbstract.PrivateSelfTypeField);
-            Assert.Equal("43", duckVirtual.PrivateSelfTypeField);
+            Assert.Equal(42, duckInterface.ProtectedSelfTypeField.MagicNumber);
+            Assert.Equal(42, duckAbstract.ProtectedSelfTypeField.MagicNumber);
+            Assert.Equal(42, duckVirtual.ProtectedSelfTypeField.MagicNumber);
 
-            duckInterface.PrivateSelfTypeField = "42";
-            Assert.Equal("42", duckInterface.PrivateSelfTypeField);
-            Assert.Equal("42", duckAbstract.PrivateSelfTypeField);
-            Assert.Equal("42", duckVirtual.PrivateSelfTypeField);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.ProtectedSelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.ProtectedSelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.ProtectedSelfTypeField).Instance);
 
-            duckAbstract.PrivateSelfTypeField = "50";
-            Assert.Equal("50", duckInterface.PrivateSelfTypeField);
-            Assert.Equal("50", duckAbstract.PrivateSelfTypeField);
-            Assert.Equal("50", duckVirtual.PrivateSelfTypeField);
+            // *
 
-            duckVirtual.PrivateSelfTypeField = "60";
-            Assert.Equal("60", duckInterface.PrivateSelfTypeField);
-            Assert.Equal("60", duckAbstract.PrivateSelfTypeField);
-            Assert.Equal("60", duckVirtual.PrivateSelfTypeField);*/
+            Assert.Equal(42, duckInterface.PrivateSelfTypeField.MagicNumber);
+            Assert.Equal(42, duckAbstract.PrivateSelfTypeField.MagicNumber);
+            Assert.Equal(42, duckVirtual.PrivateSelfTypeField.MagicNumber);
+
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.PrivateSelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.PrivateSelfTypeField).Instance);
+            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.PrivateSelfTypeField).Instance);
         }
 
         public interface IObscureDuckType
         {
             [Duck(Name = "_publicStaticReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            IDummyFieldObject PublicStaticReadonlySelfTypeField { get; set; }
+            IDummyFieldObject PublicStaticReadonlySelfTypeField { get; }
 
             [Duck(Name = "_internalStaticReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            IDummyFieldObject InternalStaticReadonlySelfTypeField { get; set; }
+            IDummyFieldObject InternalStaticReadonlySelfTypeField { get; }
 
             [Duck(Name = "_protectedStaticReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            IDummyFieldObject ProtectedStaticReadonlySelfTypeField { get; set; }
+            IDummyFieldObject ProtectedStaticReadonlySelfTypeField { get; }
 
             [Duck(Name = "_privateStaticReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            IDummyFieldObject PrivateStaticReadonlySelfTypeField { get; set; }
+            IDummyFieldObject PrivateStaticReadonlySelfTypeField { get; }
 
             // *
 
@@ -403,16 +265,16 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             // *
 
             [Duck(Name = "_publicReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            IDummyFieldObject PublicReadonlySelfTypeField { get; set; }
+            IDummyFieldObject PublicReadonlySelfTypeField { get; }
 
             [Duck(Name = "_internalReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            IDummyFieldObject InternalReadonlySelfTypeField { get; set; }
+            IDummyFieldObject InternalReadonlySelfTypeField { get; }
 
             [Duck(Name = "_protectedReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            IDummyFieldObject ProtectedReadonlySelfTypeField { get; set; }
+            IDummyFieldObject ProtectedReadonlySelfTypeField { get; }
 
             [Duck(Name = "_privateReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            IDummyFieldObject PrivateReadonlySelfTypeField { get; set; }
+            IDummyFieldObject PrivateReadonlySelfTypeField { get; }
 
             // *
 
@@ -429,19 +291,31 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             IDummyFieldObject PrivateSelfTypeField { get; set; }
         }
 
+        public interface IObscureStaticReadonlyErrorDuckType
+        {
+            [Duck(Name = "_publicStaticReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            IDummyFieldObject PublicStaticReadonlySelfTypeField { get; set; }
+        }
+
+        public interface IObscureReadonlyErrorDuckType
+        {
+            [Duck(Name = "_publicReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            IDummyFieldObject PublicReadonlySelfTypeField { get; set; }
+        }
+
         public abstract class ObscureDuckTypeAbstractClass
         {
             [Duck(Name = "_publicStaticReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public abstract IDummyFieldObject PublicStaticReadonlySelfTypeField { get; set; }
+            public abstract IDummyFieldObject PublicStaticReadonlySelfTypeField { get; }
 
             [Duck(Name = "_internalStaticReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public abstract IDummyFieldObject InternalStaticReadonlySelfTypeField { get; set; }
+            public abstract IDummyFieldObject InternalStaticReadonlySelfTypeField { get; }
 
             [Duck(Name = "_protectedStaticReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public abstract IDummyFieldObject ProtectedStaticReadonlySelfTypeField { get; set; }
+            public abstract IDummyFieldObject ProtectedStaticReadonlySelfTypeField { get; }
 
             [Duck(Name = "_privateStaticReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public abstract IDummyFieldObject PrivateStaticReadonlySelfTypeField { get; set; }
+            public abstract IDummyFieldObject PrivateStaticReadonlySelfTypeField { get; }
 
             // *
 
@@ -460,16 +334,16 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             // *
 
             [Duck(Name = "_publicReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public abstract IDummyFieldObject PublicReadonlySelfTypeField { get; set; }
+            public abstract IDummyFieldObject PublicReadonlySelfTypeField { get; }
 
             [Duck(Name = "_internalReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public abstract IDummyFieldObject InternalReadonlySelfTypeField { get; set; }
+            public abstract IDummyFieldObject InternalReadonlySelfTypeField { get; }
 
             [Duck(Name = "_protectedReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public abstract IDummyFieldObject ProtectedReadonlySelfTypeField { get; set; }
+            public abstract IDummyFieldObject ProtectedReadonlySelfTypeField { get; }
 
             [Duck(Name = "_privateReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public abstract IDummyFieldObject PrivateReadonlySelfTypeField { get; set; }
+            public abstract IDummyFieldObject PrivateReadonlySelfTypeField { get; }
 
             // *
 
@@ -489,16 +363,16 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
         public class ObscureDuckType
         {
             [Duck(Name = "_publicStaticReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public virtual IDummyFieldObject PublicStaticReadonlySelfTypeField { get; set; }
+            public virtual IDummyFieldObject PublicStaticReadonlySelfTypeField { get; }
 
             [Duck(Name = "_internalStaticReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public virtual IDummyFieldObject InternalStaticReadonlySelfTypeField { get; set; }
+            public virtual IDummyFieldObject InternalStaticReadonlySelfTypeField { get; }
 
             [Duck(Name = "_protectedStaticReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public virtual IDummyFieldObject ProtectedStaticReadonlySelfTypeField { get; set; }
+            public virtual IDummyFieldObject ProtectedStaticReadonlySelfTypeField { get; }
 
             [Duck(Name = "_privateStaticReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public virtual IDummyFieldObject PrivateStaticReadonlySelfTypeField { get; set; }
+            public virtual IDummyFieldObject PrivateStaticReadonlySelfTypeField { get; }
 
             // *
 
@@ -517,16 +391,16 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             // *
 
             [Duck(Name = "_publicReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public virtual IDummyFieldObject PublicReadonlySelfTypeField { get; set; }
+            public virtual IDummyFieldObject PublicReadonlySelfTypeField { get; }
 
             [Duck(Name = "_internalReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public virtual IDummyFieldObject InternalReadonlySelfTypeField { get; set; }
+            public virtual IDummyFieldObject InternalReadonlySelfTypeField { get; }
 
             [Duck(Name = "_protectedReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public virtual IDummyFieldObject ProtectedReadonlySelfTypeField { get; set; }
+            public virtual IDummyFieldObject ProtectedReadonlySelfTypeField { get; }
 
             [Duck(Name = "_privateReadonlySelfTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public virtual IDummyFieldObject PrivateReadonlySelfTypeField { get; set; }
+            public virtual IDummyFieldObject PrivateReadonlySelfTypeField { get; }
 
             // *
 

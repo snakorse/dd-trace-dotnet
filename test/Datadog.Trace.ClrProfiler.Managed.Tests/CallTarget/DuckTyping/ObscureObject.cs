@@ -26,6 +26,8 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
 
         public class DummyFieldObject
         {
+            internal static DummyFieldObject Default = new DummyFieldObject();
+
             public int MagicNumber = 42;
         }
 
@@ -75,25 +77,25 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
 
             // ***
 
-            public static readonly DummyFieldObject _publicStaticReadonlySelfTypeField = new DummyFieldObject();
-            internal static readonly DummyFieldObject _internalStaticReadonlySelfTypeField = new DummyFieldObject();
-            protected static readonly DummyFieldObject _protectedStaticReadonlySelfTypeField = new DummyFieldObject();
-            private static readonly DummyFieldObject _privateStaticReadonlySelfTypeField = new DummyFieldObject();
+            public static readonly DummyFieldObject _publicStaticReadonlySelfTypeField = DummyFieldObject.Default;
+            internal static readonly DummyFieldObject _internalStaticReadonlySelfTypeField = DummyFieldObject.Default;
+            protected static readonly DummyFieldObject _protectedStaticReadonlySelfTypeField = DummyFieldObject.Default;
+            private static readonly DummyFieldObject _privateStaticReadonlySelfTypeField = DummyFieldObject.Default;
 
-            public static DummyFieldObject _publicStaticSelfTypeField = new DummyFieldObject();
-            internal static DummyFieldObject _internalStaticSelfTypeField = new DummyFieldObject();
-            protected static DummyFieldObject _protectedStaticSelfTypeField = new DummyFieldObject();
-            private static DummyFieldObject _privateStaticSelfTypeField = new DummyFieldObject();
+            public static DummyFieldObject _publicStaticSelfTypeField = DummyFieldObject.Default;
+            internal static DummyFieldObject _internalStaticSelfTypeField = DummyFieldObject.Default;
+            protected static DummyFieldObject _protectedStaticSelfTypeField = DummyFieldObject.Default;
+            private static DummyFieldObject _privateStaticSelfTypeField = DummyFieldObject.Default;
 
-            public readonly DummyFieldObject _publicReadonlySelfTypeField = new DummyFieldObject();
-            internal readonly DummyFieldObject _internalReadonlySelfTypeField = new DummyFieldObject();
-            protected readonly DummyFieldObject _protectedReadonlySelfTypeField = new DummyFieldObject();
-            private readonly DummyFieldObject _privateReadonlySelfTypeField = new DummyFieldObject();
+            public readonly DummyFieldObject _publicReadonlySelfTypeField = DummyFieldObject.Default;
+            internal readonly DummyFieldObject _internalReadonlySelfTypeField = DummyFieldObject.Default;
+            protected readonly DummyFieldObject _protectedReadonlySelfTypeField = DummyFieldObject.Default;
+            private readonly DummyFieldObject _privateReadonlySelfTypeField = DummyFieldObject.Default;
 
-            public DummyFieldObject _publicSelfTypeField = new DummyFieldObject();
-            internal DummyFieldObject _internalSelfTypeField = new DummyFieldObject();
-            protected DummyFieldObject _protectedSelfTypeField = new DummyFieldObject();
-            private DummyFieldObject _privateSelfTypeField = new DummyFieldObject();
+            public DummyFieldObject _publicSelfTypeField = DummyFieldObject.Default;
+            internal DummyFieldObject _internalSelfTypeField = DummyFieldObject.Default;
+            protected DummyFieldObject _protectedSelfTypeField = DummyFieldObject.Default;
+            private DummyFieldObject _privateSelfTypeField = DummyFieldObject.Default;
         }
 
         internal class FieldInternalObject
@@ -142,25 +144,25 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
 
             // ***
 
-            public static readonly DummyFieldObject _publicStaticReadonlySelfTypeField = new DummyFieldObject();
-            internal static readonly DummyFieldObject _internalStaticReadonlySelfTypeField = new DummyFieldObject();
-            protected static readonly DummyFieldObject _protectedStaticReadonlySelfTypeField = new DummyFieldObject();
-            private static readonly DummyFieldObject _privateStaticReadonlySelfTypeField = new DummyFieldObject();
+            public static readonly DummyFieldObject _publicStaticReadonlySelfTypeField = DummyFieldObject.Default;
+            internal static readonly DummyFieldObject _internalStaticReadonlySelfTypeField = DummyFieldObject.Default;
+            protected static readonly DummyFieldObject _protectedStaticReadonlySelfTypeField = DummyFieldObject.Default;
+            private static readonly DummyFieldObject _privateStaticReadonlySelfTypeField = DummyFieldObject.Default;
 
-            public static DummyFieldObject _publicStaticSelfTypeField = new DummyFieldObject();
-            internal static DummyFieldObject _internalStaticSelfTypeField = new DummyFieldObject();
-            protected static DummyFieldObject _protectedStaticSelfTypeField = new DummyFieldObject();
-            private static DummyFieldObject _privateStaticSelfTypeField = new DummyFieldObject();
+            public static DummyFieldObject _publicStaticSelfTypeField = DummyFieldObject.Default;
+            internal static DummyFieldObject _internalStaticSelfTypeField = DummyFieldObject.Default;
+            protected static DummyFieldObject _protectedStaticSelfTypeField = DummyFieldObject.Default;
+            private static DummyFieldObject _privateStaticSelfTypeField = DummyFieldObject.Default;
 
-            public readonly DummyFieldObject _publicReadonlySelfTypeField = new DummyFieldObject();
-            internal readonly DummyFieldObject _internalReadonlySelfTypeField = new DummyFieldObject();
-            protected readonly DummyFieldObject _protectedReadonlySelfTypeField = new DummyFieldObject();
-            private readonly DummyFieldObject _privateReadonlySelfTypeField = new DummyFieldObject();
+            public readonly DummyFieldObject _publicReadonlySelfTypeField = DummyFieldObject.Default;
+            internal readonly DummyFieldObject _internalReadonlySelfTypeField = DummyFieldObject.Default;
+            protected readonly DummyFieldObject _protectedReadonlySelfTypeField = DummyFieldObject.Default;
+            private readonly DummyFieldObject _privateReadonlySelfTypeField = DummyFieldObject.Default;
 
-            public DummyFieldObject _publicSelfTypeField = new DummyFieldObject();
-            internal DummyFieldObject _internalSelfTypeField = new DummyFieldObject();
-            protected DummyFieldObject _protectedSelfTypeField = new DummyFieldObject();
-            private DummyFieldObject _privateSelfTypeField = new DummyFieldObject();
+            public DummyFieldObject _publicSelfTypeField = DummyFieldObject.Default;
+            internal DummyFieldObject _internalSelfTypeField = DummyFieldObject.Default;
+            protected DummyFieldObject _protectedSelfTypeField = DummyFieldObject.Default;
+            private DummyFieldObject _privateSelfTypeField = DummyFieldObject.Default;
         }
 
         private class FieldPrivateObject
@@ -209,25 +211,25 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
 
             // ***
 
-            public static readonly DummyFieldObject _publicStaticReadonlySelfTypeField = new DummyFieldObject();
-            internal static readonly DummyFieldObject _internalStaticReadonlySelfTypeField = new DummyFieldObject();
-            protected static readonly DummyFieldObject _protectedStaticReadonlySelfTypeField = new DummyFieldObject();
-            private static readonly DummyFieldObject _privateStaticReadonlySelfTypeField = new DummyFieldObject();
+            public static readonly DummyFieldObject _publicStaticReadonlySelfTypeField = DummyFieldObject.Default;
+            internal static readonly DummyFieldObject _internalStaticReadonlySelfTypeField = DummyFieldObject.Default;
+            protected static readonly DummyFieldObject _protectedStaticReadonlySelfTypeField = DummyFieldObject.Default;
+            private static readonly DummyFieldObject _privateStaticReadonlySelfTypeField = DummyFieldObject.Default;
 
-            public static DummyFieldObject _publicStaticSelfTypeField = new DummyFieldObject();
-            internal static DummyFieldObject _internalStaticSelfTypeField = new DummyFieldObject();
-            protected static DummyFieldObject _protectedStaticSelfTypeField = new DummyFieldObject();
-            private static DummyFieldObject _privateStaticSelfTypeField = new DummyFieldObject();
+            public static DummyFieldObject _publicStaticSelfTypeField = DummyFieldObject.Default;
+            internal static DummyFieldObject _internalStaticSelfTypeField = DummyFieldObject.Default;
+            protected static DummyFieldObject _protectedStaticSelfTypeField = DummyFieldObject.Default;
+            private static DummyFieldObject _privateStaticSelfTypeField = DummyFieldObject.Default;
 
-            public readonly DummyFieldObject _publicReadonlySelfTypeField = new DummyFieldObject();
-            internal readonly DummyFieldObject _internalReadonlySelfTypeField = new DummyFieldObject();
-            protected readonly DummyFieldObject _protectedReadonlySelfTypeField = new DummyFieldObject();
-            private readonly DummyFieldObject _privateReadonlySelfTypeField = new DummyFieldObject();
+            public readonly DummyFieldObject _publicReadonlySelfTypeField = DummyFieldObject.Default;
+            internal readonly DummyFieldObject _internalReadonlySelfTypeField = DummyFieldObject.Default;
+            protected readonly DummyFieldObject _protectedReadonlySelfTypeField = DummyFieldObject.Default;
+            private readonly DummyFieldObject _privateReadonlySelfTypeField = DummyFieldObject.Default;
 
-            public DummyFieldObject _publicSelfTypeField = new DummyFieldObject();
-            internal DummyFieldObject _internalSelfTypeField = new DummyFieldObject();
-            protected DummyFieldObject _protectedSelfTypeField = new DummyFieldObject();
-            private DummyFieldObject _privateSelfTypeField = new DummyFieldObject();
+            public DummyFieldObject _publicSelfTypeField = DummyFieldObject.Default;
+            internal DummyFieldObject _internalSelfTypeField = DummyFieldObject.Default;
+            protected DummyFieldObject _protectedSelfTypeField = DummyFieldObject.Default;
+            private DummyFieldObject _privateSelfTypeField = DummyFieldObject.Default;
         }
     }
 }

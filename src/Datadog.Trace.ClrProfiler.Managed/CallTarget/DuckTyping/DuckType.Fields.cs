@@ -141,29 +141,29 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             // Check if the field is marked as InitOnly (readonly) and throw an exception in that case
             if ((field.Attributes & FieldAttributes.InitOnly) != 0)
             {
-                il.Emit(OpCodes.Newobj, typeof(DuckTypeFieldIsReadonlyException).GetConstructor(Type.EmptyTypes));
-                il.Emit(OpCodes.Throw);
-                return method;
+                throw new DuckTypeFieldIsReadonlyException(field);
+            }
+
+            // Check if the field declaring type is an struct (structs modification is not supported)
+            if (field.DeclaringType.IsValueType)
+            {
+                throw new DuckTypeStructMembersCannotBeChangedException(field.DeclaringType);
             }
 
             // Load instance
-            if (!isPublicInstance || !field.IsPublic)
+            if (!field.IsStatic)
             {
-                // If the instance or the field is non public we load the instance field to the stack (needed when calling the Dynamic method to overpass the visibility checks)
-                if (field.IsStatic)
+                if (!isPublicInstance || !field.IsPublic)
                 {
-                    il.Emit(OpCodes.Ldnull);
-                }
-                else
-                {
+                    // If the instance or the field is non public we load the instance field to the stack (needed when calling the Dynamic method to overpass the visibility checks)
                     il.Emit(OpCodes.Ldarg_0);
                     il.Emit(OpCodes.Ldfld, instanceField);
                 }
-            }
-            else if (!field.IsStatic)
-            {
-                // If the instance and the field are public then we load the instance field
-                ILHelpers.LoadInstance(il, instanceField, instanceType);
+                else
+                {
+                    // If the instance and the field are public then we load the instance field
+                    ILHelpers.LoadInstance(il, instanceField, instanceType);
+                }
             }
 
             // Check if a duck type object
@@ -221,16 +221,40 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             {
                 // If the instance or the field are non public we need to create a Dynamic method to overpass the visibility checks
 
+                string dynMethodName = $"_setField+{field.DeclaringType.Name}.{field.Name}";
+
                 // Convert the field type for the dynamic method
                 Type dynValueType = field.FieldType.IsPublic || field.FieldType.IsNestedPublic ? field.FieldType : typeof(object);
                 Type dPropRootType = Util.GetRootType(duckTypeProperty.PropertyType);
                 ILHelpers.TypeConversion(il, dPropRootType, dynValueType);
 
                 // Create dynamic method
-                Type[] dynParameters = new[] { typeof(object), dynValueType };
-                DynamicMethod dynMethod = new DynamicMethod($"_setField+{field.DeclaringType.Name}.{field.Name}", typeof(void), dynParameters, typeof(EmitAccessors).Module, true);
-                EmitAccessors.CreateSetAccessor(dynMethod.GetILGenerator(), field, dynParameters[0], dynParameters[1]);
+                Type[] dynParameters = field.IsStatic ? new[] { dynValueType } : new[] { typeof(object), dynValueType };
+                DynamicMethod dynMethod = new DynamicMethod(dynMethodName, typeof(void), dynParameters, typeof(DuckType).Module, true);
                 DynamicMethods.Add(dynMethod);
+
+                // Write the dynamic method body
+                ILGenerator dynIL = dynMethod.GetILGenerator();
+                dynIL.Emit(OpCodes.Ldarg_0);
+
+                if (field.IsStatic)
+                {
+                    ILHelpers.TypeConversion(dynIL, dynValueType, field.FieldType);
+                    dynIL.Emit(OpCodes.Stsfld, field);
+                }
+                else
+                {
+                    if (field.DeclaringType != typeof(object))
+                    {
+                        dynIL.Emit(OpCodes.Castclass, field.DeclaringType);
+                    }
+
+                    dynIL.Emit(OpCodes.Ldarg_1);
+                    ILHelpers.TypeConversion(dynIL, dynValueType, field.FieldType);
+                    dynIL.Emit(OpCodes.Stfld, field);
+                }
+
+                dynIL.Emit(OpCodes.Ret);
 
                 // Emit the call to the dynamic method
                 il.Emit(OpCodes.Ldc_I8, (long)GetRuntimeHandle(dynMethod).GetFunctionPointer());

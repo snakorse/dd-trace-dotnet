@@ -20,6 +20,26 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
 
         [Theory]
         [MemberData(nameof(Data))]
+        public void StaticReadonlyFieldsSetException(object obscureObject)
+        {
+            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
+            {
+                obscureObject.As<IObscureStaticReadonlyErrorDuckType>();
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(Data))]
+        public void ReadonlyFieldsSetException(object obscureObject)
+        {
+            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
+            {
+                obscureObject.As<IObscureReadonlyErrorDuckType>();
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(Data))]
         public void StaticReadonlyFields(object obscureObject)
         {
             var duckInterface = obscureObject.As<IObscureDuckType>();
@@ -31,72 +51,20 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             Assert.Equal("10", duckAbstract.PublicStaticReadonlyReferenceTypeField);
             Assert.Equal("10", duckVirtual.PublicStaticReadonlyReferenceTypeField);
 
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckInterface.PublicStaticReadonlyReferenceTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckAbstract.PublicStaticReadonlyReferenceTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckVirtual.PublicStaticReadonlyReferenceTypeField = "99";
-            });
-
             // *
             Assert.Equal("11", duckInterface.InternalStaticReadonlyReferenceTypeField);
             Assert.Equal("11", duckAbstract.InternalStaticReadonlyReferenceTypeField);
             Assert.Equal("11", duckVirtual.InternalStaticReadonlyReferenceTypeField);
-
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckInterface.InternalStaticReadonlyReferenceTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckAbstract.InternalStaticReadonlyReferenceTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckVirtual.InternalStaticReadonlyReferenceTypeField = "99";
-            });
 
             // *
             Assert.Equal("12", duckInterface.ProtectedStaticReadonlyReferenceTypeField);
             Assert.Equal("12", duckAbstract.ProtectedStaticReadonlyReferenceTypeField);
             Assert.Equal("12", duckVirtual.ProtectedStaticReadonlyReferenceTypeField);
 
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckInterface.ProtectedStaticReadonlyReferenceTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckAbstract.ProtectedStaticReadonlyReferenceTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckVirtual.ProtectedStaticReadonlyReferenceTypeField = "99";
-            });
-
             // *
             Assert.Equal("13", duckInterface.PrivateStaticReadonlyReferenceTypeField);
             Assert.Equal("13", duckAbstract.PrivateStaticReadonlyReferenceTypeField);
             Assert.Equal("13", duckVirtual.PrivateStaticReadonlyReferenceTypeField);
-
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckInterface.PrivateStaticReadonlyReferenceTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckAbstract.PrivateStaticReadonlyReferenceTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckVirtual.PrivateStaticReadonlyReferenceTypeField = "99";
-            });
         }
 
         [Theory]
@@ -203,72 +171,20 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             Assert.Equal("30", duckAbstract.PublicReadonlyReferenceTypeField);
             Assert.Equal("30", duckVirtual.PublicReadonlyReferenceTypeField);
 
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckInterface.PublicReadonlyReferenceTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckAbstract.PublicReadonlyReferenceTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckVirtual.PublicReadonlyReferenceTypeField = "99";
-            });
-
             // *
             Assert.Equal("31", duckInterface.InternalReadonlyReferenceTypeField);
             Assert.Equal("31", duckAbstract.InternalReadonlyReferenceTypeField);
             Assert.Equal("31", duckVirtual.InternalReadonlyReferenceTypeField);
-
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckInterface.InternalReadonlyReferenceTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckAbstract.InternalReadonlyReferenceTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckVirtual.InternalReadonlyReferenceTypeField = "99";
-            });
 
             // *
             Assert.Equal("32", duckInterface.ProtectedReadonlyReferenceTypeField);
             Assert.Equal("32", duckAbstract.ProtectedReadonlyReferenceTypeField);
             Assert.Equal("32", duckVirtual.ProtectedReadonlyReferenceTypeField);
 
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckInterface.ProtectedReadonlyReferenceTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckAbstract.ProtectedReadonlyReferenceTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckVirtual.ProtectedReadonlyReferenceTypeField = "99";
-            });
-
             // *
             Assert.Equal("33", duckInterface.PrivateReadonlyReferenceTypeField);
             Assert.Equal("33", duckAbstract.PrivateReadonlyReferenceTypeField);
             Assert.Equal("33", duckVirtual.PrivateReadonlyReferenceTypeField);
-
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckInterface.PrivateReadonlyReferenceTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckAbstract.PrivateReadonlyReferenceTypeField = "99";
-            });
-            Assert.Throws<DuckTypeFieldIsReadonlyException>(() =>
-            {
-                duckVirtual.PrivateReadonlyReferenceTypeField = "99";
-            });
         }
 
         [Theory]
@@ -365,16 +281,16 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
         public interface IObscureDuckType
         {
             [Duck(Name = "_publicStaticReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            string PublicStaticReadonlyReferenceTypeField { get; set; }
+            string PublicStaticReadonlyReferenceTypeField { get; }
 
             [Duck(Name = "_internalStaticReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            string InternalStaticReadonlyReferenceTypeField { get; set; }
+            string InternalStaticReadonlyReferenceTypeField { get; }
 
             [Duck(Name = "_protectedStaticReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            string ProtectedStaticReadonlyReferenceTypeField { get; set; }
+            string ProtectedStaticReadonlyReferenceTypeField { get; }
 
             [Duck(Name = "_privateStaticReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            string PrivateStaticReadonlyReferenceTypeField { get; set; }
+            string PrivateStaticReadonlyReferenceTypeField { get; }
 
             // *
 
@@ -393,16 +309,16 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             // *
 
             [Duck(Name = "_publicReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            string PublicReadonlyReferenceTypeField { get; set; }
+            string PublicReadonlyReferenceTypeField { get; }
 
             [Duck(Name = "_internalReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            string InternalReadonlyReferenceTypeField { get; set; }
+            string InternalReadonlyReferenceTypeField { get; }
 
             [Duck(Name = "_protectedReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            string ProtectedReadonlyReferenceTypeField { get; set; }
+            string ProtectedReadonlyReferenceTypeField { get; }
 
             [Duck(Name = "_privateReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            string PrivateReadonlyReferenceTypeField { get; set; }
+            string PrivateReadonlyReferenceTypeField { get; }
 
             // *
 
@@ -419,19 +335,31 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             string PrivateReferenceTypeField { get; set; }
         }
 
+        public interface IObscureStaticReadonlyErrorDuckType
+        {
+            [Duck(Name = "_publicStaticReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            string PublicStaticReadonlyReferenceTypeField { get; set; }
+        }
+
+        public interface IObscureReadonlyErrorDuckType
+        {
+            [Duck(Name = "_publicReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            string PublicReadonlyReferenceTypeField { get; set; }
+        }
+
         public abstract class ObscureDuckTypeAbstractClass
         {
             [Duck(Name = "_publicStaticReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public abstract string PublicStaticReadonlyReferenceTypeField { get; set; }
+            public abstract string PublicStaticReadonlyReferenceTypeField { get; }
 
             [Duck(Name = "_internalStaticReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public abstract string InternalStaticReadonlyReferenceTypeField { get; set; }
+            public abstract string InternalStaticReadonlyReferenceTypeField { get; }
 
             [Duck(Name = "_protectedStaticReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public abstract string ProtectedStaticReadonlyReferenceTypeField { get; set; }
+            public abstract string ProtectedStaticReadonlyReferenceTypeField { get; }
 
             [Duck(Name = "_privateStaticReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public abstract string PrivateStaticReadonlyReferenceTypeField { get; set; }
+            public abstract string PrivateStaticReadonlyReferenceTypeField { get; }
 
             // *
 
@@ -450,16 +378,16 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             // *
 
             [Duck(Name = "_publicReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public abstract string PublicReadonlyReferenceTypeField { get; set; }
+            public abstract string PublicReadonlyReferenceTypeField { get; }
 
             [Duck(Name = "_internalReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public abstract string InternalReadonlyReferenceTypeField { get; set; }
+            public abstract string InternalReadonlyReferenceTypeField { get; }
 
             [Duck(Name = "_protectedReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public abstract string ProtectedReadonlyReferenceTypeField { get; set; }
+            public abstract string ProtectedReadonlyReferenceTypeField { get; }
 
             [Duck(Name = "_privateReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public abstract string PrivateReadonlyReferenceTypeField { get; set; }
+            public abstract string PrivateReadonlyReferenceTypeField { get; }
 
             // *
 
@@ -479,16 +407,16 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
         public class ObscureDuckType
         {
             [Duck(Name = "_publicStaticReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public virtual string PublicStaticReadonlyReferenceTypeField { get; set; }
+            public virtual string PublicStaticReadonlyReferenceTypeField { get; }
 
             [Duck(Name = "_internalStaticReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public virtual string InternalStaticReadonlyReferenceTypeField { get; set; }
+            public virtual string InternalStaticReadonlyReferenceTypeField { get; }
 
             [Duck(Name = "_protectedStaticReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public virtual string ProtectedStaticReadonlyReferenceTypeField { get; set; }
+            public virtual string ProtectedStaticReadonlyReferenceTypeField { get; }
 
             [Duck(Name = "_privateStaticReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public virtual string PrivateStaticReadonlyReferenceTypeField { get; set; }
+            public virtual string PrivateStaticReadonlyReferenceTypeField { get; }
 
             // *
 
@@ -507,16 +435,16 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             // *
 
             [Duck(Name = "_publicReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public virtual string PublicReadonlyReferenceTypeField { get; set; }
+            public virtual string PublicReadonlyReferenceTypeField { get; }
 
             [Duck(Name = "_internalReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public virtual string InternalReadonlyReferenceTypeField { get; set; }
+            public virtual string InternalReadonlyReferenceTypeField { get; }
 
             [Duck(Name = "_protectedReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public virtual string ProtectedReadonlyReferenceTypeField { get; set; }
+            public virtual string ProtectedReadonlyReferenceTypeField { get; }
 
             [Duck(Name = "_privateReadonlyReferenceTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
-            public virtual string PrivateReadonlyReferenceTypeField { get; set; }
+            public virtual string PrivateReadonlyReferenceTypeField { get; }
 
             // *
 

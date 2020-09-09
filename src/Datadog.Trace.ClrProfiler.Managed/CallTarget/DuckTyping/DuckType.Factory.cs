@@ -15,7 +15,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <returns>Duck type factory</returns>
         public static DuckTypeFactory GetFactoryFor(Type duckType, Type instanceType)
         {
-            return new DuckTypeFactory(GetOrCreateProxyType(duckType, instanceType));
+            CreateTypeResult result = GetOrCreateProxyType(duckType, instanceType);
+            result.ExceptionInfo?.Throw();
+            return new DuckTypeFactory(result.Type);
         }
 
         /// <summary>
@@ -27,7 +29,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         public static DuckTypeFactory<T> GetFactoryFor<T>(Type instanceType)
             where T : class
         {
-            return new DuckTypeFactory<T>(GetOrCreateProxyType(typeof(T), instanceType));
+            CreateTypeResult result = GetOrCreateProxyType(typeof(T), instanceType);
+            result.ExceptionInfo?.Throw();
+            return new DuckTypeFactory<T>(result.Type);
         }
     }
 }

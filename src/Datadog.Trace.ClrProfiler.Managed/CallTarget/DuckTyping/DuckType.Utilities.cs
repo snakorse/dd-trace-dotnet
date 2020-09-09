@@ -51,7 +51,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             var valueType = value.GetType();
             if (field is null || field.Type != valueType)
             {
-                field = (IDuckType)Activator.CreateInstance(GetOrCreateProxyType(duckType, valueType));
+                CreateTypeResult result = GetOrCreateProxyType(duckType, valueType);
+                result.ExceptionInfo?.Throw();
+                field = (IDuckType)Activator.CreateInstance(result.Type);
             }
 
             field.SetInstance(value);

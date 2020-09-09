@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 #pragma warning disable SA1649 // File name must match first type name
 #pragma warning disable SA1402 // File may only contain a single class
 
@@ -40,8 +41,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <summary>
         /// Initializes a new instance of the <see cref="DuckTypeFieldIsReadonlyException"/> class.
         /// </summary>
-        public DuckTypeFieldIsReadonlyException()
-            : base("The field is marked as readonly, you should remove the setter from the base type class or interface.")
+        /// <param name="field">Field info</param>
+        public DuckTypeFieldIsReadonlyException(FieldInfo field)
+            : base($"The field '{field.Name}' is marked as readonly, you should remove the setter from the base type class or interface.")
         {
         }
     }
@@ -88,6 +90,21 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <param name="argumentName">Name of the argument</param>
         public DuckTypeTypeIsNotPublicException(Type type, string argumentName)
             : base($"The type '{type.FullName}' must be public, argument: '{argumentName}'")
+        {
+        }
+    }
+
+    /// <summary>
+    /// DuckType struct members cannot be changed exception
+    /// </summary>
+    public class DuckTypeStructMembersCannotBeChangedException : Exception
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DuckTypeStructMembersCannotBeChangedException"/> class.
+        /// </summary>
+        /// <param name="type">Type</param>
+        public DuckTypeStructMembersCannotBeChangedException(Type type)
+            : base($"Modifying struct members is not supported. [{type.FullName}]")
         {
         }
     }

@@ -22,7 +22,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static readonly Type[] TypeObjectArray = new[] { typeof(object) };
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private static readonly Dictionary<VTuple<Type, Type>, Type> DuckTypeCache = new Dictionary<VTuple<Type, Type>, Type>();
+        private static readonly Dictionary<VTuple<Type, Type>, CreateTypeResult> DuckTypeCache = new Dictionary<VTuple<Type, Type>, CreateTypeResult>();
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static readonly ConcurrentBag<DynamicMethod> DynamicMethods = new ConcurrentBag<DynamicMethod>();
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]

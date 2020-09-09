@@ -30,10 +30,11 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             EnsureArguments(duckType, instance);
 
             // Create Type
-            var type = GetOrCreateProxyType(duckType, instance.GetType());
+            CreateTypeResult result = GetOrCreateProxyType(duckType, instance.GetType());
+            result.ExceptionInfo?.Throw();
 
             // Create instance
-            var objInstance = (IDuckType)Activator.CreateInstance(type);
+            var objInstance = (IDuckType)Activator.CreateInstance(result.Type);
             objInstance.SetInstance(instance);
             return objInstance;
         }
