@@ -11,18 +11,6 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
     public static class EmitAccessors
     {
         /// <summary>
-        /// Build a get accessor from a property info
-        /// </summary>
-        /// <param name="property">Property info</param>
-        /// <returns>Delegate to the get accessor</returns>
-        public static Func<object, object> BuildGetAccessor(PropertyInfo property)
-        {
-            var method = new DynamicMethod($"GetProp+{property.DeclaringType.Name}.{property.Name}", typeof(object), new[] { typeof(object) }, typeof(EmitAccessors).Module);
-            CreateGetAccessor(method.GetILGenerator(), property, typeof(object), typeof(object));
-            return (Func<object, object>)method.CreateDelegate(typeof(Func<object, object>));
-        }
-
-        /// <summary>
         /// Creates the IL code for a get property
         /// </summary>
         /// <remarks>
@@ -53,18 +41,6 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 
             ILHelpers.TypeConversion(il, property.PropertyType, returnType);
             il.Emit(OpCodes.Ret);
-        }
-
-        /// <summary>
-        /// Build a set accessor from a property info
-        /// </summary>
-        /// <param name="property">Property info</param>
-        /// <returns>Delegate to the set accessor</returns>
-        public static Action<object, object> BuildSetAccessor(PropertyInfo property)
-        {
-            var setMethod = new DynamicMethod($"SetProp+{property.DeclaringType!.Name}.{property.Name}", typeof(void), new[] { typeof(object), typeof(object) }, typeof(EmitAccessors).Module);
-            CreateSetAccessor(setMethod.GetILGenerator(), property, typeof(object), typeof(object));
-            return (Action<object, object>)setMethod.CreateDelegate(typeof(Action<object, object>));
         }
 
         /// <summary>
@@ -118,120 +94,6 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                     il.Emit(OpCodes.Ldarg_0);
                     il.Emit(OpCodes.Ldloc_0);
                     il.Emit(OpCodes.Box, property.DeclaringType);
-                    il.Emit(OpCodes.Stind_Ref);
-                }
-            }
-
-            il.Emit(OpCodes.Ret);
-        }
-
-        /// <summary>
-        /// Build a get accessor from a field info
-        /// </summary>
-        /// <param name="field">Field info</param>
-        /// <returns>Delegate to the get accessor</returns>
-        public static Func<object, object> BuildGetAccessor(FieldInfo field)
-        {
-            var getMethod = new DynamicMethod($"GetField+{field.DeclaringType!.Name}.{field.Name}", typeof(object), new[] { typeof(object) }, typeof(EmitAccessors).Module);
-            CreateGetAccessor(getMethod.GetILGenerator(), field, typeof(object), typeof(object));
-            return (Func<object, object>)getMethod.CreateDelegate(typeof(Func<object, object>));
-        }
-
-        /// <summary>
-        /// Creates the IL code for a get of a field
-        /// </summary>
-        /// <remarks>
-        /// Methods should accomplish the following signature:
-        /// object (object instance);
-        /// </remarks>
-        /// <param name="il">Il Generator</param>
-        /// <param name="field">Field info</param>
-        /// <param name="instanceType">Instance type</param>
-        /// <param name="returnType">Return type</param>
-        public static void CreateGetAccessor(ILGenerator il, FieldInfo field, Type instanceType, Type returnType)
-        {
-            if (field.IsStatic)
-            {
-                il.Emit(OpCodes.Ldsfld, field);
-            }
-            else
-            {
-                il.Emit(OpCodes.Ldarg_0);
-                if (field.DeclaringType != instanceType)
-                {
-                    il.Emit(field.DeclaringType!.IsValueType ? OpCodes.Unbox : OpCodes.Castclass, field.DeclaringType);
-                }
-
-                il.Emit(OpCodes.Ldfld, field);
-            }
-
-            ILHelpers.TypeConversion(il, field.FieldType, returnType);
-            il.Emit(OpCodes.Ret);
-        }
-
-        /// <summary>
-        /// Build a set accessor from a field info
-        /// </summary>
-        /// <param name="field">Field info</param>
-        /// <returns>Delegate to the set accessor</returns>
-        public static Action<object, object> BuildSetAccessor(FieldInfo field)
-        {
-            var setMethod = new DynamicMethod($"SetField+{field.DeclaringType!.Name}.{field.Name}", typeof(void), new[] { typeof(object), typeof(object) }, typeof(EmitAccessors).Module);
-            CreateSetAccessor(setMethod.GetILGenerator(), field, typeof(object), typeof(object));
-            return (Action<object, object>)setMethod.CreateDelegate(typeof(Action<object, object>));
-        }
-
-        /// <summary>
-        /// Creates the IL code for a set a field
-        /// </summary>
-        /// <remarks>
-        /// Methods should accomplish the following signature when the declaring type is a class:
-        /// void (object instance, object value);
-        /// Methods should accomplish the following signature when the declaring type is a value:
-        /// void (ref object instance, object value);
-        /// </remarks>
-        /// <param name="il">Il Generator</param>
-        /// <param name="field">Field info</param>
-        /// <param name="instanceType">Instance type</param>
-        /// <param name="valueType">Value type</param>
-        public static void CreateSetAccessor(ILGenerator il, FieldInfo field, Type instanceType, Type valueType)
-        {
-            if ((field.Attributes & FieldAttributes.InitOnly) != 0)
-            {
-                il.Emit(OpCodes.Newobj, typeof(NotImplementedException).GetConstructor(Type.EmptyTypes));
-                il.Emit(OpCodes.Throw);
-            }
-
-            if (field.IsStatic)
-            {
-                il.Emit(OpCodes.Ldarg_1);
-                ILHelpers.TypeConversion(il, valueType, field.FieldType);
-                il.Emit(OpCodes.Stsfld, field);
-            }
-            else
-            {
-                il.Emit(OpCodes.Ldarg_0);
-                if (field.DeclaringType!.IsValueType)
-                {
-                    il.DeclareLocal(field.DeclaringType);
-                    il.Emit(OpCodes.Ldind_Ref);
-                    il.Emit(OpCodes.Unbox_Any, field.DeclaringType);
-                    il.Emit(OpCodes.Stloc_0);
-                    il.Emit(OpCodes.Ldloca_S, 0);
-                }
-                else if (field.DeclaringType != instanceType)
-                {
-                    il.Emit(OpCodes.Castclass, field.DeclaringType);
-                }
-
-                il.Emit(OpCodes.Ldarg_1);
-                ILHelpers.TypeConversion(il, valueType, field.FieldType);
-                il.Emit(OpCodes.Stfld, field);
-                if (field.DeclaringType.IsValueType)
-                {
-                    il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Ldloc_0);
-                    il.Emit(OpCodes.Box, field.DeclaringType);
                     il.Emit(OpCodes.Stind_Ref);
                 }
             }
