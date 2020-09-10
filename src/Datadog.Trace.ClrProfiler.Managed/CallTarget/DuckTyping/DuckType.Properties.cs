@@ -44,9 +44,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 
             if (!prop.CanRead)
             {
-                il.Emit(OpCodes.Newobj, typeof(DuckTypePropertyCantBeReadException).GetConstructor(Type.EmptyTypes));
-                il.Emit(OpCodes.Throw);
-                return method;
+                throw new DuckTypePropertyCantBeReadException(prop);
             }
 
             var propMethod = prop.GetMethod;
@@ -183,9 +181,13 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 
             if (!prop.CanWrite)
             {
-                il.Emit(OpCodes.Newobj, typeof(DuckTypePropertyCantBeWrittenException).GetConstructor(Type.EmptyTypes));
-                il.Emit(OpCodes.Throw);
-                return method;
+                throw new DuckTypePropertyCantBeWrittenException(prop);
+            }
+
+            // Check if the property declaring type is an struct (structs modification is not supported)
+            if (prop.DeclaringType.IsValueType)
+            {
+                throw new DuckTypeStructMembersCannotBeChangedException(prop.DeclaringType);
             }
 
             var propMethod = prop.SetMethod;
@@ -195,6 +197,10 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             if (!propMethod.IsStatic)
             {
                 ILHelpers.LoadInstance(il, instanceField, instanceType);
+            }
+            else if (!publicInstance)
+            {
+                il.Emit(OpCodes.Ldnull);
             }
 
             // Check if a duck type object
@@ -228,17 +234,12 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             }
             else
             {
-                if (!publicInstance && propMethod.IsStatic)
-                {
-                    il.Emit(OpCodes.Ldnull);
-                }
-
                 // Load values
                 // If we have index parameters we need to pass it
                 var propTypes = GetPropertyParameterTypes(prop, true);
                 for (var i = 0; i < parameterTypes.Length; i++)
                 {
-                    ILHelpers.WriteLoadArgument(i, il, propMethod.IsStatic);
+                    ILHelpers.WriteLoadArgument(i, il, method.IsStatic);
                     var iPropRootType = Util.GetRootType(parameterTypes[i]);
                     var propRootType = propTypes[i].IsPublic || propTypes[i].IsNestedPublic ? Util.GetRootType(propTypes[i]) : typeof(object);
                     ILHelpers.TypeConversion(il, iPropRootType, propRootType);
@@ -270,6 +271,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                 if (prop.PropertyType.IsPublic || prop.PropertyType.IsNestedPublic)
                 {
                     dynValueType = prop.PropertyType;
+                    // ILHelpers.TypeConversion(il, typeof(object), dynValueType);
                 }
 
                 var dynParameters = new[] { typeof(object), dynValueType };

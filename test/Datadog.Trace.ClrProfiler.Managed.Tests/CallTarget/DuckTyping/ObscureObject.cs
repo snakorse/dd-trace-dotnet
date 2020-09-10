@@ -18,11 +18,23 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
         private static FieldInternalObject fieldInternalObject = new FieldInternalObject();
         private static FieldPrivateObject fieldPrivateObject = new FieldPrivateObject();
 
+        private static PropertyPublicObject propertyPublicObject = new PropertyPublicObject();
+        private static PropertyInternalObject propertyInternalObject = new PropertyInternalObject();
+        private static PropertyPrivateObject propertyPrivateObject = new PropertyPrivateObject();
+
         public static object GetFieldPublicObject() => fieldPublicObject;
 
         public static object GetFieldInternalObject() => fieldInternalObject;
 
         public static object GetFieldPrivateObject() => fieldPrivateObject;
+
+        public static object GetPropertyPublicObject() => propertyPublicObject;
+
+        public static object GetPropertyInternalObject() => propertyInternalObject;
+
+        public static object GetPropertyPrivateObject() => propertyPrivateObject;
+
+        // ***
 
         public class DummyFieldObject
         {
@@ -30,6 +42,8 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
 
             public int MagicNumber = 42;
         }
+
+        // ***
 
         public class FieldPublicObject
         {
@@ -230,6 +244,371 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             internal DummyFieldObject _internalSelfTypeField = DummyFieldObject.Default;
             protected DummyFieldObject _protectedSelfTypeField = DummyFieldObject.Default;
             private DummyFieldObject _privateSelfTypeField = DummyFieldObject.Default;
+        }
+
+        // ***
+
+        public class PropertyPublicObject
+        {
+            public static int PublicStaticGetValueType { get; } = 10;
+
+            internal static int InternalStaticGetValueType { get; } = 11;
+
+            protected static int ProtectedStaticGetValueType { get; } = 12;
+
+            private static int PrivateStaticGetValueType { get; } = 13;
+
+            // *
+
+            public static int PublicStaticGetSetValueType { get; set; } = 20;
+
+            internal static int InternalStaticGetSetValueType { get; set; } = 21;
+
+            protected static int ProtectedStaticGetSetValueType { get; set; } = 22;
+
+            private static int PrivateStaticGetSetValueType { get; set; } = 23;
+
+            // *
+
+            public int PublicGetValueType { get; } = 30;
+
+            internal int InternalGetValueType { get; } = 31;
+
+            protected int ProtectedGetValueType { get; } = 32;
+
+            private int PrivateGetValueType { get; } = 33;
+
+            // *
+
+            public int PublicGetSetValueType { get; set; } = 40;
+
+            internal int InternalGetSetValueType { get; set; } = 41;
+
+            protected int ProtectedGetSetValueType { get; set; } = 42;
+
+            private int PrivateGetSetValueType { get; set; } = 43;
+
+            // *********
+
+            public static string PublicStaticGetReferenceType { get; } = "10";
+
+            internal static string InternalStaticGetReferenceType { get; } = "11";
+
+            protected static string ProtectedStaticGetReferenceType { get; } = "12";
+
+            private static string PrivateStaticGetReferenceType { get; } = "13";
+
+            // *
+
+            public static string PublicStaticGetSetReferenceType { get; set; } = "20";
+
+            internal static string InternalStaticGetSetReferenceType { get; set; } = "21";
+
+            protected static string ProtectedStaticGetSetReferenceType { get; set; } = "22";
+
+            private static string PrivateStaticGetSetReferenceType { get; set; } = "23";
+
+            // *
+
+            public string PublicGetReferenceType { get; } = "30";
+
+            internal string InternalGetReferenceType { get; } = "31";
+
+            protected string ProtectedGetReferenceType { get; } = "32";
+
+            private string PrivateGetReferenceType { get; } = "33";
+
+            // *
+
+            public string PublicGetSetReferenceType { get; set; } = "40";
+
+            internal string InternalGetSetReferenceType { get; set; } = "41";
+
+            protected string ProtectedGetSetReferenceType { get; set; } = "42";
+
+            private string PrivateGetSetReferenceType { get; set; } = "43";
+
+            // *********
+
+            public static DummyFieldObject PublicStaticGetSelfType { get; } = DummyFieldObject.Default;
+
+            internal static DummyFieldObject InternalStaticGetSelfType { get; } = DummyFieldObject.Default;
+
+            protected static DummyFieldObject ProtectedStaticGetSelfType { get; } = DummyFieldObject.Default;
+
+            private static DummyFieldObject PrivateStaticGetSelfType { get; } = DummyFieldObject.Default;
+
+            // *
+
+            public static DummyFieldObject PublicStaticGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            internal static DummyFieldObject InternalStaticGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            protected static DummyFieldObject ProtectedStaticGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            private static DummyFieldObject PrivateStaticGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            // *
+
+            public DummyFieldObject PublicGetSelfType { get; } = DummyFieldObject.Default;
+
+            internal DummyFieldObject InternalGetSelfType { get; } = DummyFieldObject.Default;
+
+            protected DummyFieldObject ProtectedGetSelfType { get; } = DummyFieldObject.Default;
+
+            private DummyFieldObject PrivateGetSelfType { get; } = DummyFieldObject.Default;
+
+            // *
+
+            public DummyFieldObject PublicGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            internal DummyFieldObject InternalGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            protected DummyFieldObject ProtectedGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            private DummyFieldObject PrivateGetSetSelfType { get; set; } = DummyFieldObject.Default;
+        }
+
+        internal class PropertyInternalObject
+        {
+            public static int PublicStaticGetValueType { get; } = 10;
+
+            internal static int InternalStaticGetValueType { get; } = 11;
+
+            protected static int ProtectedStaticGetValueType { get; } = 12;
+
+            private static int PrivateStaticGetValueType { get; } = 13;
+
+            // *
+
+            public static int PublicStaticGetSetValueType { get; set; } = 20;
+
+            internal static int InternalStaticGetSetValueType { get; set; } = 21;
+
+            protected static int ProtectedStaticGetSetValueType { get; set; } = 22;
+
+            private static int PrivateStaticGetSetValueType { get; set; } = 23;
+
+            // *
+
+            public int PublicGetValueType { get; } = 30;
+
+            internal int InternalGetValueType { get; } = 31;
+
+            protected int ProtectedGetValueType { get; } = 32;
+
+            private int PrivateGetValueType { get; } = 33;
+
+            // *
+
+            public int PublicGetSetValueType { get; set; } = 40;
+
+            internal int InternalGetSetValueType { get; set; } = 41;
+
+            protected int ProtectedGetSetValueType { get; set; } = 42;
+
+            private int PrivateGetSetValueType { get; set; } = 43;
+
+            // *********
+
+            public static string PublicStaticGetReferenceType { get; } = "10";
+
+            internal static string InternalStaticGetReferenceType { get; } = "11";
+
+            protected static string ProtectedStaticGetReferenceType { get; } = "12";
+
+            private static string PrivateStaticGetReferenceType { get; } = "13";
+
+            // *
+
+            public static string PublicStaticGetSetReferenceType { get; set; } = "20";
+
+            internal static string InternalStaticGetSetReferenceType { get; set; } = "21";
+
+            protected static string ProtectedStaticGetSetReferenceType { get; set; } = "22";
+
+            private static string PrivateStaticGetSetReferenceType { get; set; } = "23";
+
+            // *
+
+            public string PublicGetReferenceType { get; } = "30";
+
+            internal string InternalGetReferenceType { get; } = "31";
+
+            protected string ProtectedGetReferenceType { get; } = "32";
+
+            private string PrivateGetReferenceType { get; } = "33";
+
+            // *
+
+            public string PublicGetSetReferenceType { get; set; } = "40";
+
+            internal string InternalGetSetReferenceType { get; set; } = "41";
+
+            protected string ProtectedGetSetReferenceType { get; set; } = "42";
+
+            private string PrivateGetSetReferenceType { get; set; } = "43";
+
+            // *********
+
+            public static DummyFieldObject PublicStaticGetSelfType { get; } = DummyFieldObject.Default;
+
+            internal static DummyFieldObject InternalStaticGetSelfType { get; } = DummyFieldObject.Default;
+
+            protected static DummyFieldObject ProtectedStaticGetSelfType { get; } = DummyFieldObject.Default;
+
+            private static DummyFieldObject PrivateStaticGetSelfType { get; } = DummyFieldObject.Default;
+
+            // *
+
+            public static DummyFieldObject PublicStaticGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            internal static DummyFieldObject InternalStaticGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            protected static DummyFieldObject ProtectedStaticGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            private static DummyFieldObject PrivateStaticGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            // *
+
+            public DummyFieldObject PublicGetSelfType { get; } = DummyFieldObject.Default;
+
+            internal DummyFieldObject InternalGetSelfType { get; } = DummyFieldObject.Default;
+
+            protected DummyFieldObject ProtectedGetSelfType { get; } = DummyFieldObject.Default;
+
+            private DummyFieldObject PrivateGetSelfType { get; } = DummyFieldObject.Default;
+
+            // *
+
+            public DummyFieldObject PublicGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            internal DummyFieldObject InternalGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            protected DummyFieldObject ProtectedGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            private DummyFieldObject PrivateGetSetSelfType { get; set; } = DummyFieldObject.Default;
+        }
+
+        private class PropertyPrivateObject
+        {
+            public static int PublicStaticGetValueType { get; } = 10;
+
+            internal static int InternalStaticGetValueType { get; } = 11;
+
+            protected static int ProtectedStaticGetValueType { get; } = 12;
+
+            private static int PrivateStaticGetValueType { get; } = 13;
+
+            // *
+
+            public static int PublicStaticGetSetValueType { get; set; } = 20;
+
+            internal static int InternalStaticGetSetValueType { get; set; } = 21;
+
+            protected static int ProtectedStaticGetSetValueType { get; set; } = 22;
+
+            private static int PrivateStaticGetSetValueType { get; set; } = 23;
+
+            // *
+
+            public int PublicGetValueType { get; } = 30;
+
+            internal int InternalGetValueType { get; } = 31;
+
+            protected int ProtectedGetValueType { get; } = 32;
+
+            private int PrivateGetValueType { get; } = 33;
+
+            // *
+
+            public int PublicGetSetValueType { get; set; } = 40;
+
+            internal int InternalGetSetValueType { get; set; } = 41;
+
+            protected int ProtectedGetSetValueType { get; set; } = 42;
+
+            private int PrivateGetSetValueType { get; set; } = 43;
+
+            // *********
+
+            public static string PublicStaticGetReferenceType { get; } = "10";
+
+            internal static string InternalStaticGetReferenceType { get; } = "11";
+
+            protected static string ProtectedStaticGetReferenceType { get; } = "12";
+
+            private static string PrivateStaticGetReferenceType { get; } = "13";
+
+            // *
+
+            public static string PublicStaticGetSetReferenceType { get; set; } = "20";
+
+            internal static string InternalStaticGetSetReferenceType { get; set; } = "21";
+
+            protected static string ProtectedStaticGetSetReferenceType { get; set; } = "22";
+
+            private static string PrivateStaticGetSetReferenceType { get; set; } = "23";
+
+            // *
+
+            public string PublicGetReferenceType { get; } = "30";
+
+            internal string InternalGetReferenceType { get; } = "31";
+
+            protected string ProtectedGetReferenceType { get; } = "32";
+
+            private string PrivateGetReferenceType { get; } = "33";
+
+            // *
+
+            public string PublicGetSetReferenceType { get; set; } = "40";
+
+            internal string InternalGetSetReferenceType { get; set; } = "41";
+
+            protected string ProtectedGetSetReferenceType { get; set; } = "42";
+
+            private string PrivateGetSetReferenceType { get; set; } = "43";
+
+            // *********
+
+            public static DummyFieldObject PublicStaticGetSelfType { get; } = DummyFieldObject.Default;
+
+            internal static DummyFieldObject InternalStaticGetSelfType { get; } = DummyFieldObject.Default;
+
+            protected static DummyFieldObject ProtectedStaticGetSelfType { get; } = DummyFieldObject.Default;
+
+            private static DummyFieldObject PrivateStaticGetSelfType { get; } = DummyFieldObject.Default;
+
+            // *
+
+            public static DummyFieldObject PublicStaticGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            internal static DummyFieldObject InternalStaticGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            protected static DummyFieldObject ProtectedStaticGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            private static DummyFieldObject PrivateStaticGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            // *
+
+            public DummyFieldObject PublicGetSelfType { get; } = DummyFieldObject.Default;
+
+            internal DummyFieldObject InternalGetSelfType { get; } = DummyFieldObject.Default;
+
+            protected DummyFieldObject ProtectedGetSelfType { get; } = DummyFieldObject.Default;
+
+            private DummyFieldObject PrivateGetSelfType { get; } = DummyFieldObject.Default;
+
+            // *
+
+            public DummyFieldObject PublicGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            internal DummyFieldObject InternalGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            protected DummyFieldObject ProtectedGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            private DummyFieldObject PrivateGetSetSelfType { get; set; } = DummyFieldObject.Default;
         }
     }
 }

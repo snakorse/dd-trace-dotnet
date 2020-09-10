@@ -95,45 +95,39 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             var duckAbstract = obscureObject.As<ObscureDuckTypeAbstractClass>();
             var duckVirtual = obscureObject.As<ObscureDuckType>();
 
+            IDummyFieldObject newDummy = null;
+
             // *
+            newDummy = (new ObscureObject.DummyFieldObject { MagicNumber = 42 }).As<IDummyFieldObject>();
+            duckInterface.PublicStaticSelfTypeField = newDummy;
 
             Assert.Equal(42, duckInterface.PublicStaticSelfTypeField.MagicNumber);
             Assert.Equal(42, duckAbstract.PublicStaticSelfTypeField.MagicNumber);
             Assert.Equal(42, duckVirtual.PublicStaticSelfTypeField.MagicNumber);
 
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.PublicStaticSelfTypeField).Instance);
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.PublicStaticSelfTypeField).Instance);
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.PublicStaticSelfTypeField).Instance);
+            // *
+            newDummy = (new ObscureObject.DummyFieldObject { MagicNumber = 52 }).As<IDummyFieldObject>();
+            duckInterface.InternalStaticSelfTypeField = newDummy;
+
+            Assert.Equal(52, duckInterface.InternalStaticSelfTypeField.MagicNumber);
+            Assert.Equal(52, duckAbstract.InternalStaticSelfTypeField.MagicNumber);
+            Assert.Equal(52, duckVirtual.InternalStaticSelfTypeField.MagicNumber);
 
             // *
+            newDummy = (new ObscureObject.DummyFieldObject { MagicNumber = 62 }).As<IDummyFieldObject>();
+            duckAbstract.ProtectedStaticSelfTypeField = newDummy;
 
-            Assert.Equal(42, duckInterface.InternalStaticSelfTypeField.MagicNumber);
-            Assert.Equal(42, duckAbstract.InternalStaticSelfTypeField.MagicNumber);
-            Assert.Equal(42, duckVirtual.InternalStaticSelfTypeField.MagicNumber);
-
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.InternalStaticSelfTypeField).Instance);
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.InternalStaticSelfTypeField).Instance);
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.InternalStaticSelfTypeField).Instance);
+            Assert.Equal(62, duckInterface.ProtectedStaticSelfTypeField.MagicNumber);
+            Assert.Equal(62, duckAbstract.ProtectedStaticSelfTypeField.MagicNumber);
+            Assert.Equal(62, duckVirtual.ProtectedStaticSelfTypeField.MagicNumber);
 
             // *
+            newDummy = (new ObscureObject.DummyFieldObject { MagicNumber = 72 }).As<IDummyFieldObject>();
+            duckAbstract.PrivateStaticSelfTypeField = newDummy;
 
-            Assert.Equal(42, duckInterface.ProtectedStaticSelfTypeField.MagicNumber);
-            Assert.Equal(42, duckAbstract.ProtectedStaticSelfTypeField.MagicNumber);
-            Assert.Equal(42, duckVirtual.ProtectedStaticSelfTypeField.MagicNumber);
-
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.ProtectedStaticSelfTypeField).Instance);
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.ProtectedStaticSelfTypeField).Instance);
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.ProtectedStaticSelfTypeField).Instance);
-
-            // *
-
-            Assert.Equal(42, duckInterface.PrivateStaticSelfTypeField.MagicNumber);
-            Assert.Equal(42, duckAbstract.PrivateStaticSelfTypeField.MagicNumber);
-            Assert.Equal(42, duckVirtual.PrivateStaticSelfTypeField.MagicNumber);
-
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.PrivateStaticSelfTypeField).Instance);
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.PrivateStaticSelfTypeField).Instance);
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.PrivateStaticSelfTypeField).Instance);
+            Assert.Equal(72, duckInterface.PrivateStaticSelfTypeField.MagicNumber);
+            Assert.Equal(72, duckAbstract.PrivateStaticSelfTypeField.MagicNumber);
+            Assert.Equal(72, duckVirtual.PrivateStaticSelfTypeField.MagicNumber);
         }
 
         [Theory]
@@ -193,45 +187,39 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             var duckAbstract = obscureObject.As<ObscureDuckTypeAbstractClass>();
             var duckVirtual = obscureObject.As<ObscureDuckType>();
 
+            IDummyFieldObject newDummy = null;
+
             // *
+            newDummy = (new ObscureObject.DummyFieldObject { MagicNumber = 42 }).As<IDummyFieldObject>();
+            duckInterface.PublicSelfTypeField = newDummy;
 
             Assert.Equal(42, duckInterface.PublicSelfTypeField.MagicNumber);
             Assert.Equal(42, duckAbstract.PublicSelfTypeField.MagicNumber);
             Assert.Equal(42, duckVirtual.PublicSelfTypeField.MagicNumber);
 
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.PublicSelfTypeField).Instance);
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.PublicSelfTypeField).Instance);
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.PublicSelfTypeField).Instance);
+            // *
+            newDummy = (new ObscureObject.DummyFieldObject { MagicNumber = 52 }).As<IDummyFieldObject>();
+            duckInterface.InternalSelfTypeField = newDummy;
+
+            Assert.Equal(52, duckInterface.InternalSelfTypeField.MagicNumber);
+            Assert.Equal(52, duckAbstract.InternalSelfTypeField.MagicNumber);
+            Assert.Equal(52, duckVirtual.InternalSelfTypeField.MagicNumber);
 
             // *
+            newDummy = (new ObscureObject.DummyFieldObject { MagicNumber = 62 }).As<IDummyFieldObject>();
+            duckInterface.ProtectedSelfTypeField = newDummy;
 
-            Assert.Equal(42, duckInterface.InternalSelfTypeField.MagicNumber);
-            Assert.Equal(42, duckAbstract.InternalSelfTypeField.MagicNumber);
-            Assert.Equal(42, duckVirtual.InternalSelfTypeField.MagicNumber);
-
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.InternalSelfTypeField).Instance);
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.InternalSelfTypeField).Instance);
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.InternalSelfTypeField).Instance);
+            Assert.Equal(62, duckInterface.ProtectedSelfTypeField.MagicNumber);
+            Assert.Equal(62, duckAbstract.ProtectedSelfTypeField.MagicNumber);
+            Assert.Equal(62, duckVirtual.ProtectedSelfTypeField.MagicNumber);
 
             // *
+            newDummy = (new ObscureObject.DummyFieldObject { MagicNumber = 72 }).As<IDummyFieldObject>();
+            duckInterface.PrivateSelfTypeField = newDummy;
 
-            Assert.Equal(42, duckInterface.ProtectedSelfTypeField.MagicNumber);
-            Assert.Equal(42, duckAbstract.ProtectedSelfTypeField.MagicNumber);
-            Assert.Equal(42, duckVirtual.ProtectedSelfTypeField.MagicNumber);
-
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.ProtectedSelfTypeField).Instance);
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.ProtectedSelfTypeField).Instance);
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.ProtectedSelfTypeField).Instance);
-
-            // *
-
-            Assert.Equal(42, duckInterface.PrivateSelfTypeField.MagicNumber);
-            Assert.Equal(42, duckAbstract.PrivateSelfTypeField.MagicNumber);
-            Assert.Equal(42, duckVirtual.PrivateSelfTypeField.MagicNumber);
-
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckInterface.PrivateSelfTypeField).Instance);
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckAbstract.PrivateSelfTypeField).Instance);
-            Assert.Equal(ObscureObject.DummyFieldObject.Default, ((IDuckType)duckVirtual.PrivateSelfTypeField).Instance);
+            Assert.Equal(72, duckInterface.PrivateSelfTypeField.MagicNumber);
+            Assert.Equal(72, duckAbstract.PrivateSelfTypeField.MagicNumber);
+            Assert.Equal(72, duckVirtual.PrivateSelfTypeField.MagicNumber);
         }
 
         public interface IObscureDuckType

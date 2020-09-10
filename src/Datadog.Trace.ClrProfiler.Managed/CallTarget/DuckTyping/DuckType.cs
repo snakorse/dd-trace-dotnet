@@ -343,74 +343,14 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 
                 if (property.CanRead && propertyBuilder.GetMethod is null)
                 {
-                    propertyBuilder.SetGetMethod(GetNotFoundGetMethod(instanceType, typeBuilder, property));
+                    throw new DuckTypePropertyOrFieldNotFoundException(property.Name);
                 }
 
                 if (property.CanWrite && propertyBuilder.SetMethod is null)
                 {
-                    propertyBuilder.SetSetMethod(GetNotFoundSetMethod(instanceType, typeBuilder, property));
+                    throw new DuckTypePropertyOrFieldNotFoundException(property.Name);
                 }
             }
-        }
-
-        private static MethodBuilder GetNotFoundGetMethod(Type instanceType, TypeBuilder typeBuilder, PropertyInfo duckTypeProperty)
-        {
-            Type[] parameterTypes;
-            var idxParams = duckTypeProperty.GetIndexParameters();
-            if (idxParams.Length > 0)
-            {
-                parameterTypes = new Type[idxParams.Length];
-                for (var i = 0; i < idxParams.Length; i++)
-                {
-                    parameterTypes[i] = idxParams[i].ParameterType;
-                }
-            }
-            else
-            {
-                parameterTypes = Type.EmptyTypes;
-            }
-
-            var method = typeBuilder.DefineMethod(
-                $"get_{duckTypeProperty.Name}",
-                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Virtual,
-                duckTypeProperty.PropertyType,
-                parameterTypes);
-
-            var il = method.GetILGenerator();
-            il.Emit(OpCodes.Newobj, typeof(DuckTypePropertyOrFieldNotFoundException).GetConstructor(Type.EmptyTypes));
-            il.Emit(OpCodes.Throw);
-            return method;
-        }
-
-        private static MethodBuilder GetNotFoundSetMethod(Type instanceType, TypeBuilder typeBuilder, PropertyInfo duckTypeProperty)
-        {
-            Type[] parameterTypes;
-            var idxParams = duckTypeProperty.GetIndexParameters();
-            if (idxParams.Length > 0)
-            {
-                parameterTypes = new Type[idxParams.Length + 1];
-                for (var i = 0; i < idxParams.Length; i++)
-                {
-                    parameterTypes[i] = idxParams[i].ParameterType;
-                }
-
-                parameterTypes[idxParams.Length] = duckTypeProperty.PropertyType;
-            }
-            else
-            {
-                parameterTypes = new[] { duckTypeProperty.PropertyType };
-            }
-
-            var method = typeBuilder.DefineMethod(
-                "set_" + duckTypeProperty.Name,
-                MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Virtual,
-                typeof(void),
-                parameterTypes);
-
-            var il = method.GetILGenerator();
-            il.Emit(OpCodes.Newobj, typeof(DuckTypePropertyOrFieldNotFoundException).GetConstructor(Type.EmptyTypes));
-            il.Emit(OpCodes.Throw);
-            return method;
         }
 
         /// <inheritdoc/>

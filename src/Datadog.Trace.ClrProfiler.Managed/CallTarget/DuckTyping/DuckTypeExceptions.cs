@@ -13,8 +13,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <summary>
         /// Initializes a new instance of the <see cref="DuckTypePropertyCantBeReadException"/> class.
         /// </summary>
-        public DuckTypePropertyCantBeReadException()
-            : base("The property can't be read, you should remove the getter from the base type class or interface.")
+        /// <param name="property">Property info</param>
+        internal DuckTypePropertyCantBeReadException(PropertyInfo property)
+            : base($"The property '{property.Name}' can't be read, you should remove the getter from the base type class or interface.")
         {
         }
     }
@@ -27,8 +28,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <summary>
         /// Initializes a new instance of the <see cref="DuckTypePropertyCantBeWrittenException"/> class.
         /// </summary>
-        public DuckTypePropertyCantBeWrittenException()
-            : base("The property can't be written, you should remove the setter from the base type class or interface.")
+        /// <param name="property">Property info</param>
+        internal DuckTypePropertyCantBeWrittenException(PropertyInfo property)
+            : base($"The property '{property.Name}' can't be written, you should remove the setter from the base type class or interface.")
         {
         }
     }
@@ -42,7 +44,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// Initializes a new instance of the <see cref="DuckTypeFieldIsReadonlyException"/> class.
         /// </summary>
         /// <param name="field">Field info</param>
-        public DuckTypeFieldIsReadonlyException(FieldInfo field)
+        internal DuckTypeFieldIsReadonlyException(FieldInfo field)
             : base($"The field '{field.Name}' is marked as readonly, you should remove the setter from the base type class or interface.")
         {
         }
@@ -56,8 +58,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <summary>
         /// Initializes a new instance of the <see cref="DuckTypePropertyOrFieldNotFoundException"/> class.
         /// </summary>
-        public DuckTypePropertyOrFieldNotFoundException()
-            : base("The property or field was not found in the instance.")
+        /// <param name="name">Property or field name</param>
+        public DuckTypePropertyOrFieldNotFoundException(string name)
+            : base($"The property or field  for '{name}' was not found in the instance.")
         {
         }
     }
@@ -103,7 +106,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// Initializes a new instance of the <see cref="DuckTypeStructMembersCannotBeChangedException"/> class.
         /// </summary>
         /// <param name="type">Type</param>
-        public DuckTypeStructMembersCannotBeChangedException(Type type)
+        internal DuckTypeStructMembersCannotBeChangedException(Type type)
             : base($"Modifying struct members is not supported. [{type.FullName}]")
         {
         }
