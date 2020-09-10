@@ -225,184 +225,134 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
 
         public interface IObscureDuckType
         {
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             IDummyFieldObject PublicStaticGetSelfType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             IDummyFieldObject InternalStaticGetSelfType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             IDummyFieldObject ProtectedStaticGetSelfType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             IDummyFieldObject PrivateStaticGetSelfType { get; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             IDummyFieldObject PublicStaticGetSetSelfType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             IDummyFieldObject InternalStaticGetSetSelfType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             IDummyFieldObject ProtectedStaticGetSetSelfType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             IDummyFieldObject PrivateStaticGetSetSelfType { get; set; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             IDummyFieldObject PublicGetSelfType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             IDummyFieldObject InternalGetSelfType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             IDummyFieldObject ProtectedGetSelfType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             IDummyFieldObject PrivateGetSelfType { get; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             IDummyFieldObject PublicGetSetSelfType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             IDummyFieldObject InternalGetSetSelfType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             IDummyFieldObject ProtectedGetSetSelfType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             IDummyFieldObject PrivateGetSetSelfType { get; set; }
         }
 
         public interface IObscureStaticErrorDuckType
         {
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             IDummyFieldObject PublicStaticGetSelfType { get; set; }
         }
 
         public interface IObscureErrorDuckType
         {
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             IDummyFieldObject PublicGetSelfType { get; set; }
         }
 
         public abstract class ObscureDuckTypeAbstractClass
         {
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract IDummyFieldObject PublicStaticGetSelfType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract IDummyFieldObject InternalStaticGetSelfType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract IDummyFieldObject ProtectedStaticGetSelfType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract IDummyFieldObject PrivateStaticGetSelfType { get; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract IDummyFieldObject PublicStaticGetSetSelfType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract IDummyFieldObject InternalStaticGetSetSelfType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract IDummyFieldObject ProtectedStaticGetSetSelfType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract IDummyFieldObject PrivateStaticGetSetSelfType { get; set; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract IDummyFieldObject PublicGetSelfType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract IDummyFieldObject InternalGetSelfType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract IDummyFieldObject ProtectedGetSelfType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract IDummyFieldObject PrivateGetSelfType { get; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract IDummyFieldObject PublicGetSetSelfType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract IDummyFieldObject InternalGetSetSelfType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract IDummyFieldObject ProtectedGetSetSelfType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract IDummyFieldObject PrivateGetSetSelfType { get; set; }
         }
 
         public class ObscureDuckType
         {
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual IDummyFieldObject PublicStaticGetSelfType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual IDummyFieldObject InternalStaticGetSelfType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual IDummyFieldObject ProtectedStaticGetSelfType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual IDummyFieldObject PrivateStaticGetSelfType { get; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual IDummyFieldObject PublicStaticGetSetSelfType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual IDummyFieldObject InternalStaticGetSetSelfType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual IDummyFieldObject ProtectedStaticGetSetSelfType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual IDummyFieldObject PrivateStaticGetSetSelfType { get; set; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual IDummyFieldObject PublicGetSelfType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual IDummyFieldObject InternalGetSelfType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual IDummyFieldObject ProtectedGetSelfType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual IDummyFieldObject PrivateGetSelfType { get; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual IDummyFieldObject PublicGetSetSelfType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual IDummyFieldObject InternalGetSetSelfType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual IDummyFieldObject ProtectedGetSetSelfType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual IDummyFieldObject PrivateGetSetSelfType { get; set; }
         }
     }

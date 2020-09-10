@@ -138,18 +138,6 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             ILGenerator il = method.GetILGenerator();
             bool isPublicInstance = instanceType.IsPublic || instanceType.IsNestedPublic;
 
-            // Check if the field is marked as InitOnly (readonly) and throw an exception in that case
-            if ((field.Attributes & FieldAttributes.InitOnly) != 0)
-            {
-                throw new DuckTypeFieldIsReadonlyException(field);
-            }
-
-            // Check if the field declaring type is an struct (structs modification is not supported)
-            if (field.DeclaringType.IsValueType)
-            {
-                throw new DuckTypeStructMembersCannotBeChangedException(field.DeclaringType);
-            }
-
             // Load instance
             if (!field.IsStatic)
             {

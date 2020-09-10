@@ -280,185 +280,151 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
 
         public interface IObscureDuckType
         {
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             string PublicStaticGetReferenceType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             string InternalStaticGetReferenceType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             string ProtectedStaticGetReferenceType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             string PrivateStaticGetReferenceType { get; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             string PublicStaticGetSetReferenceType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             string InternalStaticGetSetReferenceType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             string ProtectedStaticGetSetReferenceType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             string PrivateStaticGetSetReferenceType { get; set; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             string PublicGetReferenceType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             string InternalGetReferenceType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             string ProtectedGetReferenceType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             string PrivateGetReferenceType { get; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             string PublicGetSetReferenceType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             string InternalGetSetReferenceType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             string ProtectedGetSetReferenceType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             string PrivateGetSetReferenceType { get; set; }
+
+            // *
+
+            string this[string index] { get; set; }
         }
 
         public interface IObscureStaticErrorDuckType
         {
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             string PublicStaticGetReferenceType { get; set; }
         }
 
         public interface IObscureErrorDuckType
         {
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             string PublicGetReferenceType { get; set; }
         }
 
         public abstract class ObscureDuckTypeAbstractClass
         {
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract string PublicStaticGetReferenceType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract string InternalStaticGetReferenceType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract string ProtectedStaticGetReferenceType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract string PrivateStaticGetReferenceType { get; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract string PublicStaticGetSetReferenceType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract string InternalStaticGetSetReferenceType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract string ProtectedStaticGetSetReferenceType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract string PrivateStaticGetSetReferenceType { get; set; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract string PublicGetReferenceType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract string InternalGetReferenceType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract string ProtectedGetReferenceType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract string PrivateGetReferenceType { get; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract string PublicGetSetReferenceType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract string InternalGetSetReferenceType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract string ProtectedGetSetReferenceType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract string PrivateGetSetReferenceType { get; set; }
+
+            // *
+
+            public abstract string this[string index] { get; set; }
         }
 
         public class ObscureDuckType
         {
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual string PublicStaticGetReferenceType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual string InternalStaticGetReferenceType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual string ProtectedStaticGetReferenceType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual string PrivateStaticGetReferenceType { get; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual string PublicStaticGetSetReferenceType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual string InternalStaticGetSetReferenceType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual string ProtectedStaticGetSetReferenceType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual string PrivateStaticGetSetReferenceType { get; set; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual string PublicGetReferenceType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual string InternalGetReferenceType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual string ProtectedGetReferenceType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual string PrivateGetReferenceType { get; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual string PublicGetSetReferenceType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual string InternalGetSetReferenceType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual string ProtectedGetSetReferenceType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual string PrivateGetSetReferenceType { get; set; }
+
+            // *
+
+            public virtual string this[string index]
+            {
+                get => default;
+                set { }
+            }
         }
     }
 }

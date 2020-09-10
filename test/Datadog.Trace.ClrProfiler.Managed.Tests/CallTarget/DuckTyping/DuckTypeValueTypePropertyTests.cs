@@ -278,187 +278,177 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             Assert.Equal(60, duckVirtual.PrivateGetSetValueType);
         }
 
+        [Theory]
+        [MemberData(nameof(Data))]
+        public void Indexer(object obscureObject)
+        {
+            var duckInterface = obscureObject.As<IObscureDuckType>();
+            var duckAbstract = obscureObject.As<ObscureDuckTypeAbstractClass>();
+            var duckVirtual = obscureObject.As<ObscureDuckType>();
+
+            duckInterface[1] = 100;
+            Assert.Equal(100, duckInterface[1]);
+            Assert.Equal(100, duckAbstract[1]);
+            Assert.Equal(100, duckVirtual[1]);
+
+            duckAbstract[2] = 200;
+            Assert.Equal(200, duckInterface[2]);
+            Assert.Equal(200, duckAbstract[2]);
+            Assert.Equal(200, duckVirtual[2]);
+
+            duckVirtual[3] = 300;
+            Assert.Equal(300, duckInterface[3]);
+            Assert.Equal(300, duckAbstract[3]);
+            Assert.Equal(300, duckVirtual[3]);
+        }
+
         public interface IObscureDuckType
         {
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             int PublicStaticGetValueType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             int InternalStaticGetValueType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             int ProtectedStaticGetValueType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             int PrivateStaticGetValueType { get; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             int PublicStaticGetSetValueType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             int InternalStaticGetSetValueType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             int ProtectedStaticGetSetValueType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             int PrivateStaticGetSetValueType { get; set; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             int PublicGetValueType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             int InternalGetValueType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             int ProtectedGetValueType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             int PrivateGetValueType { get; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             int PublicGetSetValueType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             int InternalGetSetValueType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             int ProtectedGetSetValueType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             int PrivateGetSetValueType { get; set; }
+
+            // *
+
+            int this[int index] { get; set; }
         }
 
         public interface IObscureStaticErrorDuckType
         {
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             int PublicStaticGetValueType { get; set; }
         }
 
         public interface IObscureErrorDuckType
         {
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             int PublicGetValueType { get; set; }
         }
 
         public abstract class ObscureDuckTypeAbstractClass
         {
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract int PublicStaticGetValueType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract int InternalStaticGetValueType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract int ProtectedStaticGetValueType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract int PrivateStaticGetValueType { get; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract int PublicStaticGetSetValueType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract int InternalStaticGetSetValueType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract int ProtectedStaticGetSetValueType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract int PrivateStaticGetSetValueType { get; set; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract int PublicGetValueType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract int InternalGetValueType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract int ProtectedGetValueType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract int PrivateGetValueType { get; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract int PublicGetSetValueType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract int InternalGetSetValueType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract int ProtectedGetSetValueType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public abstract int PrivateGetSetValueType { get; set; }
+
+            // *
+
+            public abstract int this[int index] { get; set; }
         }
 
         public class ObscureDuckType
         {
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual int PublicStaticGetValueType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual int InternalStaticGetValueType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual int ProtectedStaticGetValueType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual int PrivateStaticGetValueType { get; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual int PublicStaticGetSetValueType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual int InternalStaticGetSetValueType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual int ProtectedStaticGetSetValueType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual int PrivateStaticGetSetValueType { get; set; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual int PublicGetValueType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual int InternalGetValueType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual int ProtectedGetValueType { get; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual int PrivateGetValueType { get; }
 
             // *
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual int PublicGetSetValueType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual int InternalGetSetValueType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual int ProtectedGetSetValueType { get; set; }
 
-            [Duck(BindingFlags = DuckAttribute.AllFlags)]
             public virtual int PrivateGetSetValueType { get; set; }
+
+            // *
+
+            public virtual int this[int index]
+            {
+                get => default;
+                set { }
+            }
         }
     }
 }

@@ -40,7 +40,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <summary>
         /// Gets or sets binding flags
         /// </summary>
-        public BindingFlags BindingFlags { get; set; } = BindingFlags.Instance | BindingFlags.Public;
+        public BindingFlags BindingFlags { get; set; } = AllFlags;
 
         /// <summary>
         /// Gets or sets duck kind

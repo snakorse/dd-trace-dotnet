@@ -291,8 +291,17 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                     switch (duckAttr.Kind)
                     {
                         case DuckKind.Property:
-                            var prop = instanceType.GetProperty(duckAttr.Name, duckAttr.BindingFlags);
-                            if (prop is null)
+                            PropertyInfo targetProperty = null;
+                            try
+                            {
+                                targetProperty = instanceType.GetProperty(duckAttr.Name, duckAttr.BindingFlags);
+                            }
+                            catch
+                            {
+                                targetProperty = instanceType.GetProperty(duckAttr.Name, property.PropertyType, property.GetIndexParameters().Select(i => i.ParameterType).ToArray());
+                            }
+
+                            if (targetProperty is null)
                             {
                                 continue;
                             }
@@ -301,19 +310,37 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 
                             if (property.CanRead)
                             {
-                                propertyBuilder.SetGetMethod(GetPropertyGetMethod(instanceType, typeBuilder, property, prop, instanceField));
+                                // Check if the target property can be read
+                                if (!targetProperty.CanRead)
+                                {
+                                    throw new DuckTypePropertyCantBeReadException(targetProperty);
+                                }
+
+                                propertyBuilder.SetGetMethod(GetPropertyGetMethod(instanceType, typeBuilder, property, targetProperty, instanceField));
                             }
 
                             if (property.CanWrite)
                             {
-                                propertyBuilder.SetSetMethod(GetPropertySetMethod(instanceType, typeBuilder, property, prop, instanceField));
+                                // Check if the target property can be written
+                                if (!targetProperty.CanWrite)
+                                {
+                                    throw new DuckTypePropertyCantBeWrittenException(targetProperty);
+                                }
+
+                                // Check if the target property declaring type is an struct (structs modification is not supported)
+                                if (targetProperty.DeclaringType.IsValueType)
+                                {
+                                    throw new DuckTypeStructMembersCannotBeChangedException(targetProperty.DeclaringType);
+                                }
+
+                                propertyBuilder.SetSetMethod(GetPropertySetMethod(instanceType, typeBuilder, property, targetProperty, instanceField));
                             }
 
                             break;
 
                         case DuckKind.Field:
-                            var field = instanceType.GetField(duckAttr.Name, duckAttr.BindingFlags);
-                            if (field is null)
+                            FieldInfo targetField = instanceType.GetField(duckAttr.Name, duckAttr.BindingFlags);
+                            if (targetField is null)
                             {
                                 continue;
                             }
@@ -322,12 +349,24 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 
                             if (property.CanRead)
                             {
-                                propertyBuilder.SetGetMethod(GetFieldGetMethod(instanceType, typeBuilder, property, field, instanceField));
+                                propertyBuilder.SetGetMethod(GetFieldGetMethod(instanceType, typeBuilder, property, targetField, instanceField));
                             }
 
                             if (property.CanWrite)
                             {
-                                propertyBuilder.SetSetMethod(GetFieldSetMethod(instanceType, typeBuilder, property, field, instanceField));
+                                // Check if the target field is marked as InitOnly (readonly) and throw an exception in that case
+                                if ((targetField.Attributes & FieldAttributes.InitOnly) != 0)
+                                {
+                                    throw new DuckTypeFieldIsReadonlyException(targetField);
+                                }
+
+                                // Check if the target field declaring type is an struct (structs modification is not supported)
+                                if (targetField.DeclaringType.IsValueType)
+                                {
+                                    throw new DuckTypeStructMembersCannotBeChangedException(targetField.DeclaringType);
+                                }
+
+                                propertyBuilder.SetSetMethod(GetFieldSetMethod(instanceType, typeBuilder, property, targetField, instanceField));
                             }
 
                             break;

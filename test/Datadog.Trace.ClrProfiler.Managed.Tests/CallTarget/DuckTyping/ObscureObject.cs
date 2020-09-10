@@ -250,6 +250,11 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
 
         public class PropertyPublicObject
         {
+            private Dictionary<int, int> _dictioInt = new Dictionary<int, int>();
+            private Dictionary<string, string> _dictioString = new Dictionary<string, string>();
+
+            // *********
+
             public static int PublicStaticGetValueType { get; } = 10;
 
             internal static int InternalStaticGetValueType { get; } = 11;
@@ -367,10 +372,25 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             protected DummyFieldObject ProtectedGetSetSelfType { get; set; } = DummyFieldObject.Default;
 
             private DummyFieldObject PrivateGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            public int this[int index]
+            {
+                get => _dictioInt[index];
+                set => _dictioInt[index] = value;
+            }
+
+            public string this[string index]
+            {
+                get => _dictioString[index];
+                set => _dictioString[index] = value;
+            }
         }
 
         internal class PropertyInternalObject
         {
+            private Dictionary<int, int> _dictioInt = new Dictionary<int, int>();
+            private Dictionary<string, string> _dictioString = new Dictionary<string, string>();
+
             public static int PublicStaticGetValueType { get; } = 10;
 
             internal static int InternalStaticGetValueType { get; } = 11;
@@ -488,10 +508,25 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             protected DummyFieldObject ProtectedGetSetSelfType { get; set; } = DummyFieldObject.Default;
 
             private DummyFieldObject PrivateGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            public int this[int index]
+            {
+                get => _dictioInt[index];
+                set => _dictioInt[index] = value;
+            }
+
+            public string this[string index]
+            {
+                get => _dictioString[index];
+                set => _dictioString[index] = value;
+            }
         }
 
         private class PropertyPrivateObject
         {
+            private Dictionary<int, int> _dictioInt = new Dictionary<int, int>();
+            private Dictionary<string, string> _dictioString = new Dictionary<string, string>();
+
             public static int PublicStaticGetValueType { get; } = 10;
 
             internal static int InternalStaticGetValueType { get; } = 11;
@@ -609,6 +644,18 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             protected DummyFieldObject ProtectedGetSetSelfType { get; set; } = DummyFieldObject.Default;
 
             private DummyFieldObject PrivateGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            public int this[int index]
+            {
+                get => _dictioInt[index];
+                set => _dictioInt[index] = value;
+            }
+
+            public string this[string index]
+            {
+                get => _dictioString[index];
+                set => _dictioString[index] = value;
+            }
         }
     }
 }

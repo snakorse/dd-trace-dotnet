@@ -280,184 +280,184 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
 
         public interface IObscureDuckType
         {
-            [Duck(Name = "_publicStaticReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_publicStaticReadonlyValueTypeField", Kind = DuckKind.Field)]
             int PublicStaticReadonlyValueTypeField { get; }
 
-            [Duck(Name = "_internalStaticReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_internalStaticReadonlyValueTypeField", Kind = DuckKind.Field)]
             int InternalStaticReadonlyValueTypeField { get; }
 
-            [Duck(Name = "_protectedStaticReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_protectedStaticReadonlyValueTypeField", Kind = DuckKind.Field)]
             int ProtectedStaticReadonlyValueTypeField { get; }
 
-            [Duck(Name = "_privateStaticReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_privateStaticReadonlyValueTypeField", Kind = DuckKind.Field)]
             int PrivateStaticReadonlyValueTypeField { get; }
 
             // *
 
-            [Duck(Name = "_publicStaticValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_publicStaticValueTypeField", Kind = DuckKind.Field)]
             int PublicStaticValueTypeField { get; set; }
 
-            [Duck(Name = "_internalStaticValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_internalStaticValueTypeField", Kind = DuckKind.Field)]
             int InternalStaticValueTypeField { get; set; }
 
-            [Duck(Name = "_protectedStaticValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_protectedStaticValueTypeField", Kind = DuckKind.Field)]
             int ProtectedStaticValueTypeField { get; set; }
 
-            [Duck(Name = "_privateStaticValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_privateStaticValueTypeField", Kind = DuckKind.Field)]
             int PrivateStaticValueTypeField { get; set; }
 
             // *
 
-            [Duck(Name = "_publicReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_publicReadonlyValueTypeField", Kind = DuckKind.Field)]
             int PublicReadonlyValueTypeField { get; }
 
-            [Duck(Name = "_internalReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_internalReadonlyValueTypeField", Kind = DuckKind.Field)]
             int InternalReadonlyValueTypeField { get; }
 
-            [Duck(Name = "_protectedReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_protectedReadonlyValueTypeField", Kind = DuckKind.Field)]
             int ProtectedReadonlyValueTypeField { get; }
 
-            [Duck(Name = "_privateReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_privateReadonlyValueTypeField", Kind = DuckKind.Field)]
             int PrivateReadonlyValueTypeField { get; }
 
             // *
 
-            [Duck(Name = "_publicValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_publicValueTypeField", Kind = DuckKind.Field)]
             int PublicValueTypeField { get; set; }
 
-            [Duck(Name = "_internalValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_internalValueTypeField", Kind = DuckKind.Field)]
             int InternalValueTypeField { get; set; }
 
-            [Duck(Name = "_protectedValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_protectedValueTypeField", Kind = DuckKind.Field)]
             int ProtectedValueTypeField { get; set; }
 
-            [Duck(Name = "_privateValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_privateValueTypeField", Kind = DuckKind.Field)]
             int PrivateValueTypeField { get; set; }
         }
 
         public interface IObscureStaticReadonlyErrorDuckType
         {
-            [Duck(Name = "_publicStaticReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_publicStaticReadonlyValueTypeField", Kind = DuckKind.Field)]
             int PublicStaticReadonlyValueTypeField { get; set; }
         }
 
         public interface IObscureReadonlyErrorDuckType
         {
-            [Duck(Name = "_publicReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_publicReadonlyValueTypeField", Kind = DuckKind.Field)]
             int PublicReadonlyValueTypeField { get; set; }
         }
 
         public abstract class ObscureDuckTypeAbstractClass
         {
-            [Duck(Name = "_publicStaticReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_publicStaticReadonlyValueTypeField", Kind = DuckKind.Field)]
             public abstract int PublicStaticReadonlyValueTypeField { get; }
 
-            [Duck(Name = "_internalStaticReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_internalStaticReadonlyValueTypeField", Kind = DuckKind.Field)]
             public abstract int InternalStaticReadonlyValueTypeField { get; }
 
-            [Duck(Name = "_protectedStaticReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_protectedStaticReadonlyValueTypeField", Kind = DuckKind.Field)]
             public abstract int ProtectedStaticReadonlyValueTypeField { get; }
 
-            [Duck(Name = "_privateStaticReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_privateStaticReadonlyValueTypeField", Kind = DuckKind.Field)]
             public abstract int PrivateStaticReadonlyValueTypeField { get; }
 
             // *
 
-            [Duck(Name = "_publicStaticValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_publicStaticValueTypeField", Kind = DuckKind.Field)]
             public abstract int PublicStaticValueTypeField { get; set; }
 
-            [Duck(Name = "_internalStaticValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_internalStaticValueTypeField", Kind = DuckKind.Field)]
             public abstract int InternalStaticValueTypeField { get; set; }
 
-            [Duck(Name = "_protectedStaticValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_protectedStaticValueTypeField", Kind = DuckKind.Field)]
             public abstract int ProtectedStaticValueTypeField { get; set; }
 
-            [Duck(Name = "_privateStaticValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_privateStaticValueTypeField", Kind = DuckKind.Field)]
             public abstract int PrivateStaticValueTypeField { get; set; }
 
             // *
 
-            [Duck(Name = "_publicReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_publicReadonlyValueTypeField", Kind = DuckKind.Field)]
             public abstract int PublicReadonlyValueTypeField { get; }
 
-            [Duck(Name = "_internalReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_internalReadonlyValueTypeField", Kind = DuckKind.Field)]
             public abstract int InternalReadonlyValueTypeField { get; }
 
-            [Duck(Name = "_protectedReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_protectedReadonlyValueTypeField", Kind = DuckKind.Field)]
             public abstract int ProtectedReadonlyValueTypeField { get; }
 
-            [Duck(Name = "_privateReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_privateReadonlyValueTypeField", Kind = DuckKind.Field)]
             public abstract int PrivateReadonlyValueTypeField { get; }
 
             // *
 
-            [Duck(Name = "_publicValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_publicValueTypeField", Kind = DuckKind.Field)]
             public abstract int PublicValueTypeField { get; set; }
 
-            [Duck(Name = "_internalValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_internalValueTypeField", Kind = DuckKind.Field)]
             public abstract int InternalValueTypeField { get; set; }
 
-            [Duck(Name = "_protectedValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_protectedValueTypeField", Kind = DuckKind.Field)]
             public abstract int ProtectedValueTypeField { get; set; }
 
-            [Duck(Name = "_privateValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_privateValueTypeField", Kind = DuckKind.Field)]
             public abstract int PrivateValueTypeField { get; set; }
         }
 
         public class ObscureDuckType
         {
-            [Duck(Name = "_publicStaticReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_publicStaticReadonlyValueTypeField", Kind = DuckKind.Field)]
             public virtual int PublicStaticReadonlyValueTypeField { get; }
 
-            [Duck(Name = "_internalStaticReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_internalStaticReadonlyValueTypeField", Kind = DuckKind.Field)]
             public virtual int InternalStaticReadonlyValueTypeField { get; }
 
-            [Duck(Name = "_protectedStaticReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_protectedStaticReadonlyValueTypeField", Kind = DuckKind.Field)]
             public virtual int ProtectedStaticReadonlyValueTypeField { get; }
 
-            [Duck(Name = "_privateStaticReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_privateStaticReadonlyValueTypeField", Kind = DuckKind.Field)]
             public virtual int PrivateStaticReadonlyValueTypeField { get; }
 
             // *
 
-            [Duck(Name = "_publicStaticValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_publicStaticValueTypeField", Kind = DuckKind.Field)]
             public virtual int PublicStaticValueTypeField { get; set; }
 
-            [Duck(Name = "_internalStaticValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_internalStaticValueTypeField", Kind = DuckKind.Field)]
             public virtual int InternalStaticValueTypeField { get; set; }
 
-            [Duck(Name = "_protectedStaticValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_protectedStaticValueTypeField", Kind = DuckKind.Field)]
             public virtual int ProtectedStaticValueTypeField { get; set; }
 
-            [Duck(Name = "_privateStaticValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_privateStaticValueTypeField", Kind = DuckKind.Field)]
             public virtual int PrivateStaticValueTypeField { get; set; }
 
             // *
 
-            [Duck(Name = "_publicReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_publicReadonlyValueTypeField", Kind = DuckKind.Field)]
             public virtual int PublicReadonlyValueTypeField { get; }
 
-            [Duck(Name = "_internalReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_internalReadonlyValueTypeField", Kind = DuckKind.Field)]
             public virtual int InternalReadonlyValueTypeField { get; }
 
-            [Duck(Name = "_protectedReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_protectedReadonlyValueTypeField", Kind = DuckKind.Field)]
             public virtual int ProtectedReadonlyValueTypeField { get; }
 
-            [Duck(Name = "_privateReadonlyValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_privateReadonlyValueTypeField", Kind = DuckKind.Field)]
             public virtual int PrivateReadonlyValueTypeField { get; }
 
             // *
 
-            [Duck(Name = "_publicValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_publicValueTypeField", Kind = DuckKind.Field)]
             public virtual int PublicValueTypeField { get; set; }
 
-            [Duck(Name = "_internalValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_internalValueTypeField", Kind = DuckKind.Field)]
             public virtual int InternalValueTypeField { get; set; }
 
-            [Duck(Name = "_protectedValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_protectedValueTypeField", Kind = DuckKind.Field)]
             public virtual int ProtectedValueTypeField { get; set; }
 
-            [Duck(Name = "_privateValueTypeField", Kind = DuckKind.Field, BindingFlags = DuckAttribute.AllFlags)]
+            [Duck(Name = "_privateValueTypeField", Kind = DuckKind.Field)]
             public virtual int PrivateValueTypeField { get; set; }
         }
     }
