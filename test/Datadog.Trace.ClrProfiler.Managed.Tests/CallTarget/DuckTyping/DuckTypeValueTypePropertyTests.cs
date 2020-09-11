@@ -302,6 +302,97 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             Assert.Equal(300, duckVirtual[3]);
         }
 
+        [Theory]
+        [MemberData(nameof(Data))]
+        public void NullableOfKnown(object obscureObject)
+        {
+            var duckInterface = obscureObject.As<IObscureDuckType>();
+            var duckAbstract = obscureObject.As<ObscureDuckTypeAbstractClass>();
+            var duckVirtual = obscureObject.As<ObscureDuckType>();
+
+            Assert.Null(duckInterface.PublicStaticNullableInt);
+            Assert.Null(duckAbstract.PublicStaticNullableInt);
+            Assert.Null(duckVirtual.PublicStaticNullableInt);
+
+            duckInterface.PublicStaticNullableInt = 42;
+            Assert.Equal(42, duckInterface.PublicStaticNullableInt);
+            Assert.Equal(42, duckAbstract.PublicStaticNullableInt);
+            Assert.Equal(42, duckVirtual.PublicStaticNullableInt);
+
+            duckAbstract.PublicStaticNullableInt = 50;
+            Assert.Equal(50, duckInterface.PublicStaticNullableInt);
+            Assert.Equal(50, duckAbstract.PublicStaticNullableInt);
+            Assert.Equal(50, duckVirtual.PublicStaticNullableInt);
+
+            duckVirtual.PublicStaticNullableInt = null;
+            Assert.Null(duckInterface.PublicStaticNullableInt);
+            Assert.Null(duckAbstract.PublicStaticNullableInt);
+            Assert.Null(duckVirtual.PublicStaticNullableInt);
+
+            // *
+
+            Assert.Null(duckInterface.PrivateStaticNullableInt);
+            Assert.Null(duckAbstract.PrivateStaticNullableInt);
+            Assert.Null(duckVirtual.PrivateStaticNullableInt);
+
+            duckInterface.PrivateStaticNullableInt = 42;
+            Assert.Equal(42, duckInterface.PrivateStaticNullableInt);
+            Assert.Equal(42, duckAbstract.PrivateStaticNullableInt);
+            Assert.Equal(42, duckVirtual.PrivateStaticNullableInt);
+
+            duckAbstract.PrivateStaticNullableInt = 50;
+            Assert.Equal(50, duckInterface.PrivateStaticNullableInt);
+            Assert.Equal(50, duckAbstract.PrivateStaticNullableInt);
+            Assert.Equal(50, duckVirtual.PrivateStaticNullableInt);
+
+            duckVirtual.PrivateStaticNullableInt = null;
+            Assert.Null(duckInterface.PrivateStaticNullableInt);
+            Assert.Null(duckAbstract.PrivateStaticNullableInt);
+            Assert.Null(duckVirtual.PrivateStaticNullableInt);
+
+            // *
+
+            Assert.Null(duckInterface.PublicNullableInt);
+            Assert.Null(duckAbstract.PublicNullableInt);
+            Assert.Null(duckVirtual.PublicNullableInt);
+
+            duckInterface.PublicNullableInt = 42;
+            Assert.Equal(42, duckInterface.PublicNullableInt);
+            Assert.Equal(42, duckAbstract.PublicNullableInt);
+            Assert.Equal(42, duckVirtual.PublicNullableInt);
+
+            duckAbstract.PublicNullableInt = 50;
+            Assert.Equal(50, duckInterface.PublicNullableInt);
+            Assert.Equal(50, duckAbstract.PublicNullableInt);
+            Assert.Equal(50, duckVirtual.PublicNullableInt);
+
+            duckVirtual.PublicNullableInt = null;
+            Assert.Null(duckInterface.PublicNullableInt);
+            Assert.Null(duckAbstract.PublicNullableInt);
+            Assert.Null(duckVirtual.PublicNullableInt);
+
+            // *
+
+            Assert.Null(duckInterface.PrivateNullableInt);
+            Assert.Null(duckAbstract.PrivateNullableInt);
+            Assert.Null(duckVirtual.PrivateNullableInt);
+
+            duckInterface.PrivateNullableInt = 42;
+            Assert.Equal(42, duckInterface.PrivateNullableInt);
+            Assert.Equal(42, duckAbstract.PrivateNullableInt);
+            Assert.Equal(42, duckVirtual.PrivateNullableInt);
+
+            duckAbstract.PrivateNullableInt = 50;
+            Assert.Equal(50, duckInterface.PrivateNullableInt);
+            Assert.Equal(50, duckAbstract.PrivateNullableInt);
+            Assert.Equal(50, duckVirtual.PrivateNullableInt);
+
+            duckVirtual.PrivateNullableInt = null;
+            Assert.Null(duckInterface.PrivateNullableInt);
+            Assert.Null(duckAbstract.PrivateNullableInt);
+            Assert.Null(duckVirtual.PrivateNullableInt);
+        }
+
         public interface IObscureDuckType
         {
             int PublicStaticGetValueType { get; }
@@ -341,6 +432,16 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             int ProtectedGetSetValueType { get; set; }
 
             int PrivateGetSetValueType { get; set; }
+
+            // *
+
+            int? PublicStaticNullableInt { get; set; }
+
+            int? PrivateStaticNullableInt { get; set; }
+
+            int? PublicNullableInt { get; set; }
+
+            int? PrivateNullableInt { get; set; }
 
             // *
 
@@ -399,6 +500,16 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
 
             // *
 
+            public abstract int? PublicStaticNullableInt { get; set; }
+
+            public abstract int? PrivateStaticNullableInt { get; set; }
+
+            public abstract int? PublicNullableInt { get; set; }
+
+            public abstract int? PrivateNullableInt { get; set; }
+
+            // *
+
             public abstract int this[int index] { get; set; }
         }
 
@@ -441,6 +552,16 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             public virtual int ProtectedGetSetValueType { get; set; }
 
             public virtual int PrivateGetSetValueType { get; set; }
+
+            // *
+
+            public virtual int? PublicStaticNullableInt { get; set; }
+
+            public virtual int? PrivateStaticNullableInt { get; set; }
+
+            public virtual int? PublicNullableInt { get; set; }
+
+            public virtual int? PrivateNullableInt { get; set; }
 
             // *
 

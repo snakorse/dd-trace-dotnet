@@ -213,8 +213,8 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             // Load the indexer keys and set value to the stack
             for (int pIndex = 0; pIndex < proxyParameterTypes.Length; pIndex++)
             {
-                Type proxyParamType = Util.GetRootType(proxyParameterTypes[pIndex]);
-                Type targetParamType = Util.GetRootType(targetParametersTypes[pIndex]);
+                Type proxyParamType = proxyParameterTypes[pIndex];
+                Type targetParamType = targetParametersTypes[pIndex];
 
                 // Check if the type can be converted of if we need to enable duck chaining
                 if (proxyParamType != targetParamType && !proxyParamType.IsValueType && !proxyParamType.IsAssignableFrom(targetProperty.PropertyType))

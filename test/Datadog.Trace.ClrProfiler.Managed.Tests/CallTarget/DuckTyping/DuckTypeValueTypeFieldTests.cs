@@ -278,6 +278,97 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             Assert.Equal(60, duckVirtual.PrivateValueTypeField);
         }
 
+        [Theory]
+        [MemberData(nameof(Data))]
+        public void NullableOfKnown(object obscureObject)
+        {
+            var duckInterface = obscureObject.As<IObscureDuckType>();
+            var duckAbstract = obscureObject.As<ObscureDuckTypeAbstractClass>();
+            var duckVirtual = obscureObject.As<ObscureDuckType>();
+
+            Assert.Null(duckInterface.PublicStaticNullableIntField);
+            Assert.Null(duckAbstract.PublicStaticNullableIntField);
+            Assert.Null(duckVirtual.PublicStaticNullableIntField);
+
+            duckInterface.PublicStaticNullableIntField = 42;
+            Assert.Equal(42, duckInterface.PublicStaticNullableIntField);
+            Assert.Equal(42, duckAbstract.PublicStaticNullableIntField);
+            Assert.Equal(42, duckVirtual.PublicStaticNullableIntField);
+
+            duckAbstract.PublicStaticNullableIntField = 50;
+            Assert.Equal(50, duckInterface.PublicStaticNullableIntField);
+            Assert.Equal(50, duckAbstract.PublicStaticNullableIntField);
+            Assert.Equal(50, duckVirtual.PublicStaticNullableIntField);
+
+            duckVirtual.PublicStaticNullableIntField = null;
+            Assert.Null(duckInterface.PublicStaticNullableIntField);
+            Assert.Null(duckAbstract.PublicStaticNullableIntField);
+            Assert.Null(duckVirtual.PublicStaticNullableIntField);
+
+            // *
+
+            Assert.Null(duckInterface.PrivateStaticNullableIntField);
+            Assert.Null(duckAbstract.PrivateStaticNullableIntField);
+            Assert.Null(duckVirtual.PrivateStaticNullableIntField);
+
+            duckInterface.PrivateStaticNullableIntField = 42;
+            Assert.Equal(42, duckInterface.PrivateStaticNullableIntField);
+            Assert.Equal(42, duckAbstract.PrivateStaticNullableIntField);
+            Assert.Equal(42, duckVirtual.PrivateStaticNullableIntField);
+
+            duckAbstract.PrivateStaticNullableIntField = 50;
+            Assert.Equal(50, duckInterface.PrivateStaticNullableIntField);
+            Assert.Equal(50, duckAbstract.PrivateStaticNullableIntField);
+            Assert.Equal(50, duckVirtual.PrivateStaticNullableIntField);
+
+            duckVirtual.PrivateStaticNullableIntField = null;
+            Assert.Null(duckInterface.PrivateStaticNullableIntField);
+            Assert.Null(duckAbstract.PrivateStaticNullableIntField);
+            Assert.Null(duckVirtual.PrivateStaticNullableIntField);
+
+            // *
+
+            Assert.Null(duckInterface.PublicNullableIntField);
+            Assert.Null(duckAbstract.PublicNullableIntField);
+            Assert.Null(duckVirtual.PublicNullableIntField);
+
+            duckInterface.PublicNullableIntField = 42;
+            Assert.Equal(42, duckInterface.PublicNullableIntField);
+            Assert.Equal(42, duckAbstract.PublicNullableIntField);
+            Assert.Equal(42, duckVirtual.PublicNullableIntField);
+
+            duckAbstract.PublicNullableIntField = 50;
+            Assert.Equal(50, duckInterface.PublicNullableIntField);
+            Assert.Equal(50, duckAbstract.PublicNullableIntField);
+            Assert.Equal(50, duckVirtual.PublicNullableIntField);
+
+            duckVirtual.PublicNullableIntField = null;
+            Assert.Null(duckInterface.PublicNullableIntField);
+            Assert.Null(duckAbstract.PublicNullableIntField);
+            Assert.Null(duckVirtual.PublicNullableIntField);
+
+            // *
+
+            Assert.Null(duckInterface.PrivateNullableIntField);
+            Assert.Null(duckAbstract.PrivateNullableIntField);
+            Assert.Null(duckVirtual.PrivateNullableIntField);
+
+            duckInterface.PrivateNullableIntField = 42;
+            Assert.Equal(42, duckInterface.PrivateNullableIntField);
+            Assert.Equal(42, duckAbstract.PrivateNullableIntField);
+            Assert.Equal(42, duckVirtual.PrivateNullableIntField);
+
+            duckAbstract.PrivateNullableIntField = 50;
+            Assert.Equal(50, duckInterface.PrivateNullableIntField);
+            Assert.Equal(50, duckAbstract.PrivateNullableIntField);
+            Assert.Equal(50, duckVirtual.PrivateNullableIntField);
+
+            duckVirtual.PrivateNullableIntField = null;
+            Assert.Null(duckInterface.PrivateNullableIntField);
+            Assert.Null(duckAbstract.PrivateNullableIntField);
+            Assert.Null(duckVirtual.PrivateNullableIntField);
+        }
+
         public interface IObscureDuckType
         {
             [Duck(Name = "_publicStaticReadonlyValueTypeField", Kind = DuckKind.Field)]
@@ -333,6 +424,20 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
 
             [Duck(Name = "_privateValueTypeField", Kind = DuckKind.Field)]
             int PrivateValueTypeField { get; set; }
+
+            // *
+
+            [Duck(Name = "_publicStaticNullableIntField", Kind = DuckKind.Field)]
+            int? PublicStaticNullableIntField { get; set; }
+
+            [Duck(Name = "_privateStaticNullableIntField", Kind = DuckKind.Field)]
+            int? PrivateStaticNullableIntField { get; set; }
+
+            [Duck(Name = "_publicNullableIntField", Kind = DuckKind.Field)]
+            int? PublicNullableIntField { get; set; }
+
+            [Duck(Name = "_privateNullableIntField", Kind = DuckKind.Field)]
+            int? PrivateNullableIntField { get; set; }
         }
 
         public interface IObscureStaticReadonlyErrorDuckType
@@ -402,6 +507,20 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
 
             [Duck(Name = "_privateValueTypeField", Kind = DuckKind.Field)]
             public abstract int PrivateValueTypeField { get; set; }
+
+            // *
+
+            [Duck(Name = "_publicStaticNullableIntField", Kind = DuckKind.Field)]
+            public abstract int? PublicStaticNullableIntField { get; set; }
+
+            [Duck(Name = "_privateStaticNullableIntField", Kind = DuckKind.Field)]
+            public abstract int? PrivateStaticNullableIntField { get; set; }
+
+            [Duck(Name = "_publicNullableIntField", Kind = DuckKind.Field)]
+            public abstract int? PublicNullableIntField { get; set; }
+
+            [Duck(Name = "_privateNullableIntField", Kind = DuckKind.Field)]
+            public abstract int? PrivateNullableIntField { get; set; }
         }
 
         public class ObscureDuckType
@@ -459,6 +578,20 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
 
             [Duck(Name = "_privateValueTypeField", Kind = DuckKind.Field)]
             public virtual int PrivateValueTypeField { get; set; }
+
+            // *
+
+            [Duck(Name = "_publicStaticNullableIntField", Kind = DuckKind.Field)]
+            public virtual int? PublicStaticNullableIntField { get; set; }
+
+            [Duck(Name = "_privateStaticNullableIntField", Kind = DuckKind.Field)]
+            public virtual int? PrivateStaticNullableIntField { get; set; }
+
+            [Duck(Name = "_publicNullableIntField", Kind = DuckKind.Field)]
+            public virtual int? PublicNullableIntField { get; set; }
+
+            [Duck(Name = "_privateNullableIntField", Kind = DuckKind.Field)]
+            public virtual int? PrivateNullableIntField { get; set; }
         }
     }
 }

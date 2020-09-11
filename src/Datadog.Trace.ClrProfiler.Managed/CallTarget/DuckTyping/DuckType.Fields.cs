@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -132,6 +133,11 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             ILGenerator il = method.GetILGenerator();
             bool isPublicInstance = targetType.IsPublic || targetType.IsNestedPublic;
 
+            if (proxyProperty.PropertyType.IsGenericType && proxyProperty.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
+            {
+                Debugger.Break();
+            }
+
             // Load instance
             if (!targetField.IsStatic)
             {
@@ -186,9 +192,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             if (isPublicInstance && targetField.IsPublic)
             {
                 // If the instance and the field are public then is easy to set.
-                Type fieldRootType = Util.GetRootType(targetField.FieldType);
-                Type dPropRootType = Util.GetRootType(proxyProperty.PropertyType);
-                ILHelpers.TypeConversion(il, dPropRootType, fieldRootType);
+                ILHelpers.TypeConversion(il, proxyProperty.PropertyType, targetField.FieldType);
 
                 il.Emit(targetField.IsStatic ? OpCodes.Stsfld : OpCodes.Stfld, targetField);
             }
@@ -200,8 +204,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 
                 // Convert the field type for the dynamic method
                 Type dynValueType = targetField.FieldType.IsPublic || targetField.FieldType.IsNestedPublic ? targetField.FieldType : typeof(object);
-                Type dPropRootType = Util.GetRootType(proxyProperty.PropertyType);
-                ILHelpers.TypeConversion(il, dPropRootType, dynValueType);
+                ILHelpers.TypeConversion(il, proxyProperty.PropertyType, dynValueType);
 
                 // Create dynamic method
                 Type[] dynParameters = targetField.IsStatic ? new[] { dynValueType } : new[] { typeof(object), dynValueType };

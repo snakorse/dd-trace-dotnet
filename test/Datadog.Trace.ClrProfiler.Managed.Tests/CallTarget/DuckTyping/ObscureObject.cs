@@ -110,6 +110,13 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             internal DummyFieldObject _internalSelfTypeField = DummyFieldObject.Default;
             protected DummyFieldObject _protectedSelfTypeField = DummyFieldObject.Default;
             private DummyFieldObject _privateSelfTypeField = DummyFieldObject.Default;
+
+            // ***
+
+            public static int? _publicStaticNullableIntField = null;
+            private static int? _privateStaticNullableIntField = null;
+            public int? _publicNullableIntField = null;
+            private int? _privateNullableIntField = null;
         }
 
         internal class FieldInternalObject
@@ -177,6 +184,13 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             internal DummyFieldObject _internalSelfTypeField = DummyFieldObject.Default;
             protected DummyFieldObject _protectedSelfTypeField = DummyFieldObject.Default;
             private DummyFieldObject _privateSelfTypeField = DummyFieldObject.Default;
+
+            // ***
+
+            public static int? _publicStaticNullableIntField = null;
+            private static int? _privateStaticNullableIntField = null;
+            public int? _publicNullableIntField = null;
+            private int? _privateNullableIntField = null;
         }
 
         private class FieldPrivateObject
@@ -244,6 +258,13 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             internal DummyFieldObject _internalSelfTypeField = DummyFieldObject.Default;
             protected DummyFieldObject _protectedSelfTypeField = DummyFieldObject.Default;
             private DummyFieldObject _privateSelfTypeField = DummyFieldObject.Default;
+
+            // ***
+
+            public static int? _publicStaticNullableIntField = null;
+            private static int? _privateStaticNullableIntField = null;
+            public int? _publicNullableIntField = null;
+            private int? _privateNullableIntField = null;
         }
 
         // ***
@@ -372,6 +393,18 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             protected DummyFieldObject ProtectedGetSetSelfType { get; set; } = DummyFieldObject.Default;
 
             private DummyFieldObject PrivateGetSetSelfType { get; set; } = DummyFieldObject.Default;
+
+            // ***
+
+            public static int? PublicStaticNullableInt { get; set; }
+
+            private static int? PrivateStaticNullableInt { get; set; }
+
+            public int? PublicNullableInt { get; set; }
+
+            private int? PrivateNullableInt { get; set; }
+
+            // ***
 
             public int this[int index]
             {
@@ -509,6 +542,18 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
 
             private DummyFieldObject PrivateGetSetSelfType { get; set; } = DummyFieldObject.Default;
 
+            // ***
+
+            public static int? PublicStaticNullableInt { get; set; }
+
+            private static int? PrivateStaticNullableInt { get; set; }
+
+            public int? PublicNullableInt { get; set; }
+
+            private int? PrivateNullableInt { get; set; }
+
+            // ***
+
             public int this[int index]
             {
                 get => _dictioInt[index];
@@ -645,6 +690,17 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
 
             private DummyFieldObject PrivateGetSetSelfType { get; set; } = DummyFieldObject.Default;
 
+            // ***
+
+            public static int? PublicStaticNullableInt { get; set; }
+
+            private static int? PrivateStaticNullableInt { get; set; }
+
+            public int? PublicNullableInt { get; set; }
+
+            private int? PrivateNullableInt { get; set; }
+
+            // ***
             public int this[int index]
             {
                 get => _dictioInt[index];
