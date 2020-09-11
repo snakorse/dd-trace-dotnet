@@ -248,17 +248,17 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             // Gets all properties to be implemented
             var selectedProperties = GetProperties(baseType);
 
-            foreach (var property in selectedProperties)
+            foreach (var proxyProperty in selectedProperties)
             {
                 PropertyBuilder propertyBuilder = null;
 
                 // If the property is abstract or interface we make sure that we have the property defined in the new class
-                if ((property.CanRead && property.GetMethod.IsAbstract) || (property.CanWrite && property.SetMethod.IsAbstract))
+                if ((proxyProperty.CanRead && proxyProperty.GetMethod.IsAbstract) || (proxyProperty.CanWrite && proxyProperty.SetMethod.IsAbstract))
                 {
-                    propertyBuilder = typeBuilder.DefineProperty(property.Name, PropertyAttributes.None, property.PropertyType, null);
+                    propertyBuilder = typeBuilder.DefineProperty(proxyProperty.Name, PropertyAttributes.None, proxyProperty.PropertyType, null);
                 }
 
-                var duckAttrs = new List<DuckAttribute>(property.GetCustomAttributes<DuckAttribute>(true));
+                var duckAttrs = new List<DuckAttribute>(proxyProperty.GetCustomAttributes<DuckAttribute>(true));
                 if (duckAttrs.Count == 0)
                 {
                     duckAttrs.Add(new DuckAttribute());
@@ -286,7 +286,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                         continue;
                     }
 
-                    duckAttr.Name ??= property.Name;
+                    duckAttr.Name ??= proxyProperty.Name;
 
                     switch (duckAttr.Kind)
                     {
@@ -298,7 +298,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                             }
                             catch
                             {
-                                targetProperty = instanceType.GetProperty(duckAttr.Name, property.PropertyType, property.GetIndexParameters().Select(i => i.ParameterType).ToArray());
+                                targetProperty = instanceType.GetProperty(duckAttr.Name, proxyProperty.PropertyType, proxyProperty.GetIndexParameters().Select(i => i.ParameterType).ToArray());
                             }
 
                             if (targetProperty is null)
@@ -306,9 +306,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                                 continue;
                             }
 
-                            propertyBuilder ??= typeBuilder.DefineProperty(property.Name, PropertyAttributes.None, property.PropertyType, null);
+                            propertyBuilder ??= typeBuilder.DefineProperty(proxyProperty.Name, PropertyAttributes.None, proxyProperty.PropertyType, null);
 
-                            if (property.CanRead)
+                            if (proxyProperty.CanRead)
                             {
                                 // Check if the target property can be read
                                 if (!targetProperty.CanRead)
@@ -316,10 +316,10 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                                     throw new DuckTypePropertyCantBeReadException(targetProperty);
                                 }
 
-                                propertyBuilder.SetGetMethod(GetPropertyGetMethod(instanceType, typeBuilder, property, targetProperty, instanceField));
+                                propertyBuilder.SetGetMethod(GetPropertyGetMethod(instanceType, typeBuilder, proxyProperty, targetProperty, instanceField));
                             }
 
-                            if (property.CanWrite)
+                            if (proxyProperty.CanWrite)
                             {
                                 // Check if the target property can be written
                                 if (!targetProperty.CanWrite)
@@ -333,7 +333,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                                     throw new DuckTypeStructMembersCannotBeChangedException(targetProperty.DeclaringType);
                                 }
 
-                                propertyBuilder.SetSetMethod(GetPropertySetMethod(instanceType, typeBuilder, property, targetProperty, instanceField));
+                                propertyBuilder.SetSetMethod(GetPropertySetMethod(instanceType, typeBuilder, proxyProperty, targetProperty, instanceField));
                             }
 
                             break;
@@ -345,14 +345,14 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                                 continue;
                             }
 
-                            propertyBuilder ??= typeBuilder.DefineProperty(property.Name, PropertyAttributes.None, property.PropertyType, null);
+                            propertyBuilder ??= typeBuilder.DefineProperty(proxyProperty.Name, PropertyAttributes.None, proxyProperty.PropertyType, null);
 
-                            if (property.CanRead)
+                            if (proxyProperty.CanRead)
                             {
-                                propertyBuilder.SetGetMethod(GetFieldGetMethod(instanceType, typeBuilder, property, targetField, instanceField));
+                                propertyBuilder.SetGetMethod(GetFieldGetMethod(instanceType, typeBuilder, proxyProperty, targetField, instanceField));
                             }
 
-                            if (property.CanWrite)
+                            if (proxyProperty.CanWrite)
                             {
                                 // Check if the target field is marked as InitOnly (readonly) and throw an exception in that case
                                 if ((targetField.Attributes & FieldAttributes.InitOnly) != 0)
@@ -366,7 +366,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                                     throw new DuckTypeStructMembersCannotBeChangedException(targetField.DeclaringType);
                                 }
 
-                                propertyBuilder.SetSetMethod(GetFieldSetMethod(instanceType, typeBuilder, property, targetField, instanceField));
+                                propertyBuilder.SetSetMethod(GetFieldSetMethod(instanceType, typeBuilder, proxyProperty, targetField, instanceField));
                             }
 
                             break;
@@ -380,14 +380,14 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                     continue;
                 }
 
-                if (property.CanRead && propertyBuilder.GetMethod is null)
+                if (proxyProperty.CanRead && propertyBuilder.GetMethod is null)
                 {
-                    throw new DuckTypePropertyOrFieldNotFoundException(property.Name);
+                    throw new DuckTypePropertyOrFieldNotFoundException(proxyProperty.Name);
                 }
 
-                if (property.CanWrite && propertyBuilder.SetMethod is null)
+                if (proxyProperty.CanWrite && propertyBuilder.SetMethod is null)
                 {
-                    throw new DuckTypePropertyOrFieldNotFoundException(property.Name);
+                    throw new DuckTypePropertyOrFieldNotFoundException(proxyProperty.Name);
                 }
             }
         }
