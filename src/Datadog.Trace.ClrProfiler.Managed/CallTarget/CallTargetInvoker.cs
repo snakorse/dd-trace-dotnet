@@ -291,7 +291,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
 
                 if (_onMethodEndAsyncDelegate != null)
                 {
-                    returnValue = returnValue = AsyncTool.AddContinuation(
+                    returnValue = AsyncTool.AddContinuation(
                         returnValue,
                         exception,
                         new VTuple<MethodEndDelegate, CallTargetState>(_onMethodEndAsyncDelegate, state),

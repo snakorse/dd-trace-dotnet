@@ -84,6 +84,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                 // We store the dynamic method in a bag to avoid getting collected by the GC.
                 DynamicMethods.Add(dynMethod);
 
+                // Emit the dynamic method body
                 ILGenerator dynIL = dynMethod.GetILGenerator();
 
                 if (!field.IsStatic)
