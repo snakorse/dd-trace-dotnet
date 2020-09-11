@@ -8,30 +8,30 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
     public partial class DuckType
     {
         /// <summary>
-        /// Gets a ducktype factory for a base type and instance type
+        /// Gets a ducktype factory for a proxy type and target type
         /// </summary>
-        /// <param name="duckType">Duck type</param>
-        /// <param name="instanceType">Object type</param>
+        /// <param name="proxyType">Proxy type</param>
+        /// <param name="targetType">Target type</param>
         /// <returns>Duck type factory</returns>
-        public static DuckTypeFactory GetFactoryFor(Type duckType, Type instanceType)
+        public static DuckTypeFactory GetFactoryFor(Type proxyType, Type targetType)
         {
-            CreateTypeResult result = GetOrCreateProxyType(duckType, instanceType);
+            CreateTypeResult result = GetOrCreateProxyType(proxyType, targetType);
             result.ExceptionInfo?.Throw();
-            return new DuckTypeFactory(result.Type);
+            return new DuckTypeFactory(result.ProxyType);
         }
 
         /// <summary>
-        /// Gets a ducktype factory for a base type and instance type
+        /// Gets a ducktype factory for a proxy type and target type
         /// </summary>
-        /// <param name="instanceType">Type of instance</param>
-        /// <typeparam name="T">Type of Duck</typeparam>
+        /// <param name="targetType">Type of instance</param>
+        /// <typeparam name="T">Type of Proxy</typeparam>
         /// <returns>Duck Type factory</returns>
-        public static DuckTypeFactory<T> GetFactoryFor<T>(Type instanceType)
+        public static DuckTypeFactory<T> GetFactoryFor<T>(Type targetType)
             where T : class
         {
-            CreateTypeResult result = GetOrCreateProxyType(typeof(T), instanceType);
+            CreateTypeResult result = GetOrCreateProxyType(typeof(T), targetType);
             result.ExceptionInfo?.Throw();
-            return new DuckTypeFactory<T>(result.Type);
+            return new DuckTypeFactory<T>(result.ProxyType);
         }
     }
 }

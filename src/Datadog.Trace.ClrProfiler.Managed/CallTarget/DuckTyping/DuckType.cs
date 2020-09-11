@@ -56,9 +56,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// </summary>
         public Version AssemblyVersion => _version ??= Type?.Assembly?.GetName().Version;
 
-        private static CreateTypeResult GetOrCreateProxyType(Type duckType, Type instanceType)
+        private static CreateTypeResult GetOrCreateProxyType(Type proxyType, Type targetType)
         {
-            VTuple<Type, Type> key = new VTuple<Type, Type>(duckType, instanceType);
+            VTuple<Type, Type> key = new VTuple<Type, Type>(proxyType, targetType);
 
             if (DuckTypeCache.TryGetValue(key, out CreateTypeResult proxyTypeResult))
             {
@@ -69,7 +69,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             {
                 if (!DuckTypeCache.TryGetValue(key, out proxyTypeResult))
                 {
-                    proxyTypeResult = CreateProxyType(duckType, instanceType);
+                    proxyTypeResult = CreateProxyType(proxyType, targetType);
                     DuckTypeCache[key] = proxyTypeResult;
                 }
 
@@ -77,21 +77,21 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             }
         }
 
-        private static CreateTypeResult CreateProxyType(Type duckType, Type instanceType)
+        private static CreateTypeResult CreateProxyType(Type proxyType, Type targetType)
         {
             try
             {
                 // Define parent type, interface types
                 Type parentType;
                 Type[] interfaceTypes;
-                if (duckType.IsInterface)
+                if (proxyType.IsInterface)
                 {
                     parentType = typeof(DuckType);
-                    interfaceTypes = new[] { duckType };
+                    interfaceTypes = new[] { proxyType };
                 }
                 else
                 {
-                    parentType = duckType;
+                    parentType = proxyType;
                     interfaceTypes = Type.EmptyTypes;
                 }
 
@@ -116,28 +116,28 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                     }
                 }
 
-                string proxyTypeName = $"{duckType.FullName}->{instanceType.FullName}";
+                string proxyTypeName = $"{proxyType.FullName}->{targetType.FullName}";
                 Log.Information("Creating type proxy: " + proxyTypeName);
 
                 // Create Type
-                TypeBuilder typeBuilder = _moduleBuilder.DefineType(
+                TypeBuilder proxyTypeBuilder = _moduleBuilder.DefineType(
                     proxyTypeName,
                     TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.AutoClass | TypeAttributes.AnsiClass | TypeAttributes.BeforeFieldInit | TypeAttributes.AutoLayout | TypeAttributes.Sealed,
                     parentType,
                     interfaceTypes);
 
                 // Define .ctor
-                typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+                proxyTypeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
 
                 // Create instance field if is null
-                instanceField ??= CreateInstanceField(typeBuilder);
+                instanceField ??= CreateInstanceField(proxyTypeBuilder);
 
                 // Create Members
-                CreateProperties(duckType, instanceType, instanceField, typeBuilder);
-                CreateMethods(duckType, instanceType, instanceField, typeBuilder);
+                CreateProperties(proxyTypeBuilder, proxyType, targetType, instanceField);
+                CreateMethods(proxyTypeBuilder, proxyType, targetType, instanceField);
 
                 // Create Type
-                return new CreateTypeResult(typeBuilder.CreateTypeInfo().AsType(), null);
+                return new CreateTypeResult(proxyTypeBuilder.CreateTypeInfo().AsType(), null);
             }
             catch (Exception ex)
             {
@@ -145,11 +145,11 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             }
         }
 
-        private static FieldInfo CreateInstanceField(TypeBuilder typeBuilder)
+        private static FieldInfo CreateInstanceField(TypeBuilder proxyTypeBuilder)
         {
-            var instanceField = typeBuilder.DefineField(nameof(_currentInstance), typeof(object), FieldAttributes.Family);
+            var instanceField = proxyTypeBuilder.DefineField(nameof(_currentInstance), typeof(object), FieldAttributes.Family);
 
-            var setInstance = typeBuilder.DefineMethod(
+            var setInstance = proxyTypeBuilder.DefineMethod(
                 nameof(SetInstance),
                 MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot,
                 typeof(void),
@@ -160,8 +160,8 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             il.Emit(OpCodes.Stfld, instanceField);
             il.Emit(OpCodes.Ret);
 
-            var propInstance = typeBuilder.DefineProperty(nameof(Instance), PropertyAttributes.None, typeof(object), null);
-            var getPropInstance = typeBuilder.DefineMethod(
+            var propInstance = proxyTypeBuilder.DefineProperty(nameof(Instance), PropertyAttributes.None, typeof(object), null);
+            var getPropInstance = proxyTypeBuilder.DefineMethod(
                 $"get_{nameof(Instance)}",
                 MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot,
                 typeof(object),
@@ -172,8 +172,8 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             il.Emit(OpCodes.Ret);
             propInstance.SetGetMethod(getPropInstance);
 
-            var propType = typeBuilder.DefineProperty(nameof(Type), PropertyAttributes.None, typeof(Type), null);
-            var getPropType = typeBuilder.DefineMethod(
+            var propType = proxyTypeBuilder.DefineProperty(nameof(Type), PropertyAttributes.None, typeof(Type), null);
+            var getPropType = proxyTypeBuilder.DefineMethod(
                 $"get_{nameof(Type)}",
                 MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot,
                 typeof(Type),
@@ -185,8 +185,8 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             il.Emit(OpCodes.Ret);
             propType.SetGetMethod(getPropType);
 
-            var propVersion = typeBuilder.DefineProperty(nameof(AssemblyVersion), PropertyAttributes.None, typeof(Version), null);
-            var getPropVersion = typeBuilder.DefineMethod(
+            var propVersion = proxyTypeBuilder.DefineProperty(nameof(AssemblyVersion), PropertyAttributes.None, typeof(Version), null);
+            var getPropVersion = proxyTypeBuilder.DefineMethod(
                 $"get_{nameof(AssemblyVersion)}",
                 MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot,
                 typeof(Version),
@@ -204,10 +204,10 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             return instanceField;
         }
 
-        private static List<PropertyInfo> GetProperties(Type baseType)
+        private static List<PropertyInfo> GetProperties(Type proxyType)
         {
-            var selectedProperties = new List<PropertyInfo>(baseType.IsInterface ? baseType.GetProperties() : GetBaseProperties(baseType));
-            var implementedInterfaces = baseType.GetInterfaces();
+            var selectedProperties = new List<PropertyInfo>(proxyType.IsInterface ? proxyType.GetProperties() : GetBaseProperties(proxyType));
+            var implementedInterfaces = proxyType.GetInterfaces();
             foreach (var imInterface in implementedInterfaces)
             {
                 if (imInterface == typeof(IDuckType))
@@ -242,20 +242,20 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             }
         }
 
-        private static void CreateProperties(Type baseType, Type instanceType, FieldInfo instanceField, TypeBuilder typeBuilder)
+        private static void CreateProperties(TypeBuilder proxyTypeBuilder, Type proxyType, Type targetType, FieldInfo instanceField)
         {
-            var asmVersion = instanceType.Assembly.GetName().Version;
+            var targetTypeAssemblyVersion = targetType.Assembly.GetName().Version;
             // Gets all properties to be implemented
-            var selectedProperties = GetProperties(baseType);
+            var proxyTypeProperties = GetProperties(proxyType);
 
-            foreach (var proxyProperty in selectedProperties)
+            foreach (var proxyProperty in proxyTypeProperties)
             {
                 PropertyBuilder propertyBuilder = null;
 
                 // If the property is abstract or interface we make sure that we have the property defined in the new class
                 if ((proxyProperty.CanRead && proxyProperty.GetMethod.IsAbstract) || (proxyProperty.CanWrite && proxyProperty.SetMethod.IsAbstract))
                 {
-                    propertyBuilder = typeBuilder.DefineProperty(proxyProperty.Name, PropertyAttributes.None, proxyProperty.PropertyType, null);
+                    propertyBuilder = proxyTypeBuilder.DefineProperty(proxyProperty.Name, PropertyAttributes.None, proxyProperty.PropertyType, null);
                 }
 
                 var duckAttrs = new List<DuckAttribute>(proxyProperty.GetCustomAttributes<DuckAttribute>(true));
@@ -281,7 +281,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 
                 foreach (var duckAttr in duckAttrs)
                 {
-                    if (!(duckAttr.Version is null) && asmVersion > duckAttr.Version)
+                    if (!(duckAttr.Version is null) && targetTypeAssemblyVersion > duckAttr.Version)
                     {
                         continue;
                     }
@@ -294,11 +294,11 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                             PropertyInfo targetProperty = null;
                             try
                             {
-                                targetProperty = instanceType.GetProperty(duckAttr.Name, duckAttr.BindingFlags);
+                                targetProperty = targetType.GetProperty(duckAttr.Name, duckAttr.BindingFlags);
                             }
                             catch
                             {
-                                targetProperty = instanceType.GetProperty(duckAttr.Name, proxyProperty.PropertyType, proxyProperty.GetIndexParameters().Select(i => i.ParameterType).ToArray());
+                                targetProperty = targetType.GetProperty(duckAttr.Name, proxyProperty.PropertyType, proxyProperty.GetIndexParameters().Select(i => i.ParameterType).ToArray());
                             }
 
                             if (targetProperty is null)
@@ -306,7 +306,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                                 continue;
                             }
 
-                            propertyBuilder ??= typeBuilder.DefineProperty(proxyProperty.Name, PropertyAttributes.None, proxyProperty.PropertyType, null);
+                            propertyBuilder ??= proxyTypeBuilder.DefineProperty(proxyProperty.Name, PropertyAttributes.None, proxyProperty.PropertyType, null);
 
                             if (proxyProperty.CanRead)
                             {
@@ -316,7 +316,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                                     throw new DuckTypePropertyCantBeReadException(targetProperty);
                                 }
 
-                                propertyBuilder.SetGetMethod(GetPropertyGetMethod(instanceType, typeBuilder, proxyProperty, targetProperty, instanceField));
+                                propertyBuilder.SetGetMethod(GetPropertyGetMethod(proxyTypeBuilder, targetType, proxyProperty, targetProperty, instanceField));
                             }
 
                             if (proxyProperty.CanWrite)
@@ -333,23 +333,23 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                                     throw new DuckTypeStructMembersCannotBeChangedException(targetProperty.DeclaringType);
                                 }
 
-                                propertyBuilder.SetSetMethod(GetPropertySetMethod(instanceType, typeBuilder, proxyProperty, targetProperty, instanceField));
+                                propertyBuilder.SetSetMethod(GetPropertySetMethod(proxyTypeBuilder, targetType, proxyProperty, targetProperty, instanceField));
                             }
 
                             break;
 
                         case DuckKind.Field:
-                            FieldInfo targetField = instanceType.GetField(duckAttr.Name, duckAttr.BindingFlags);
+                            FieldInfo targetField = targetType.GetField(duckAttr.Name, duckAttr.BindingFlags);
                             if (targetField is null)
                             {
                                 continue;
                             }
 
-                            propertyBuilder ??= typeBuilder.DefineProperty(proxyProperty.Name, PropertyAttributes.None, proxyProperty.PropertyType, null);
+                            propertyBuilder ??= proxyTypeBuilder.DefineProperty(proxyProperty.Name, PropertyAttributes.None, proxyProperty.PropertyType, null);
 
                             if (proxyProperty.CanRead)
                             {
-                                propertyBuilder.SetGetMethod(GetFieldGetMethod(instanceType, typeBuilder, proxyProperty, targetField, instanceField));
+                                propertyBuilder.SetGetMethod(GetFieldGetMethod(proxyTypeBuilder, targetType, proxyProperty, targetField, instanceField));
                             }
 
                             if (proxyProperty.CanWrite)
@@ -366,7 +366,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                                     throw new DuckTypeStructMembersCannotBeChangedException(targetField.DeclaringType);
                                 }
 
-                                propertyBuilder.SetSetMethod(GetFieldSetMethod(instanceType, typeBuilder, proxyProperty, targetField, instanceField));
+                                propertyBuilder.SetSetMethod(GetFieldSetMethod(proxyTypeBuilder, targetType, proxyProperty, targetField, instanceField));
                             }
 
                             break;
@@ -405,15 +405,15 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 
         private readonly struct CreateTypeResult
         {
-            public readonly Type Type;
+            public readonly Type ProxyType;
             public readonly ExceptionDispatchInfo ExceptionInfo;
             public readonly bool Success;
 
-            public CreateTypeResult(Type type, ExceptionDispatchInfo exceptionInfo)
+            public CreateTypeResult(Type proxyType, ExceptionDispatchInfo exceptionInfo)
             {
-                Type = type;
+                ProxyType = proxyType;
                 ExceptionInfo = exceptionInfo;
-                Success = type != null && exceptionInfo == null;
+                Success = proxyType != null && exceptionInfo == null;
             }
         }
     }

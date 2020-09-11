@@ -30,7 +30,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
     /// <summary>
     /// Duck type factory
     /// </summary>
-    /// <typeparam name="T">Base class or interface for duck type</typeparam>
+    /// <typeparam name="T">Proxy type</typeparam>
     public readonly struct DuckTypeFactory<T>
         where T : class
     {

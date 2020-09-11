@@ -11,14 +11,14 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <summary>
         /// Checks and ensures the arguments for the Create methods
         /// </summary>
-        /// <param name="duckType">Duck type</param>
+        /// <param name="proxyType">Duck type</param>
         /// <param name="instance">Instance value</param>
         /// <exception cref="ArgumentNullException">If the duck type or the instance value is null</exception>
-        private static void EnsureArguments(Type duckType, object instance)
+        private static void EnsureArguments(Type proxyType, object instance)
         {
-            if (duckType is null)
+            if (proxyType is null)
             {
-                throw new ArgumentNullException(nameof(duckType), "The duck type can't be null");
+                throw new ArgumentNullException(nameof(proxyType), "The proxy type can't be null");
             }
 
             if (instance is null)
@@ -26,21 +26,21 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                 throw new ArgumentNullException(nameof(instance), "The object instance can't be null");
             }
 
-            if (!duckType.IsPublic && !duckType.IsNestedPublic)
+            if (!proxyType.IsPublic && !proxyType.IsNestedPublic)
             {
-                throw new DuckTypeTypeIsNotPublicException(duckType, nameof(duckType));
+                throw new DuckTypeTypeIsNotPublicException(proxyType, nameof(proxyType));
             }
         }
 
         /// <summary>
-        /// Get inner DuckType
+        /// Get inner IDuckType
         /// </summary>
         /// <param name="field">Field reference</param>
-        /// <param name="duckType">Duck type</param>
+        /// <param name="proxyType">Proxy type</param>
         /// <param name="value">Property value</param>
         /// <returns>DuckType instance</returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static IDuckType GetInnerDuckType(ref IDuckType field, Type duckType, object value)
+        public static IDuckType GetInnerDuckType(ref IDuckType field, Type proxyType, object value)
         {
             if (value is null)
             {
@@ -51,9 +51,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             var valueType = value.GetType();
             if (field is null || field.Type != valueType)
             {
-                CreateTypeResult result = GetOrCreateProxyType(duckType, valueType);
+                CreateTypeResult result = GetOrCreateProxyType(proxyType, valueType);
                 result.ExceptionInfo?.Throw();
-                field = (IDuckType)Activator.CreateInstance(result.Type);
+                field = (IDuckType)Activator.CreateInstance(result.ProxyType);
             }
 
             field.SetInstance(value);
@@ -64,10 +64,10 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// Set inner DuckType
         /// </summary>
         /// <param name="field">Field reference</param>
-        /// <param name="value">DuckType instance</param>
+        /// <param name="value">Proxy type instance</param>
         /// <returns>Property value</returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static object SetInnerDuckType(ref IDuckType field, DuckType value)
+        public static object SetInnerDuckType(ref IDuckType field, IDuckType value)
         {
             field = value;
             return field?.Instance;

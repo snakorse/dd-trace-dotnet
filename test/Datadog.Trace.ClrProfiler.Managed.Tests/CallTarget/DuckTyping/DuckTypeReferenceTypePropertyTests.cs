@@ -278,6 +278,30 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.CallTarget.DuckTyping
             Assert.Equal("60", duckVirtual.PrivateGetSetReferenceType);
         }
 
+        [Theory]
+        [MemberData(nameof(Data))]
+        public void Indexer(object obscureObject)
+        {
+            var duckInterface = obscureObject.As<IObscureDuckType>();
+            var duckAbstract = obscureObject.As<ObscureDuckTypeAbstractClass>();
+            var duckVirtual = obscureObject.As<ObscureDuckType>();
+
+            duckInterface["1"] = "100";
+            Assert.Equal("100", duckInterface["1"]);
+            Assert.Equal("100", duckAbstract["1"]);
+            Assert.Equal("100", duckVirtual["1"]);
+
+            duckAbstract["2"] = "200";
+            Assert.Equal("200", duckInterface["2"]);
+            Assert.Equal("200", duckAbstract["2"]);
+            Assert.Equal("200", duckVirtual["2"]);
+
+            duckVirtual["3"] = "300";
+            Assert.Equal("300", duckInterface["3"]);
+            Assert.Equal("300", duckAbstract["3"]);
+            Assert.Equal("300", duckVirtual["3"]);
+        }
+
         public interface IObscureDuckType
         {
             string PublicStaticGetReferenceType { get; }

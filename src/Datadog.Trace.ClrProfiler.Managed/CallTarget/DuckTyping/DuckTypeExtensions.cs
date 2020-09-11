@@ -10,27 +10,27 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <summary>
         /// Gets the duck type factory for the type implementing a base class or interface T
         /// </summary>
-        /// <param name="source">Source type</param>
-        /// <typeparam name="T">Base type</typeparam>
+        /// <param name="targetType">Target type</param>
+        /// <typeparam name="T">Proxy type</typeparam>
         /// <returns>DuckTypeFactory instance</returns>
-        public static DuckTypeFactory<T> GetDuckTypeFactory<T>(this Type source)
+        public static DuckTypeFactory<T> GetDuckTypeFactory<T>(this Type targetType)
             where T : class
-            => DuckType.GetFactoryFor<T>(source);
+            => DuckType.GetFactoryFor<T>(targetType);
 
         /// <summary>
         /// Gets the duck type factory for the type implementing a base class or interface T
         /// </summary>
-        /// <param name="source">Source type</param>
-        /// <param name="baseType">Base type</param>
+        /// <param name="targetType">Target type</param>
+        /// <param name="proxyType">Proxy type</param>
         /// <returns>DuckTypeFactory instance</returns>
-        public static DuckTypeFactory GetDuckTypeFactory(this Type source, Type baseType)
-            => DuckType.GetFactoryFor(baseType, source);
+        public static DuckTypeFactory GetDuckTypeFactory(this Type targetType, Type proxyType)
+            => DuckType.GetFactoryFor(proxyType, targetType);
 
         /// <summary>
         /// Gets the duck type instance for the object implementing a base class or interface T
         /// </summary>
         /// <param name="instance">Object instance</param>
-        /// <typeparam name="T">Base type</typeparam>
+        /// <typeparam name="T">Target type</typeparam>
         /// <returns>DuckType instance</returns>
         public static T As<T>(this object instance)
             where T : class
@@ -40,9 +40,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// Gets the duck type instance for the object implementing a base class or interface T
         /// </summary>
         /// <param name="instance">Object instance</param>
-        /// <param name="baseType">Base type</param>
+        /// <param name="targetType">Target type</param>
         /// <returns>DuckType instance</returns>
-        public static object As(this object instance, Type baseType)
-            => DuckType.Create(baseType, instance);
+        public static object As(this object instance, Type targetType)
+            => DuckType.Create(targetType, instance);
     }
 }

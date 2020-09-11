@@ -21,20 +21,20 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <summary>
         /// Create duck type proxy using a base type
         /// </summary>
-        /// <param name="duckType">Duck type</param>
+        /// <param name="proxyType">Duck type</param>
         /// <param name="instance">Instance object</param>
         /// <returns>Duck Type proxy</returns>
-        public static IDuckType Create(Type duckType, object instance)
+        public static IDuckType Create(Type proxyType, object instance)
         {
             // Validate arguments
-            EnsureArguments(duckType, instance);
+            EnsureArguments(proxyType, instance);
 
             // Create Type
-            CreateTypeResult result = GetOrCreateProxyType(duckType, instance.GetType());
+            CreateTypeResult result = GetOrCreateProxyType(proxyType, instance.GetType());
             result.ExceptionInfo?.Throw();
 
             // Create instance
-            var objInstance = (IDuckType)Activator.CreateInstance(result.Type);
+            var objInstance = (IDuckType)Activator.CreateInstance(result.ProxyType);
             objInstance.SetInstance(instance);
             return objInstance;
         }
