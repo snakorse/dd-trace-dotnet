@@ -9,7 +9,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
     /// <summary>
     /// Duck Type
     /// </summary>
-    public partial class DuckType
+    public static partial class DuckType
     {
         private static MethodBuilder GetPropertyGetMethod(TypeBuilder proxyTypeBuilder, Type targetType, PropertyInfo proxyProperty, PropertyInfo targetProperty, FieldInfo instanceField)
         {

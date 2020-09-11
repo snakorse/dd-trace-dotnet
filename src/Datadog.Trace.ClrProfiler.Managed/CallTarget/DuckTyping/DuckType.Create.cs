@@ -5,7 +5,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
     /// <summary>
     /// Duck Type
     /// </summary>
-    public partial class DuckType
+    public static partial class DuckType
     {
         /// <summary>
         /// Create duck type proxy using a base type

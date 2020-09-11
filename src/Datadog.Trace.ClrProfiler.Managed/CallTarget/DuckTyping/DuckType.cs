@@ -1,61 +1,17 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.ExceptionServices;
-using System.Runtime.InteropServices;
 
 namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 {
     /// <summary>
     /// Duck Type
     /// </summary>
-    public partial class DuckType : IDuckType
+    public static partial class DuckType
     {
-        /// <summary>
-        /// Current instance
-        /// </summary>
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-#pragma warning disable SA1401 // Fields must be private
-        protected object _currentInstance;
-#pragma warning restore SA1401 // Fields must be private
-
-        /// <summary>
-        /// Instance type
-        /// </summary>
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private Type _type;
-
-        /// <summary>
-        /// Assembly version
-        /// </summary>
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private Version _version;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DuckType"/> class.
-        /// </summary>
-        protected DuckType()
-        {
-        }
-
-        /// <summary>
-        /// Gets instance
-        /// </summary>
-        public object Instance => _currentInstance;
-
-        /// <summary>
-        /// Gets instance Type
-        /// </summary>
-        public Type Type => _type ??= _currentInstance?.GetType();
-
-        /// <summary>
-        /// Gets assembly version
-        /// </summary>
-        public Version AssemblyVersion => _version ??= Type?.Assembly?.GetName().Version;
-
         private static CreateTypeResult GetOrCreateProxyType(Type proxyType, Type targetType)
         {
             VTuple<Type, Type> key = new VTuple<Type, Type>(proxyType, targetType);
@@ -86,19 +42,12 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                 Type[] interfaceTypes;
                 if (proxyType.IsInterface)
                 {
-                    parentType = typeof(DuckType);
-                    interfaceTypes = new[] { proxyType };
+                    parentType = typeof(object);
+                    interfaceTypes = new[] { proxyType, typeof(IDuckType) };
                 }
                 else
                 {
                     parentType = proxyType;
-                    interfaceTypes = Type.EmptyTypes;
-                }
-
-                // Gets the current instance field info
-                FieldInfo instanceField = parentType.GetField(nameof(_currentInstance), BindingFlags.Instance | BindingFlags.NonPublic);
-                if (instanceField is null)
-                {
                     interfaceTypes = DefaultInterfaceTypes;
                 }
 
@@ -130,7 +79,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                 proxyTypeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
 
                 // Create instance field if is null
-                instanceField ??= CreateInstanceField(proxyTypeBuilder);
+                FieldInfo instanceField = CreateInstanceField(proxyTypeBuilder);
 
                 // Create Members
                 CreateProperties(proxyTypeBuilder, proxyType, targetType, instanceField);
@@ -147,10 +96,10 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
 
         private static FieldInfo CreateInstanceField(TypeBuilder proxyTypeBuilder)
         {
-            var instanceField = proxyTypeBuilder.DefineField(nameof(_currentInstance), typeof(object), FieldAttributes.Family);
+            var instanceField = proxyTypeBuilder.DefineField("_currentInstance", typeof(object), FieldAttributes.Family);
 
             var setInstance = proxyTypeBuilder.DefineMethod(
-                nameof(SetInstance),
+                "SetInstance",
                 MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot,
                 typeof(void),
                 new[] { typeof(object) });
@@ -160,9 +109,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             il.Emit(OpCodes.Stfld, instanceField);
             il.Emit(OpCodes.Ret);
 
-            var propInstance = proxyTypeBuilder.DefineProperty(nameof(Instance), PropertyAttributes.None, typeof(object), null);
+            var propInstance = proxyTypeBuilder.DefineProperty("Instance", PropertyAttributes.None, typeof(object), null);
             var getPropInstance = proxyTypeBuilder.DefineMethod(
-                $"get_{nameof(Instance)}",
+                "get_Instance",
                 MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot,
                 typeof(object),
                 Type.EmptyTypes);
@@ -172,9 +121,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             il.Emit(OpCodes.Ret);
             propInstance.SetGetMethod(getPropInstance);
 
-            var propType = proxyTypeBuilder.DefineProperty(nameof(Type), PropertyAttributes.None, typeof(Type), null);
+            var propType = proxyTypeBuilder.DefineProperty("Type", PropertyAttributes.None, typeof(Type), null);
             var getPropType = proxyTypeBuilder.DefineMethod(
-                $"get_{nameof(Type)}",
+                "get_Type",
                 MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot,
                 typeof(Type),
                 Type.EmptyTypes);
@@ -185,9 +134,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             il.Emit(OpCodes.Ret);
             propType.SetGetMethod(getPropType);
 
-            var propVersion = proxyTypeBuilder.DefineProperty(nameof(AssemblyVersion), PropertyAttributes.None, typeof(Version), null);
+            var propVersion = proxyTypeBuilder.DefineProperty("AssemblyVersion", PropertyAttributes.None, typeof(Version), null);
             var getPropVersion = proxyTypeBuilder.DefineMethod(
-                $"get_{nameof(AssemblyVersion)}",
+                "get_AssemblyVersion",
                 MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot,
                 typeof(Version),
                 Type.EmptyTypes);
@@ -390,17 +339,6 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                     throw new DuckTypePropertyOrFieldNotFoundException(proxyProperty.Name);
                 }
             }
-        }
-
-        /// <inheritdoc/>
-        void IDuckType.SetInstance(object instance)
-        {
-            _currentInstance = instance;
-        }
-
-        private void SetInstance(object instance)
-        {
-            _currentInstance = instance;
         }
 
         private readonly struct CreateTypeResult

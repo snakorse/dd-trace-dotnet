@@ -11,7 +11,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
     /// <summary>
     /// Duck Type
     /// </summary>
-    public partial class DuckType
+    public static partial class DuckType
     {
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static readonly Vendors.Serilog.ILogger Log = DatadogLogging.GetLogger(typeof(DuckType));

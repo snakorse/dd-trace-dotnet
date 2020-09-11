@@ -6,7 +6,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
     /// <summary>
     /// Duck Type
     /// </summary>
-    public partial class DuckType
+    public static partial class DuckType
     {
         /// <summary>
         /// Checks and ensures the arguments for the Create methods
