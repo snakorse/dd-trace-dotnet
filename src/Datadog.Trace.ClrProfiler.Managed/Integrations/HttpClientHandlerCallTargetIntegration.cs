@@ -14,28 +14,21 @@ using Datadog.Trace.Logging;
 namespace Datadog.Trace.ClrProfiler.Integrations
 {
     [InterceptMethod(
-            TargetAssembly = SystemNetHttp,
-            TargetType = HttpClientHandler,
-            TargetMethod = SendAsync,
+            TargetAssembly = "System.Net.Http",
+            TargetType = "System.Net.Http.HttpClientHandler",
+            TargetMethod = "SendAsync",
             TargetSignatureTypes = new[] { ClrNames.HttpResponseMessageTask, ClrNames.HttpRequestMessage, ClrNames.CancellationToken },
-            TargetMinimumVersion = Major4,
-            TargetMaximumVersion = Major4,
+            TargetMinimumVersion = "4",
+            TargetMaximumVersion = "4",
             MethodReplacementAction = MethodReplacementActionType.CallTargetModification)]
-    public class HttpClientHandlerCallTargetIntegration
+    public static class HttpClientHandlerCallTargetIntegration
     {
         private const string IntegrationName = "HttpMessageHandler";
-        private const string SystemNetHttp = "System.Net.Http";
-        private const string Major4 = "4";
-
-        private const string HttpMessageHandlerTypeName = "HttpMessageHandler";
-        private const string HttpClientHandlerTypeName = "HttpClientHandler";
-
-        private const string HttpMessageHandler = SystemNetHttp + "." + HttpMessageHandlerTypeName;
-        private const string HttpClientHandler = SystemNetHttp + "." + HttpClientHandlerTypeName;
-        private const string SendAsync = "SendAsync";
         private static readonly Vendors.Serilog.ILogger Log = DatadogLogging.GetLogger(typeof(HttpClientHandlerCallTargetIntegration));
 
-        public static CallTargetState OnMethodBegin(CallerInfo caller, HttpRequestMessage requestMessage, CancellationToken cancellationToken)
+        public static CallTargetState OnMethodBegin<TInstance, TArg1>(TInstance instance, TArg1 requestMessage, CancellationToken cancellationToken)
+            where TInstance : IHttpClientHandler, IDuckType
+            where TArg1 : IHttpRequestMessage
         {
             Scope scope = null;
 
@@ -44,7 +37,11 @@ namespace Datadog.Trace.ClrProfiler.Integrations
                 scope = ScopeFactory.CreateOutboundHttpScope(Tracer.Instance, requestMessage.Method.Method, requestMessage.RequestUri, IntegrationName);
                 if (scope != null)
                 {
-                    scope.Span.SetTag("http-client-handler-type", caller.Type.FullName);
+                    scope.Span.SetTag("http-client-handler-type", instance.Type.ToString());
+                    scope.Span.SetTag("prototype-version", "v9");
+                    scope.Span.SetTag("use-proxy", instance.UseProxy.ToString());
+                    scope.Span.SetTag("max-connections-per-server", instance.MaxConnectionsPerServer.ToString());
+                    scope.Span.SetTag("ducktype-proxy-name", instance.ToString());
 
                     // add distributed tracing headers to the HTTP request
                     SpanContextPropagator.Instance.Inject(scope.Span.Context, new ReflectionHttpHeadersCollection(((IDuckType)requestMessage.Headers).Instance));
@@ -54,7 +51,7 @@ namespace Datadog.Trace.ClrProfiler.Integrations
             return new CallTargetState(scope);
         }
 
-        public static object OnMethodEndAsync(HttpResponseMessage responseMessage, Exception exception, CallTargetState state)
+        public static object OnMethodEndAsync(IHttpResponseMessage responseMessage, Exception exception, CallTargetState state)
         {
             Scope scope = (Scope)state.State;
             try
@@ -62,6 +59,7 @@ namespace Datadog.Trace.ClrProfiler.Integrations
                 if (scope != null)
                 {
                     scope.Span.SetTag("integration", "CallTarget");
+                    scope.Span.SetTag("integration-version", "v9");
                     if (exception is null)
                     {
                         scope.Span.SetTag(Tags.HttpStatusCode, responseMessage.StatusCode.ToString());
@@ -80,7 +78,7 @@ namespace Datadog.Trace.ClrProfiler.Integrations
             return responseMessage;
         }
 
-        private static bool IsTracingEnabled(RequestHeaders headers)
+        private static bool IsTracingEnabled(IRequestHeaders headers)
         {
             if (headers.Contains(HttpHeaderNames.TracingEnabled))
             {
@@ -95,41 +93,48 @@ namespace Datadog.Trace.ClrProfiler.Integrations
             return true;
         }
 
-        public class HttpRequestMessage
+        public interface IHttpRequestMessage
         {
-            public virtual HttpMethod Method { get; }
+            IHttpMethod Method { get; }
 
-            public virtual Uri RequestUri { get; }
+            Uri RequestUri { get; }
 
-            public virtual Version Version { get; }
+            IVersion Version { get; }
 
-            public virtual RequestHeaders Headers { get; }
+            IRequestHeaders Headers { get; }
         }
 
-        public class HttpMethod
+        public interface IHttpMethod
         {
-            public virtual string Method { get; }
+            string Method { get; }
         }
 
-        public class Version
+        public interface IVersion
         {
-            public virtual int Major { get; }
+            int Major { get; }
 
-            public virtual int Minor { get; }
+            int Minor { get; }
 
-            public virtual int Build { get; }
+            int Build { get; }
         }
 
-        public class RequestHeaders
+        public interface IRequestHeaders
         {
-            public virtual bool Contains(string name) => true;
+            bool Contains(string name);
 
-            public virtual IEnumerable<string> GetValues(string name) => Enumerable.Empty<string>();
+            IEnumerable<string> GetValues(string name);
         }
 
-        public class HttpResponseMessage
+        public interface IHttpResponseMessage
         {
-            public int StatusCode { get; }
+            int StatusCode { get; }
+        }
+
+        public interface IHttpClientHandler
+        {
+            bool UseProxy { get; set; }
+
+            int MaxConnectionsPerServer { get; set; }
         }
     }
 }

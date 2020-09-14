@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -8,7 +9,7 @@ using Datadog.Trace.Logging;
 
 namespace Datadog.Trace.ClrProfiler.CallTarget
 {
-    internal delegate CallTargetState MethodBeginDelegate(CallerInfo callerInfo, object[] arguments);
+    internal delegate CallTargetState MethodBeginDelegate(object instance, object[] arguments);
 
     internal delegate object MethodEndDelegate(object returnValue, Exception exception, CallTargetState state);
 
@@ -25,26 +26,27 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
         /// Call target static begin method helper
         /// </summary>
         /// <typeparam name="TWrapper">Type of the wrapper</typeparam>
-        /// <param name="instanceTypeHandle">Instance type handle</param>
+        /// <typeparam name="TInstance">Type of the instance</typeparam>
         /// <param name="instance">Object instance</param>
         /// <param name="arguments">Arguments</param>
         /// <returns>CallTargetBeginReturn instance</returns>
-        public static CallTargetState BeginMethod<TWrapper>(RuntimeTypeHandle instanceTypeHandle, object instance, object[] arguments)
+        public static CallTargetState BeginMethod<TWrapper, TInstance>(TInstance instance, object[] arguments)
         {
-            return CallTargetIntegration<TWrapper>.BeginMethod(instanceTypeHandle, instance, arguments);
+            return CallTargetIntegration<TWrapper, TInstance>.BeginMethod(instance, arguments);
         }
 
         /// <summary>
         /// Call target static end method helper
         /// </summary>
         /// <typeparam name="TWrapper">Type of the wrapper</typeparam>
+        /// <typeparam name="TInstance">Type of the instance</typeparam>
         /// <param name="returnValue">Original method return value</param>
         /// <param name="exception">Original method exception</param>
         /// <param name="state">State from the BeginMethod</param>
         /// <returns>Return value</returns>
-        public static object EndMethod<TWrapper>(object returnValue, Exception exception, CallTargetState state)
+        public static object EndMethod<TWrapper, TInstance>(object returnValue, Exception exception, CallTargetState state)
         {
-            return CallTargetIntegration<TWrapper>.EndMethod(returnValue, exception, state);
+            return CallTargetIntegration<TWrapper, TInstance>.EndMethod(returnValue, exception, state);
         }
 
         /// <summary>
@@ -59,7 +61,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
             }
         }
 
-        private static MethodBeginDelegate CreateMethodBeginDelegate(Type wrapperType, string methodName)
+        private static MethodBeginDelegate CreateMethodBeginDelegate<TInstance>(Type wrapperType, string methodName)
         {
             try
             {
@@ -77,26 +79,69 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
                     return null;
                 }
 
+                Type[] genericArgumentsTypes = onMethodBeginMethodInfo.GetGenericArguments();
+
+                Type[] genericInstanceConstraints = genericArgumentsTypes[0].GetGenericParameterConstraints();
+                bool hasInstanceContraint = genericInstanceConstraints.Length > 0;
+                List<Type> callGenericTypes = new List<Type>();
+
+                if (hasInstanceContraint)
+                {
+                    callGenericTypes.Add(genericInstanceConstraints[0]);
+                }
+
                 DynamicMethod callMethod = new DynamicMethod(
                     $"{onMethodBeginMethodInfo.DeclaringType.Name}.{onMethodBeginMethodInfo.Name}",
                     typeof(CallTargetState),
-                    new Type[] { typeof(CallerInfo), typeof(object[]) },
+                    new Type[] { typeof(object), typeof(object[]) },
                     onMethodBeginMethodInfo.Module);
                 ILGenerator ilWriter = callMethod.GetILGenerator();
 
                 ParameterInfo[] parameters = onMethodBeginMethodInfo.GetParameters();
-                bool hasCallerInfo = (parameters.Length > 0 && parameters[0].ParameterType == typeof(CallerInfo));
 
-                // Load caller info
-                if (hasCallerInfo)
+                ilWriter.Emit(OpCodes.Ldarg_0);
+                if (hasInstanceContraint)
                 {
-                    ilWriter.Emit(OpCodes.Ldarg_0);
+                    ilWriter.Emit(OpCodes.Ldtoken, genericInstanceConstraints[0]);
+                    ilWriter.EmitCall(OpCodes.Call, DuckTyping.Util.GetTypeFromHandleMethodInfo, null);
+                    ilWriter.EmitCall(OpCodes.Call, ConvertTypeMethodInfo, null);
+                }
+                else
+                {
+                    if (typeof(TInstance).IsValueType)
+                    {
+                        ilWriter.Emit(OpCodes.Unbox_Any, typeof(TInstance));
+                    }
+                    else if (typeof(TInstance) != typeof(object))
+                    {
+                        ilWriter.Emit(OpCodes.Castclass, typeof(TInstance));
+                    }
                 }
 
                 // Load arguments
-                for (var i = (hasCallerInfo ? 1 : 0); i < parameters.Length; i++)
+                for (var i = 1; i < parameters.Length; i++)
                 {
                     Type pType = parameters[i].ParameterType;
+
+                    if (pType.IsGenericParameter)
+                    {
+                        pType = genericArgumentsTypes[pType.GenericParameterPosition];
+                        Type[] genericConstraints = pType.GetGenericParameterConstraints();
+                        if (genericConstraints.Length > 0)
+                        {
+                            pType = genericConstraints[0];
+                            callGenericTypes.Add(pType);
+                        }
+                        else
+                        {
+                            ilWriter.Emit(OpCodes.Ldarg_1);
+                            ILHelpers.WriteIlIntValue(ilWriter, i - 1);
+                            ilWriter.Emit(OpCodes.Ldelem_Ref);
+                            callGenericTypes.Add(typeof(object));
+                            continue;
+                        }
+                    }
+
                     Type rType = DuckTyping.Util.GetRootType(pType);
                     bool callEnum = false;
                     if (rType.IsEnum)
@@ -107,7 +152,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
                     }
 
                     ilWriter.Emit(OpCodes.Ldarg_1);
-                    ILHelpers.WriteIlIntValue(ilWriter, i - (hasCallerInfo ? 1 : 0));
+                    ILHelpers.WriteIlIntValue(ilWriter, i - 1);
                     ilWriter.Emit(OpCodes.Ldelem_Ref);
 
                     if (callEnum)
@@ -132,6 +177,15 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
                 }
 
                 // Call method
+                if (hasInstanceContraint)
+                {
+                    onMethodBeginMethodInfo = onMethodBeginMethodInfo.MakeGenericMethod(callGenericTypes.ToArray());
+                }
+                else
+                {
+                    onMethodBeginMethodInfo = onMethodBeginMethodInfo.MakeGenericMethod(typeof(TInstance));
+                }
+
                 ilWriter.EmitCall(OpCodes.Call, onMethodBeginMethodInfo, null);
                 ilWriter.Emit(OpCodes.Ret);
 
@@ -239,10 +293,10 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
                 return value;
             }
 
-            if (value is IConvertible)
-            {
-                return Convert.ChangeType(value, conversionType, CultureInfo.CurrentCulture);
-            }
+            // if (value is IConvertible)
+            // {
+            //     return Convert.ChangeType(value, conversionType, CultureInfo.CurrentCulture);
+            // }
 
             // Finally we try to duck type
             return DuckType.Create(conversionType, value);
@@ -258,7 +312,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
             return returnValue;
         }
 
-        private static class CallTargetIntegration<TWrapper>
+        private static class CallTargetIntegration<TWrapper, TInstance>
         {
             private static MethodBeginDelegate _onMethodBeginDelegate;
             private static MethodEndDelegate _onMethodEndDelegate;
@@ -267,16 +321,16 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
             static CallTargetIntegration()
             {
                 Type wrapperType = typeof(TWrapper);
-                _onMethodBeginDelegate = CallTargetInvoker.CreateMethodBeginDelegate(wrapperType, "OnMethodBegin");
+                _onMethodBeginDelegate = CallTargetInvoker.CreateMethodBeginDelegate<TInstance>(wrapperType, "OnMethodBegin");
                 _onMethodEndDelegate = CallTargetInvoker.CreateMethodEndDelegate(wrapperType, "OnMethodEnd");
                 _onMethodEndAsyncDelegate = CallTargetInvoker.CreateMethodEndDelegate(wrapperType, "OnMethodEndAsync");
             }
 
-            public static CallTargetState BeginMethod(RuntimeTypeHandle instanceTypeHandle, object instance, object[] arguments)
+            public static CallTargetState BeginMethod(TInstance instance, object[] arguments)
             {
                 if (_onMethodBeginDelegate != null)
                 {
-                    return _onMethodBeginDelegate(new CallerInfo(instanceTypeHandle, instance), arguments);
+                    return _onMethodBeginDelegate(instance, arguments);
                 }
 
                 return new CallTargetState(null);

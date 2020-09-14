@@ -119,7 +119,7 @@ namespace Datadog.Trace.ClrProfiler.Integrations.Testing
                 TResult result = default;
                 try
                 {
-                    result = await previousTask.ConfigureAwait(false);
+                    result = await previousTask;
                 }
                 catch (Exception ex)
                 {
@@ -134,21 +134,21 @@ namespace Datadog.Trace.ClrProfiler.Integrations.Testing
             {
                 if (previousTask.Status == TaskStatus.RanToCompletion)
                 {
-                    return (TResult)await continuation(previousTask.Result, null, state).ConfigureAwait(false);
+                    return (TResult)await continuation(previousTask.Result, null, state);
                 }
 
                 TResult result = default;
                 try
                 {
-                    result = await previousTask.ConfigureAwait(false);
+                    result = await previousTask;
                 }
                 catch (Exception ex)
                 {
-                    await continuation(result, ex, state).ConfigureAwait(false);
+                    await continuation(result, ex, state);
                     throw;
                 }
 
-                return (TResult)await continuation(result, null, state).ConfigureAwait(false);
+                return (TResult)await continuation(result, null, state);
             }
         }
 
@@ -175,7 +175,7 @@ namespace Datadog.Trace.ClrProfiler.Integrations.Testing
             {
                 try
                 {
-                    await previousTask.ConfigureAwait(false);
+                    await previousTask;
                 }
                 catch (Exception ex)
                 {
@@ -200,15 +200,15 @@ namespace Datadog.Trace.ClrProfiler.Integrations.Testing
             {
                 try
                 {
-                    await previousTask.ConfigureAwait(false);
+                    await previousTask;
                 }
                 catch (Exception ex)
                 {
-                    await continuation(null, ex, state).ConfigureAwait(false);
+                    await continuation(null, ex, state);
                     throw;
                 }
 
-                await continuation(null, null, state).ConfigureAwait(false);
+                await continuation(null, null, state);
             }
         }
     }

@@ -1359,6 +1359,10 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         auto wrapper_type_ref_size =
             CorSigCompressToken(wrapper_type_ref, &wrapper_type_ref_buffer);
 
+        // *** Get the caller type buffer
+        unsigned callerType_buffer;
+        auto callerType_size = CorSigCompressToken(caller.type.id, &callerType_buffer);
+
         // Modify locals signature to add returnvalue, exception, and the object with the delegate to call after the method finishes.
         hr = ModifyLocalSig(module_metadata, rewriter,
                             retIsValueType ? NULL : &retFuncArg,
@@ -1385,7 +1389,7 @@ HRESULT CorProfiler::ProcessCallTargetModification(
                 {
                     try
                     {
-                        state = CallTargetInvoker.BeginMethod<TWrapper>([instanceRuntimeHandle], this, [method_parameters_array]); 
+                        state = CallTargetInvoker.BeginMethod<TWrapper, TInstance>(this, [method_parameters_array]); 
                         if (!state.ShouldExecuteMethod())
                         {
                             return;
@@ -1415,7 +1419,7 @@ HRESULT CorProfiler::ProcessCallTargetModification(
                 {
                     try
                     {
-                        returnValue = CallTargetInvoker.EndMethod<TWrapper>(returnValue, exception, state);
+                        returnValue = CallTargetInvoker.EndMethod<TWrapper, TInstance>(returnValue, exception, state);
                     }
                     catch (Exception ex)
                     {
@@ -1446,6 +1450,7 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         //
 
         // clear locals
+        ILInstr* pTryStartInstr = reWriterWrapper.NOP();
         reWriterWrapper.LoadNull();
         reWriterWrapper.StLocal(indexRet);
         reWriterWrapper.LoadNull();
@@ -1453,9 +1458,6 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         reWriterWrapper.CallMember(module_metadata->getDefaultMemberRef, false);
         reWriterWrapper.StLocal(indexState);
         
-        // load caller type into the stack
-        ILInstr* pTryStartInstr = reWriterWrapper.LoadToken(caller.type.id);
-
         // load instance into the stack (if not static)
         if (isStatic) {
           reWriterWrapper.LoadNull();
@@ -1493,22 +1495,31 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         // Create the BeginMethod method spec with the wrapper type as generic
         mdMethodSpec beginMemberRefSpec = mdMethodSpecNil;
         {
-          auto signatureSize = 3 + wrapper_type_ref_size;
-          auto* signature = new COR_SIGNATURE[signatureSize];
-          signature[0] = IMAGE_CEE_CS_CALLCONV_GENERICINST;
-          signature[1] = 0x01;
-          signature[2] = ELEMENT_TYPE_CLASS;
-          memcpy(&signature[3], &wrapper_type_ref_buffer,
+          auto signatureLength = 4 + wrapper_type_ref_size + callerType_size;
+          auto* signature = new COR_SIGNATURE[signatureLength];
+          unsigned offset = 0;
+          signature[offset++] = IMAGE_CEE_CS_CALLCONV_GENERICINST;
+          signature[offset++] = 0x02;
+          
+          signature[offset++] = ELEMENT_TYPE_CLASS;
+          memcpy(&signature[offset], &wrapper_type_ref_buffer,
                  wrapper_type_ref_size);
+          offset += wrapper_type_ref_size;
+
+          signature[offset++] = ELEMENT_TYPE_CLASS;
+          memcpy(&signature[offset], &callerType_buffer,
+                 callerType_size);
 
           hr = module_metadata->metadata_emit->DefineMethodSpec(
-              module_metadata->beginMemberRef, signature,
-              signatureSize, &beginMemberRefSpec);
+              module_metadata->beginMemberRef, signature, signatureLength,
+              &beginMemberRefSpec);
 
           if (FAILED(hr)) {
-            Warn("Error creating begin method spec");
+            Warn("Error creating begin method spec.");
             return S_OK;
           }
+
+          Info("BeginMethod spec signature: ", HexStr(signature, signatureLength));
         }
 
         // Call the BeginMethod and store the result to the local
@@ -1594,22 +1605,30 @@ HRESULT CorProfiler::ProcessCallTargetModification(
         // Create the EndMethod method spec with the wrapper type as generic
         mdMethodSpec endMemberRefSpec = mdMethodSpecNil;
         {
-          auto signatureSize = 3 + wrapper_type_ref_size;
-          auto* signature = new COR_SIGNATURE[signatureSize];
-          signature[0] = IMAGE_CEE_CS_CALLCONV_GENERICINST;
-          signature[1] = 0x01;
-          signature[2] = ELEMENT_TYPE_CLASS;
-          memcpy(&signature[3], &wrapper_type_ref_buffer,
+          auto signatureLength = 4 + wrapper_type_ref_size + callerType_size;
+          auto* signature = new COR_SIGNATURE[signatureLength];
+          unsigned offset = 0;
+          signature[offset++] = IMAGE_CEE_CS_CALLCONV_GENERICINST;
+          signature[offset++] = 0x02;
+
+          signature[offset++] = ELEMENT_TYPE_CLASS;
+          memcpy(&signature[offset], &wrapper_type_ref_buffer,
                  wrapper_type_ref_size);
+          offset += wrapper_type_ref_size;
+
+          signature[offset++] = ELEMENT_TYPE_CLASS;
+          memcpy(&signature[offset], &callerType_buffer, callerType_size);
 
           hr = module_metadata->metadata_emit->DefineMethodSpec(
-              module_metadata->endMemberRef, signature, signatureSize,
+              module_metadata->endMemberRef, signature, signatureLength,
               &endMemberRefSpec);
 
           if (FAILED(hr)) {
             Warn("Error creating end method spec");
             return S_OK;
           }
+          Info("EndMethod spec signature: ",
+               HexStr(signature, signatureLength));
         }
         
         // Call the EndMethod and store the result to the local
@@ -2068,32 +2087,26 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
 
   // *** Ensure calltarget beginmethod member ref
   if (module_metadata->beginMemberRef == mdMemberRefNil) {
-    unsigned runtimeTypeHandle_buffer;
-    auto runtimeTypeHandle_size = CorSigCompressToken(
-        module_metadata->runtimeTypeHandleRef, &runtimeTypeHandle_buffer);
-
     unsigned callTargetState_buffer;
     auto callTargetState_size = CorSigCompressToken(
         module_metadata->callTargetStateTypeRef, &callTargetState_buffer);
 
-    auto signatureLength = 8 + runtimeTypeHandle_size +
+    auto signatureLength = 8 +
                            callTargetState_size;
     auto* signature = new COR_SIGNATURE[signatureLength];
     unsigned offset = 0;
 
     signature[offset++] = IMAGE_CEE_CS_CALLCONV_GENERIC;
-    signature[offset++] = 0x01;
-    signature[offset++] = 0x03;
+    signature[offset++] = 0x02;
+    signature[offset++] = 0x02;
 
     signature[offset++] = ELEMENT_TYPE_VALUETYPE;
     memcpy(&signature[offset], &callTargetState_buffer, callTargetState_size);
     offset += callTargetState_size;
 
-    signature[offset++] = ELEMENT_TYPE_VALUETYPE;
-    memcpy(&signature[offset], &runtimeTypeHandle_buffer,
-           runtimeTypeHandle_size);
-    offset += runtimeTypeHandle_size;
-    signature[offset++] = ELEMENT_TYPE_OBJECT;
+    signature[offset++] = ELEMENT_TYPE_MVAR;
+    signature[offset++] = 0x01;
+
     signature[offset++] = ELEMENT_TYPE_SZARRAY;
     signature[offset++] = ELEMENT_TYPE_OBJECT;
 
@@ -2123,7 +2136,7 @@ HRESULT CorProfiler::EnsureCallTargetRefs(ModuleMetadata* module_metadata) {
     unsigned offset = 0;
 
     signature[offset++] = IMAGE_CEE_CS_CALLCONV_GENERIC;
-    signature[offset++] = 0x01;
+    signature[offset++] = 0x02;
     signature[offset++] = 0x03;
     signature[offset++] = ELEMENT_TYPE_OBJECT;
 
