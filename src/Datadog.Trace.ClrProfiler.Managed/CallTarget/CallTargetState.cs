@@ -1,3 +1,5 @@
+using System;
+
 namespace Datadog.Trace.ClrProfiler.CallTarget
 {
     /// <summary>

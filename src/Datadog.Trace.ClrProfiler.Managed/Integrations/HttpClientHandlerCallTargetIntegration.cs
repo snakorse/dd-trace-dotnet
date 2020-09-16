@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Datadog.Trace.ClrProfiler.CallTarget;
 using Datadog.Trace.ClrProfiler.CallTarget.DuckTyping;
 using Datadog.Trace.ClrProfiler.Helpers;
@@ -38,7 +39,7 @@ namespace Datadog.Trace.ClrProfiler.Integrations
                 if (scope != null)
                 {
                     scope.Span.SetTag("http-client-handler-type", instance.Type.ToString());
-                    scope.Span.SetTag("prototype-version", "v9");
+                    scope.Span.SetTag("prototype-version", "v11");
                     scope.Span.SetTag("use-proxy", instance.UseProxy.ToString());
                     scope.Span.SetTag("max-connections-per-server", instance.MaxConnectionsPerServer.ToString());
                     scope.Span.SetTag("ducktype-proxy-name", instance.ToString());
@@ -51,7 +52,18 @@ namespace Datadog.Trace.ClrProfiler.Integrations
             return new CallTargetState(scope);
         }
 
-        public static object OnMethodEndAsync(IHttpResponseMessage responseMessage, Exception exception, CallTargetState state)
+        public static Task OnMethodEnd(Task responseMessage, Exception exception, CallTargetState state)
+        {
+            Scope scope = (Scope)state.State;
+            if (scope != null)
+            {
+                scope.Span.SetTag("Control flow return", "true");
+            }
+
+            return responseMessage;
+        }
+
+        public static IHttpResponseMessage OnAsyncMethodEnd(IHttpResponseMessage responseMessage, Exception exception, CallTargetState state)
         {
             Scope scope = (Scope)state.State;
             try
@@ -59,7 +71,7 @@ namespace Datadog.Trace.ClrProfiler.Integrations
                 if (scope != null)
                 {
                     scope.Span.SetTag("integration", "CallTarget");
-                    scope.Span.SetTag("integration-version", "v9");
+                    scope.Span.SetTag("integration-version", "v11");
                     if (exception is null)
                     {
                         scope.Span.SetTag(Tags.HttpStatusCode, responseMessage.StatusCode.ToString());

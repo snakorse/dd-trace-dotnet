@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using Datadog.Trace.ClrProfiler.CallTarget.DuckTyping;
@@ -87,7 +88,13 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
 
                 if (hasInstanceContraint)
                 {
-                    callGenericTypes.Add(genericInstanceConstraints[0]);
+                    var result = DuckType.GetOrCreateProxyType(genericInstanceConstraints[0], typeof(TInstance));
+                    result.ExceptionInfo?.Throw();
+                    callGenericTypes.Add(result.ProxyType);
+                }
+                else
+                {
+                    callGenericTypes.Add(typeof(TInstance));
                 }
 
                 DynamicMethod callMethod = new DynamicMethod(
@@ -177,15 +184,8 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
                 }
 
                 // Call method
-                if (hasInstanceContraint)
-                {
-                    onMethodBeginMethodInfo = onMethodBeginMethodInfo.MakeGenericMethod(callGenericTypes.ToArray());
-                }
-                else
-                {
-                    onMethodBeginMethodInfo = onMethodBeginMethodInfo.MakeGenericMethod(typeof(TInstance));
-                }
-
+                Log.Information("Generic Types: " + string.Join(", ", callGenericTypes.Select(t => t.FullName)));
+                onMethodBeginMethodInfo = onMethodBeginMethodInfo.MakeGenericMethod(callGenericTypes.ToArray());
                 ilWriter.EmitCall(OpCodes.Call, onMethodBeginMethodInfo, null);
                 ilWriter.Emit(OpCodes.Ret);
 
@@ -316,14 +316,14 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
         {
             private static MethodBeginDelegate _onMethodBeginDelegate;
             private static MethodEndDelegate _onMethodEndDelegate;
-            private static MethodEndDelegate _onMethodEndAsyncDelegate;
+            private static MethodEndDelegate _onAsyncMethodEndDelegate;
 
             static CallTargetIntegration()
             {
                 Type wrapperType = typeof(TWrapper);
                 _onMethodBeginDelegate = CallTargetInvoker.CreateMethodBeginDelegate<TInstance>(wrapperType, "OnMethodBegin");
                 _onMethodEndDelegate = CallTargetInvoker.CreateMethodEndDelegate(wrapperType, "OnMethodEnd");
-                _onMethodEndAsyncDelegate = CallTargetInvoker.CreateMethodEndDelegate(wrapperType, "OnMethodEndAsync");
+                _onAsyncMethodEndDelegate = CallTargetInvoker.CreateMethodEndDelegate(wrapperType, "OnAsyncMethodEnd");
             }
 
             public static CallTargetState BeginMethod(TInstance instance, object[] arguments)
@@ -343,12 +343,12 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
                     returnValue = _onMethodEndDelegate(returnValue, exception, state);
                 }
 
-                if (_onMethodEndAsyncDelegate != null)
+                if (_onAsyncMethodEndDelegate != null)
                 {
                     returnValue = AsyncTool.AddContinuation(
                         returnValue,
                         exception,
-                        new VTuple<MethodEndDelegate, CallTargetState>(_onMethodEndAsyncDelegate, state),
+                        new VTuple<MethodEndDelegate, CallTargetState>(_onAsyncMethodEndDelegate, state),
                         (rValue, ex, tuple) =>
                         {
                             try

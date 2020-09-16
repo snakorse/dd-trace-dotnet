@@ -12,7 +12,13 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
     /// </summary>
     public static partial class DuckType
     {
-        private static CreateTypeResult GetOrCreateProxyType(Type proxyType, Type targetType)
+        /// <summary>
+        /// Gets or create a new proxy type for ducktyping
+        /// </summary>
+        /// <param name="proxyType">ProxyType interface</param>
+        /// <param name="targetType">Target type</param>
+        /// <returns>CreateTypeResult instance</returns>
+        internal static CreateTypeResult GetOrCreateProxyType(Type proxyType, Type targetType)
         {
             VTuple<Type, Type> key = new VTuple<Type, Type>(proxyType, targetType);
 
@@ -341,7 +347,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             }
         }
 
-        private readonly struct CreateTypeResult
+        internal readonly struct CreateTypeResult
         {
             public readonly Type ProxyType;
             public readonly ExceptionDispatchInfo ExceptionInfo;
