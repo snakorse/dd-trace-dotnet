@@ -45,16 +45,19 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             {
                 // Define parent type, interface types
                 Type parentType;
+                TypeAttributes typeAttributes;
                 Type[] interfaceTypes;
                 if (proxyType.IsInterface)
                 {
-                    parentType = typeof(object);
+                    parentType = typeof(ValueType);
+                    typeAttributes = TypeAttributes.Public | TypeAttributes.AnsiClass | TypeAttributes.BeforeFieldInit | TypeAttributes.SequentialLayout | TypeAttributes.Sealed | TypeAttributes.Serializable;
                     interfaceTypes = new[] { proxyType, typeof(IDuckType) };
                 }
                 else
                 {
                     parentType = proxyType;
-                    interfaceTypes = DefaultInterfaceTypes;
+                    typeAttributes = TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.AutoClass | TypeAttributes.AnsiClass | TypeAttributes.BeforeFieldInit | TypeAttributes.AutoLayout | TypeAttributes.Sealed;
+                    interfaceTypes = new[] { typeof(IDuckTypeClass) };
                 }
 
                 // Ensures the module builder
@@ -77,15 +80,23 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                 // Create Type
                 TypeBuilder proxyTypeBuilder = _moduleBuilder.DefineType(
                     proxyTypeName,
-                    TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.AutoClass | TypeAttributes.AnsiClass | TypeAttributes.BeforeFieldInit | TypeAttributes.AutoLayout | TypeAttributes.Sealed,
+                    typeAttributes,
                     parentType,
                     interfaceTypes);
 
-                // Define .ctor
-                proxyTypeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+                // Create IDuckType and IDuckTypeSetter implementations
+                FieldInfo instanceField = CreateIDuckTypeImplementation(proxyTypeBuilder, !proxyType.IsInterface);
 
-                // Create instance field if is null
-                FieldInfo instanceField = CreateInstanceField(proxyTypeBuilder);
+                // Define .ctor
+                ConstructorBuilder ctorBuilder = proxyTypeBuilder.DefineConstructor(
+                    MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
+                    CallingConventions.Standard,
+                    TypeObjectArray);
+                ILGenerator ctorIL = ctorBuilder.GetILGenerator();
+                ctorIL.Emit(OpCodes.Ldarg_0);
+                ctorIL.Emit(OpCodes.Ldarg_1);
+                ctorIL.Emit(OpCodes.Stfld, instanceField);
+                ctorIL.Emit(OpCodes.Ret);
 
                 // Create Members
                 CreateProperties(proxyTypeBuilder, proxyType, targetType, instanceField);
@@ -100,20 +111,9 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             }
         }
 
-        private static FieldInfo CreateInstanceField(TypeBuilder proxyTypeBuilder)
+        private static FieldInfo CreateIDuckTypeImplementation(TypeBuilder proxyTypeBuilder, bool emitSetInstance)
         {
-            var instanceField = proxyTypeBuilder.DefineField("_currentInstance", typeof(object), FieldAttributes.Family);
-
-            var setInstance = proxyTypeBuilder.DefineMethod(
-                "SetInstance",
-                MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot,
-                typeof(void),
-                new[] { typeof(object) });
-            var il = setInstance.GetILGenerator();
-            il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Ldarg_1);
-            il.Emit(OpCodes.Stfld, instanceField);
-            il.Emit(OpCodes.Ret);
+            var instanceField = proxyTypeBuilder.DefineField("_currentInstance", typeof(object), FieldAttributes.Private | FieldAttributes.InitOnly);
 
             var propInstance = proxyTypeBuilder.DefineProperty("Instance", PropertyAttributes.None, typeof(object), null);
             var getPropInstance = proxyTypeBuilder.DefineMethod(
@@ -121,7 +121,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                 MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot,
                 typeof(object),
                 Type.EmptyTypes);
-            il = getPropInstance.GetILGenerator();
+            ILGenerator il = getPropInstance.GetILGenerator();
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Ldfld, instanceField);
             il.Emit(OpCodes.Ret);
@@ -156,6 +156,20 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             il.Emit(OpCodes.Ret);
             propVersion.SetGetMethod(getPropVersion);
 
+            if (emitSetInstance)
+            {
+                var setInstance = proxyTypeBuilder.DefineMethod(
+                    "SetInstance",
+                    MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot,
+                    typeof(void),
+                    new[] { typeof(object) });
+                il = setInstance.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Stfld, instanceField);
+                il.Emit(OpCodes.Ret);
+            }
+
             return instanceField;
         }
 
@@ -165,7 +179,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             var implementedInterfaces = proxyType.GetInterfaces();
             foreach (var imInterface in implementedInterfaces)
             {
-                if (imInterface == typeof(IDuckType))
+                if (imInterface == typeof(IDuckType) || imInterface == typeof(IDuckTypeClass))
                 {
                     continue;
                 }

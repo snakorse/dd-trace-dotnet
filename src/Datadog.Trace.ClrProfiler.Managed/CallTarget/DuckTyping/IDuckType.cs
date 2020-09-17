@@ -21,7 +21,13 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// Gets assembly version
         /// </summary>
         Version AssemblyVersion { get; }
+    }
 
+    /// <summary>
+    /// Duck type class interface
+    /// </summary>
+    public interface IDuckTypeClass : IDuckType
+    {
         /// <summary>
         /// Sets the instance object
         /// </summary>

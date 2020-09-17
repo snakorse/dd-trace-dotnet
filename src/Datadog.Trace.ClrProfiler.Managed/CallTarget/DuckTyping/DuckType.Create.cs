@@ -34,9 +34,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             result.ExceptionInfo?.Throw();
 
             // Create instance
-            var objInstance = (IDuckType)Activator.CreateInstance(result.ProxyType);
-            objInstance.SetInstance(instance);
-            return objInstance;
+            return (IDuckType)Activator.CreateInstance(result.ProxyType, instance);
         }
     }
 }

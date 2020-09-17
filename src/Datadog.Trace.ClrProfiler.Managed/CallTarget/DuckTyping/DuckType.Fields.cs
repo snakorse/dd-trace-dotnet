@@ -21,33 +21,6 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             ILGenerator il = proxyMethod.GetILGenerator();
             bool isPublicInstance = targetType.IsPublic || targetType.IsNestedPublic;
             Type returnType = targetField.FieldType;
-            bool duckChaining = false;
-
-            // Check if the type can be converted of if we need to enable duck chaining
-            if (proxyProperty.PropertyType != targetField.FieldType && !proxyProperty.PropertyType.IsValueType && !proxyProperty.PropertyType.IsAssignableFrom(targetField.FieldType))
-            {
-                // Create and load the duck type field reference to the stack
-                if (targetField.IsStatic)
-                {
-                    FieldInfo innerDuckField = DynamicFields.GetOrAdd(
-                        new VTuple<string, TypeBuilder>("_duckStatic_" + proxyProperty.Name, proxyTypeBuilder),
-                        tuple => tuple.Item2.DefineField(tuple.Item1, typeof(IDuckType), FieldAttributes.Private | FieldAttributes.Static));
-                    il.Emit(OpCodes.Ldsflda, innerDuckField);
-                }
-                else
-                {
-                    FieldInfo innerDuckField = DynamicFields.GetOrAdd(
-                        new VTuple<string, TypeBuilder>("_duck_" + proxyProperty.Name, proxyTypeBuilder),
-                        tuple => tuple.Item2.DefineField(tuple.Item1, typeof(IDuckType), FieldAttributes.Private));
-                    il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Ldflda, innerDuckField);
-                }
-
-                // Load the property type to the stack
-                il.Emit(OpCodes.Ldtoken, proxyProperty.PropertyType);
-                il.EmitCall(OpCodes.Call, Util.GetTypeFromHandleMethodInfo, null);
-                duckChaining = true;
-            }
 
             // Load the field value to the stack
             if (isPublicInstance && targetField.IsPublic)
@@ -104,13 +77,47 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                 il.EmitCalli(OpCodes.Calli, dynMethod.CallingConvention, returnType, dynParameters, null);
             }
 
-            if (duckChaining)
+            // Check if the type can be converted of if we need to enable duck chaining
+            if (proxyProperty.PropertyType != targetField.FieldType && !proxyProperty.PropertyType.IsValueType && !proxyProperty.PropertyType.IsAssignableFrom(targetField.FieldType))
             {
                 // If we are in a duck chaining scenario we convert the field value to an object and push it to the stack
                 ILHelpers.TypeConversion(il, returnType, typeof(object));
 
-                // We call DuckType.GetInnerDuckType() with the 3 loaded values from the stack: ducktype field reference, property type and the, field value
-                il.EmitCall(OpCodes.Call, GetInnerDuckTypeMethodInfo, null);
+                // Load the property type to the stack
+                il.Emit(OpCodes.Ldtoken, proxyProperty.PropertyType);
+                il.EmitCall(OpCodes.Call, Util.GetTypeFromHandleMethodInfo, null);
+
+                // Check if the proxy definition is an interface or not.
+                // Proxy definitions interfaces are implemented by structs, so we create it in the fly.
+                // Proxy definitions that aren't interfaces are implemented using IDuckTypeClass classes,
+                // containing the SetInstance method that we can use directly.
+                if (!proxyProperty.PropertyType.IsInterface)
+                {
+                    // Create and load the duck type field reference to the stack
+                    if (targetField.IsStatic)
+                    {
+                        FieldInfo innerDuckField = DynamicFields.GetOrAdd(
+                            new VTuple<string, TypeBuilder>("_duckStatic_" + proxyProperty.Name, proxyTypeBuilder),
+                            tuple => tuple.Item2.DefineField(tuple.Item1, typeof(IDuckTypeClass), FieldAttributes.Private | FieldAttributes.Static));
+                        il.Emit(OpCodes.Ldsflda, innerDuckField);
+                    }
+                    else
+                    {
+                        FieldInfo innerDuckField = DynamicFields.GetOrAdd(
+                            new VTuple<string, TypeBuilder>("_duck_" + proxyProperty.Name, proxyTypeBuilder),
+                            tuple => tuple.Item2.DefineField(tuple.Item1, typeof(IDuckTypeClass), FieldAttributes.Private));
+                        il.Emit(OpCodes.Ldarg_0);
+                        il.Emit(OpCodes.Ldflda, innerDuckField);
+                    }
+
+                    // We call DuckType.GetClassDuckTypeChainningValue() with the 3 loaded values from the stack: field value, property type and the ducktype field reference
+                    il.EmitCall(OpCodes.Call, GetClassDuckTypeChainningValueMethodInfo, null);
+                }
+                else
+                {
+                    // We call DuckType.GetStructDuckTypeChainningValue() with the 2 loaded values from the stack: field value, property type
+                    il.EmitCall(OpCodes.Call, GetStructDuckTypeChainningValueMethodInfo, null);
+                }
             }
             else if (returnType != proxyProperty.PropertyType)
             {
@@ -133,11 +140,6 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             ILGenerator il = method.GetILGenerator();
             bool isPublicInstance = targetType.IsPublic || targetType.IsNestedPublic;
 
-            if (proxyProperty.PropertyType.IsGenericType && proxyProperty.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
-            {
-                Debugger.Break();
-            }
-
             // Load instance
             if (!targetField.IsStatic)
             {
@@ -157,30 +159,46 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             // Check if the type can be converted of if we need to enable duck chaining
             if (proxyProperty.PropertyType != targetField.FieldType && !proxyProperty.PropertyType.IsValueType && !proxyProperty.PropertyType.IsAssignableFrom(targetField.FieldType))
             {
-                // Create and load the duck type field reference to the stack
-                if (targetField.IsStatic)
+                // Check if the proxy definition is an interface or not.
+                // Proxy definitions interfaces are implemented by structs, so we create it in the fly.
+                // Proxy definitions that aren't interfaces are implemented using IDuckTypeClass classes,
+                // containing the SetInstance method that we can use directly.
+                if (!proxyProperty.PropertyType.IsInterface)
                 {
-                    FieldInfo innerDuckField = DynamicFields.GetOrAdd(
-                        new VTuple<string, TypeBuilder>("_duckStatic_" + proxyProperty.Name, proxyTypeBuilder),
-                        tuple => tuple.Item2.DefineField(tuple.Item1, typeof(IDuckType), FieldAttributes.Private | FieldAttributes.Static));
-                    il.Emit(OpCodes.Ldsflda, innerDuckField);
+                    // Create and load the duck type field reference to the stack
+                    if (targetField.IsStatic)
+                    {
+                        FieldInfo innerDuckField = DynamicFields.GetOrAdd(
+                            new VTuple<string, TypeBuilder>("_duckStatic_" + proxyProperty.Name, proxyTypeBuilder),
+                            tuple => tuple.Item2.DefineField(tuple.Item1, typeof(IDuckTypeClass), FieldAttributes.Private | FieldAttributes.Static));
+                        il.Emit(OpCodes.Ldsflda, innerDuckField);
+                    }
+                    else
+                    {
+                        FieldInfo innerDuckField = DynamicFields.GetOrAdd(
+                            new VTuple<string, TypeBuilder>("_duck_" + proxyProperty.Name, proxyTypeBuilder),
+                            tuple => tuple.Item2.DefineField(tuple.Item1, typeof(IDuckTypeClass), FieldAttributes.Private));
+                        il.Emit(OpCodes.Ldarg_0);
+                        il.Emit(OpCodes.Ldflda, innerDuckField);
+                    }
+
+                    // Load the argument and cast it as Duck type
+                    il.Emit(OpCodes.Ldarg_1);
+                    il.Emit(OpCodes.Castclass, typeof(IDuckTypeClass));
+
+                    // Call the DuckType.SetInnerDuckType() with 2 loaded values from the stack: the inner ducktype field and the value argument to be setted
+                    // This call push a new value to be used in the stack
+                    il.EmitCall(OpCodes.Call, SetInnerDuckTypeMethodInfo, null);
                 }
                 else
                 {
-                    FieldInfo innerDuckField = DynamicFields.GetOrAdd(
-                        new VTuple<string, TypeBuilder>("_duck_" + proxyProperty.Name, proxyTypeBuilder),
-                        tuple => tuple.Item2.DefineField(tuple.Item1, typeof(IDuckType), FieldAttributes.Private));
-                    il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Ldflda, innerDuckField);
+                    // Load the argument and cast it as Duck type
+                    il.Emit(OpCodes.Ldarg_1);
+                    il.Emit(OpCodes.Castclass, typeof(IDuckType));
+
+                    // Call IDuckType.Instance property to get the actual value
+                    il.EmitCall(OpCodes.Callvirt, DuckTypeInstancePropertyInfo.GetMethod, null);
                 }
-
-                // Load the argument and cast it as Duck type
-                il.Emit(OpCodes.Ldarg_1);
-                il.Emit(OpCodes.Castclass, typeof(IDuckType));
-
-                // Call the DuckType.SetInnerDuckType() with 2 loaded values from the stack: the inner ducktype field and the value argument to be setted
-                // This call push a new value to be used in the stack
-                il.EmitCall(OpCodes.Call, SetInnerDuckTypeMethodInfo, null);
             }
             else
             {

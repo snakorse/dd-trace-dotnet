@@ -17,7 +17,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
             var implementedInterfaces = baseType.GetInterfaces();
             foreach (var imInterface in implementedInterfaces)
             {
-                if (imInterface == typeof(IDuckType))
+                if (imInterface == typeof(IDuckType) || imInterface == typeof(IDuckTypeClass))
                 {
                     continue;
                 }

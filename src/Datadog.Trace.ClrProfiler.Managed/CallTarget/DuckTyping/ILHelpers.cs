@@ -323,7 +323,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                     il.EmitCall(OpCodes.Call, Util.ConvertTypeMethodInfo, null);
                     il.Emit(OpCodes.Unbox_Any, expectedType);
                 }
-                else
+                else if (expectedType != typeof(object))
                 {
                     il.Emit(OpCodes.Castclass, expectedType);
                 }

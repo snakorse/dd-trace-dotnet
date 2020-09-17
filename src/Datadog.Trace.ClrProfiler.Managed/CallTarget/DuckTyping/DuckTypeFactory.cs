@@ -21,9 +21,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <returns>Duck type proxy instance</returns>
         public IDuckType Create(object instance)
         {
-            var inst = (IDuckType)Activator.CreateInstance(_proxyType);
-            inst.SetInstance(instance);
-            return inst;
+            return (IDuckType)Activator.CreateInstance(_proxyType, instance);
         }
     }
 
@@ -48,8 +46,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         /// <returns>Duck type proxy instance</returns>
         public T Create(object instance)
         {
-            var inst = (IDuckType)Activator.CreateInstance(_proxyType);
-            inst.SetInstance(instance);
+            var inst = (IDuckType)Activator.CreateInstance(_proxyType, instance);
             return inst as T;
         }
     }

@@ -18,8 +18,6 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static readonly object _locker = new object();
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private static readonly Type[] DefaultInterfaceTypes = new[] { typeof(IDuckType) };
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static readonly Type[] TypeObjectArray = new[] { typeof(object) };
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static readonly Dictionary<VTuple<Type, Type>, CreateTypeResult> DuckTypeCache = new Dictionary<VTuple<Type, Type>, CreateTypeResult>();
@@ -34,6 +32,14 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static readonly MethodInfo SetInnerDuckTypeMethodInfo = typeof(DuckType).GetMethod(nameof(SetInnerDuckType), BindingFlags.Static | BindingFlags.Public);
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private static readonly PropertyInfo DuckTypeInstancePropertyInfo = typeof(IDuckType).GetProperty(nameof(IDuckType.Instance));
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private static readonly MethodInfo GetClassDuckTypeChainningValueMethodInfo = typeof(DuckType).GetMethod(nameof(GetClassDuckTypeChainningValue), BindingFlags.Static | BindingFlags.Public);
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private static readonly MethodInfo GetStructDuckTypeChainningValueMethodInfo = typeof(DuckType).GetMethod(nameof(GetStructDuckTypeChainningValue), BindingFlags.Static | BindingFlags.Public);
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static ModuleBuilder _moduleBuilder = null;
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static Func<DynamicMethod, RuntimeMethodHandle> _dynamicGetMethodDescriptor;
@@ -45,5 +51,5 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                 .CreateDelegate(typeof(Func<DynamicMethod, RuntimeMethodHandle>));
             return _dynamicGetMethodDescriptor(dynamicMethod);
         }
-    }
+     }
 }

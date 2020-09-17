@@ -39,13 +39,13 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                 if (targetMethod.IsStatic)
                 {
                     FieldInfo innerDuckField = DynamicFields.GetOrAdd(new VTuple<string, TypeBuilder>($"_duckStatic_{proxyProperty.Name}_{proxyParameterTypes.Length}", proxyTypeBuilder), tuple =>
-                        tuple.Item2.DefineField(tuple.Item1, typeof(IDuckType), FieldAttributes.Private | FieldAttributes.Static));
+                        tuple.Item2.DefineField(tuple.Item1, typeof(IDuckTypeClass), FieldAttributes.Private | FieldAttributes.Static));
                     il.Emit(OpCodes.Ldsflda, innerDuckField);
                 }
                 else
                 {
                     FieldInfo innerDuckField = DynamicFields.GetOrAdd(new VTuple<string, TypeBuilder>($"_duck_{proxyProperty.Name}_{proxyParameterTypes.Length}", proxyTypeBuilder), tuple =>
-                        tuple.Item2.DefineField(tuple.Item1, typeof(IDuckType), FieldAttributes.Private));
+                        tuple.Item2.DefineField(tuple.Item1, typeof(IDuckTypeClass), FieldAttributes.Private));
                     il.Emit(OpCodes.Ldarg_0);
                     il.Emit(OpCodes.Ldflda, innerDuckField);
                 }
@@ -75,20 +75,20 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                     if (targetMethod.IsStatic)
                     {
                         FieldInfo innerField = DynamicFields.GetOrAdd(new VTuple<string, TypeBuilder>($"_duckStatic_{proxyProperty.Name}_{pIndex}", proxyTypeBuilder), tuple =>
-                            tuple.Item2.DefineField(tuple.Item1, typeof(IDuckType), FieldAttributes.Private | FieldAttributes.Static));
+                            tuple.Item2.DefineField(tuple.Item1, typeof(IDuckTypeClass), FieldAttributes.Private | FieldAttributes.Static));
                         il.Emit(OpCodes.Ldsflda, innerField);
                     }
                     else
                     {
                         FieldInfo innerField = DynamicFields.GetOrAdd(new VTuple<string, TypeBuilder>($"_duck_{proxyProperty.Name}_{pIndex}", proxyTypeBuilder), tuple =>
-                            tuple.Item2.DefineField(tuple.Item1, typeof(IDuckType), FieldAttributes.Private));
+                            tuple.Item2.DefineField(tuple.Item1, typeof(IDuckTypeClass), FieldAttributes.Private));
                         il.Emit(OpCodes.Ldarg_0);
                         il.Emit(OpCodes.Ldflda, innerField);
                     }
 
                     // Load the property type to the stack
                     il.Emit(OpCodes.Ldarg_1);
-                    il.Emit(OpCodes.Castclass, typeof(IDuckType));
+                    il.Emit(OpCodes.Castclass, typeof(IDuckTypeClass));
                     il.EmitCall(OpCodes.Call, SetInnerDuckTypeMethodInfo, null);
                     targetParamType = typeof(object);
                 }
@@ -223,20 +223,20 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.DuckTyping
                     if (targetMethod.IsStatic)
                     {
                         FieldInfo innerField = DynamicFields.GetOrAdd(new VTuple<string, TypeBuilder>($"_duckStatic_{proxyProperty.Name}_{pIndex}", proxyTypeBuilder), tuple =>
-                            tuple.Item2.DefineField(tuple.Item1, typeof(IDuckType), FieldAttributes.Private | FieldAttributes.Static));
+                            tuple.Item2.DefineField(tuple.Item1, typeof(IDuckTypeClass), FieldAttributes.Private | FieldAttributes.Static));
                         il.Emit(OpCodes.Ldsflda, innerField);
                     }
                     else
                     {
                         FieldInfo innerField = DynamicFields.GetOrAdd(new VTuple<string, TypeBuilder>($"_duck_{proxyProperty.Name}_{pIndex}", proxyTypeBuilder), tuple =>
-                            tuple.Item2.DefineField(tuple.Item1, typeof(IDuckType), FieldAttributes.Private));
+                            tuple.Item2.DefineField(tuple.Item1, typeof(IDuckTypeClass), FieldAttributes.Private));
                         il.Emit(OpCodes.Ldarg_0);
                         il.Emit(OpCodes.Ldflda, innerField);
                     }
 
                     // Load the property type to the stack
                     il.Emit(OpCodes.Ldarg_1);
-                    il.Emit(OpCodes.Castclass, typeof(IDuckType));
+                    il.Emit(OpCodes.Castclass, typeof(IDuckTypeClass));
                     il.EmitCall(OpCodes.Call, SetInnerDuckTypeMethodInfo, null);
                     targetParamType = typeof(object);
                 }
