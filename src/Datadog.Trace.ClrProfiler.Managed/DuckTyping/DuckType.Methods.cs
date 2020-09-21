@@ -180,16 +180,16 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                     }
                 }
 
-                // Create generic method call
-                if (proxyMethodDefinitionGenericArguments.Length > 0)
-                {
-                    targetMethod = targetMethod.MakeGenericMethod(proxyMethodDefinitionGenericArguments);
-                }
-
                 // Call the target method
                 if (publicInstance)
                 {
                     // If the instance is public we can emit directly without any dynamic method
+
+                    // Create generic method call
+                    if (proxyMethodDefinitionGenericArguments.Length > 0)
+                    {
+                        targetMethod = targetMethod.MakeGenericMethod(proxyMethodDefinitionGenericArguments);
+                    }
 
                     // Method call
                     if (targetMethod.IsPublic)
@@ -212,6 +212,12 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                 }
                 else
                 {
+                    // A generic method call can't be made from a DynamicMethod
+                    if (proxyMethodDefinitionGenericArguments.Length > 0)
+                    {
+                        throw new DuckTypeProxyMethodsWithGenericParametersNotSupportedInNonPublicInstancesException(proxyMethod);
+                    }
+
                     // If the instance is not public we need to create a Dynamic method to overpass the visibility checks
                     // we can't access non public types so we have to cast to object type (in the instance object and the return type).
 

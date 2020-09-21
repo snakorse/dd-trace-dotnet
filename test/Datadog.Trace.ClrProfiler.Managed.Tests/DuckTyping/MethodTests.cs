@@ -61,21 +61,6 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             Assert.Equal(20, duckAbstract.InternalSum(10, 10));
             Assert.Equal(20, duckVirtual.InternalSum(10, 10));
 
-            /*// GetDefault int
-            Assert.Equal(0, duckInterface.GetDefault<int>());
-            Assert.Equal(0, duckAbstract.GetDefault<int>());
-            Assert.Equal(0, duckVirtual.GetDefault<int>());
-
-            // GetDefault double
-            Assert.Equal(0d, duckInterface.GetDefault<double>());
-            Assert.Equal(0d, duckAbstract.GetDefault<double>());
-            Assert.Equal(0d, duckVirtual.GetDefault<double>());
-
-            // GetDefault string
-            Assert.Null(duckInterface.GetDefault<string>());
-            Assert.Null(duckAbstract.GetDefault<string>());
-            Assert.Null(duckVirtual.GetDefault<string>());*/
-
             // Void with object
             duckInterface.Add("Key01", new ObscureObject.DummyFieldObject());
             duckAbstract.Add("Key02", new ObscureObject.DummyFieldObject());
@@ -105,6 +90,51 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             duckVirtual.GetOutput(out outValue);
         }
 
+        [Theory]
+        [MemberData(nameof(Data))]
+        public void DefaultGenericsMethods(object obscureObject)
+        {
+            if (obscureObject.GetType().IsPublic || obscureObject.GetType().IsNestedPublic)
+            {
+                var duckInterface = obscureObject.As<IDefaultGenericMethodDuckType>();
+                var duckAbstract = obscureObject.As<DefaultGenericMethodDuckTypeAbstractClass>();
+                var duckVirtual = obscureObject.As<DefaultGenericMethodDuckType>();
+
+                // GetDefault int
+                Assert.Equal(0, duckInterface.GetDefault<int>());
+                Assert.Equal(0, duckAbstract.GetDefault<int>());
+                Assert.Equal(0, duckVirtual.GetDefault<int>());
+
+                // GetDefault double
+                Assert.Equal(0d, duckInterface.GetDefault<double>());
+                Assert.Equal(0d, duckAbstract.GetDefault<double>());
+                Assert.Equal(0d, duckVirtual.GetDefault<double>());
+
+                // GetDefault string
+                Assert.Null(duckInterface.GetDefault<string>());
+                Assert.Null(duckAbstract.GetDefault<string>());
+                Assert.Null(duckVirtual.GetDefault<string>());
+            }
+            else
+            {
+                Assert.Throws<DuckTypeProxyMethodsWithGenericParametersNotSupportedInNonPublicInstancesException>(
+                    () =>
+                    {
+                        obscureObject.As<IDefaultGenericMethodDuckType>();
+                    });
+                Assert.Throws<DuckTypeProxyMethodsWithGenericParametersNotSupportedInNonPublicInstancesException>(
+                    () =>
+                    {
+                        obscureObject.As<DefaultGenericMethodDuckTypeAbstractClass>();
+                    });
+                Assert.Throws<DuckTypeProxyMethodsWithGenericParametersNotSupportedInNonPublicInstancesException>(
+                    () =>
+                    {
+                        obscureObject.As<DefaultGenericMethodDuckType>();
+                    });
+            }
+        }
+
         public interface IObscureDuckType
         {
             int Sum(int a, int b);
@@ -119,8 +149,6 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
 
             [Duck(BindingFlags = BindingFlags.Instance | BindingFlags.NonPublic)]
             object InternalSum(int a, int b);
-
-            // T GetDefault<T>();
 
             void Add(string name, object obj);
 
@@ -148,8 +176,6 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             [Duck(BindingFlags = BindingFlags.Instance | BindingFlags.NonPublic)]
             public abstract object InternalSum(int a, int b);
 
-            // public abstract T GetDefault<T>();
-
             public abstract void Add(string name, object obj);
 
             public abstract void Add(string name, int obj);
@@ -175,8 +201,6 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
 
             [Duck(BindingFlags = BindingFlags.Instance | BindingFlags.NonPublic)]
             public virtual object InternalSum(int a, int b) => default;
-
-            // public virtual T GetDefault<T>() => default;
 
             public virtual void Add(string name, object obj)
             {
@@ -204,6 +228,21 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
         {
             Primero,
             Segundo
+        }
+
+        public interface IDefaultGenericMethodDuckType
+        {
+            T GetDefault<T>();
+        }
+
+        public abstract class DefaultGenericMethodDuckTypeAbstractClass
+        {
+            public abstract T GetDefault<T>();
+        }
+
+        public class DefaultGenericMethodDuckType
+        {
+            public virtual T GetDefault<T>() => default;
         }
     }
 }

@@ -147,4 +147,15 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
         {
         }
     }
+
+    /// <summary>
+    /// DuckType proxy methods with generic parameters are not supported in non public instances exception
+    /// </summary>
+    public class DuckTypeProxyMethodsWithGenericParametersNotSupportedInNonPublicInstancesException : DuckTypeException
+    {
+        internal DuckTypeProxyMethodsWithGenericParametersNotSupportedInNonPublicInstancesException(MethodInfo proxyMethod)
+            : base($"The proxy method with generic parameters '{proxyMethod}' are not supported on non public instances")
+        {
+        }
+    }
 }
