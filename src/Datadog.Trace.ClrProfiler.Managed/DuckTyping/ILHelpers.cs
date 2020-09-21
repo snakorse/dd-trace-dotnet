@@ -265,6 +265,11 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                 return;
             }
 
+            if (actualType.IsGenericParameter && expectedType.IsGenericParameter)
+            {
+                return;
+            }
+
             var actualUnderlyingType = actualType.IsEnum ? Enum.GetUnderlyingType(actualType) : actualType;
             var expectedUnderlyingType = expectedType.IsEnum ? Enum.GetUnderlyingType(expectedType) : expectedType;
 

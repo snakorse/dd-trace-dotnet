@@ -45,7 +45,7 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                 Type targetParamType = targetParametersTypes[pIndex];
 
                 // Check if the type can be converted of if we need to enable duck chaining
-                if (proxyParamType != targetParamType && !proxyParamType.IsValueType && !proxyParamType.IsAssignableFrom(targetProperty.PropertyType))
+                if (proxyParamType != targetParamType && !proxyParamType.IsValueType && !proxyParamType.IsAssignableFrom(targetParamType))
                 {
                     // Load the argument and cast it as Duck type
                     ILHelpers.WriteLoadArgument(pIndex, il, false);
@@ -187,7 +187,7 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                 Type targetParamType = targetParametersTypes[pIndex];
 
                 // Check if the type can be converted of if we need to enable duck chaining
-                if (proxyParamType != targetParamType && !proxyParamType.IsValueType && !proxyParamType.IsAssignableFrom(targetProperty.PropertyType))
+                if (proxyParamType != targetParamType && !proxyParamType.IsValueType && !proxyParamType.IsAssignableFrom(targetParamType))
                 {
                     // Load the argument and cast it as Duck type
                     ILHelpers.WriteLoadArgument(pIndex, il, false);

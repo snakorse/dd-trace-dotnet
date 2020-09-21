@@ -110,7 +110,40 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
     public class DuckTypeTargetMethodNotFoundException : DuckTypeException
     {
         internal DuckTypeTargetMethodNotFoundException(MethodInfo method)
-            : base($"The target method for the proxy method '{method.ToString()}' was not found.")
+            : base($"The target method for the proxy method '{method}' was not found.")
+        {
+        }
+    }
+
+    /// <summary>
+    /// DuckType target method parameter is missing exception
+    /// </summary>
+    public class DuckTypeTargetMethodParameterIsMissingException : DuckTypeException
+    {
+        internal DuckTypeTargetMethodParameterIsMissingException(MethodInfo targetMethod, ParameterInfo proxyParameterInfo)
+            : base($"The target method '{targetMethod.Name}' is missing parameter '{proxyParameterInfo.Name}' declared in the proxy method.")
+        {
+        }
+    }
+
+    /// <summary>
+    /// DuckType proxy method parameter is missing exception
+    /// </summary>
+    public class DuckTypeProxyMethodParameterIsMissingException : DuckTypeException
+    {
+        internal DuckTypeProxyMethodParameterIsMissingException(MethodInfo proxyMethod, ParameterInfo targetParameterInfo)
+            : base($"The proxy method '{proxyMethod.Name}' is missing parameter '{targetParameterInfo.Name}' declared in the target method.")
+        {
+        }
+    }
+
+    /// <summary>
+    /// DuckType parameter signature mismatch between proxy and target method
+    /// </summary>
+    public class DuckTypeProxyAndTargetMethodParameterSignatureMismatch : DuckTypeException
+    {
+        internal DuckTypeProxyAndTargetMethodParameterSignatureMismatch(MethodInfo proxyMethod, MethodInfo targetMethod)
+            : base($"Parameter signature mismatch between proxy '{proxyMethod}' and target method '{targetMethod}'")
         {
         }
     }
