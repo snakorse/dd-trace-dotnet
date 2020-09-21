@@ -465,6 +465,16 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             public void Add(string name, string obj = "none")
             {
             }
+
+            public void Pow2(ref int value)
+            {
+                value *= value;
+            }
+
+            public void GetOutput(out int value)
+            {
+                value = 42;
+            }
         }
 
         internal class PropertyInternalObject
@@ -652,6 +662,16 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             public void Add(string name, string obj = "none")
             {
             }
+
+            public void Pow2(ref int value)
+            {
+                value *= value;
+            }
+
+            public void GetOutput(out int value)
+            {
+                value = 42;
+            }
         }
 
         private class PropertyPrivateObject
@@ -837,6 +857,16 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
 
             public void Add(string name, string obj = "none")
             {
+            }
+
+            public void Pow2(ref int value)
+            {
+                value *= value;
+            }
+
+            public void GetOutput(out int value)
+            {
+                value = 42;
             }
         }
     }

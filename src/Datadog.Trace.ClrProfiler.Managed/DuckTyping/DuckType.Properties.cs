@@ -53,15 +53,15 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
 
                     // Call IDuckType.Instance property to get the actual value
                     il.EmitCall(OpCodes.Callvirt, DuckTypeInstancePropertyInfo.GetMethod, null);
-
-                    targetParamType = typeof(object);
                 }
                 else
                 {
                     ILHelpers.WriteLoadArgument(pIndex, il, false);
-                    targetParamType = targetParamType.IsPublic || targetParamType.IsNestedPublic ? targetParamType : typeof(object);
-                    ILHelpers.TypeConversion(il, proxyParamType, targetParamType);
                 }
+
+                // If the target parameter type is public or if it's by ref we have to actually use the original target type.
+                targetParamType = targetParamType.IsPublic || targetParamType.IsNestedPublic || targetParamType.IsByRef ? targetParamType : typeof(object);
+                ILHelpers.TypeConversion(il, proxyParamType, targetParamType);
 
                 targetParametersTypes[pIndex] = targetParamType;
             }
@@ -201,9 +201,11 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                 else
                 {
                     ILHelpers.WriteLoadArgument(pIndex, il, false);
-                    targetParamType = targetParamType.IsPublic || targetParamType.IsNestedPublic ? targetParamType : typeof(object);
-                    ILHelpers.TypeConversion(il, proxyParamType, targetParamType);
                 }
+
+                // If the target parameter type is public or if it's by ref we have to actually use the original target type.
+                targetParamType = targetParamType.IsPublic || targetParamType.IsNestedPublic || targetParamType.IsByRef ? targetParamType : typeof(object);
+                ILHelpers.TypeConversion(il, proxyParamType, targetParamType);
 
                 targetParametersTypes[pIndex] = targetParamType;
             }

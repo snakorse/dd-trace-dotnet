@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -59,6 +60,11 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
             List<MethodInfo> proxyMethodsDefinitions = GetMethods(proxyType);
             foreach (MethodInfo proxyMethodDefinition in proxyMethodsDefinitions)
             {
+                if (proxyMethodDefinition.Name == "Pow2")
+                {
+                    Debugger.Break();
+                }
+
                 // Extract the method parameters types
                 ParameterInfo[] proxyMethodDefinitionParameters = proxyMethodDefinition.GetParameters();
                 Type[] proxyMethodDefinitionParametersTypes = proxyMethodDefinitionParameters.Select(p => p.ParameterType).ToArray();
@@ -160,15 +166,15 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
 
                             // Call IDuckType.Instance property to get the actual value
                             il.EmitCall(OpCodes.Callvirt, DuckTypeInstancePropertyInfo.GetMethod, null);
-
-                            targetParamType = typeof(object);
                         }
                         else
                         {
                             ILHelpers.WriteLoadArgument(idx, il, false);
-                            targetParamType = targetParamType.IsPublic || targetParamType.IsNestedPublic ? targetParamType : typeof(object);
-                            ILHelpers.TypeConversion(il, proxyParamType, targetParamType);
                         }
+
+                        // If the target parameter type is public or if it's by ref we have to actually use the original target type.
+                        targetParamType = targetParamType.IsPublic || targetParamType.IsNestedPublic || targetParamType.IsByRef ? targetParamType : typeof(object);
+                        ILHelpers.TypeConversion(il, proxyParamType, targetParamType);
 
                         targetMethodParametersTypes[idx] = targetParamType;
                     }

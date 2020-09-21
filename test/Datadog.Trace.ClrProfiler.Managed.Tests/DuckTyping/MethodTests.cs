@@ -76,17 +76,33 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             Assert.Null(duckAbstract.GetDefault<string>());
             Assert.Null(duckVirtual.GetDefault<string>());*/
 
+            // Void with object
             duckInterface.Add("Key01", new ObscureObject.DummyFieldObject());
             duckAbstract.Add("Key02", new ObscureObject.DummyFieldObject());
             duckVirtual.Add("Key03", new ObscureObject.DummyFieldObject());
 
+            // Void with int
             duckInterface.Add("KeyInt01", 42);
             duckAbstract.Add("KeyInt02", 42);
             duckVirtual.Add("KeyInt03", 42);
 
+            // Void with string
             duckInterface.Add("KeyString01", "Value01");
             duckAbstract.Add("KeyString02", "Value02");
             duckVirtual.Add("KeyString03", "Value03");
+
+            // Ref parameter
+            int value = 4;
+            duckInterface.Pow2(ref value);
+            duckAbstract.Pow2(ref value);
+            duckVirtual.Pow2(ref value);
+            Assert.Equal(65536, value);
+
+            // Out parameter
+            int outValue;
+            duckInterface.GetOutput(out outValue);
+            duckAbstract.GetOutput(out outValue);
+            duckVirtual.GetOutput(out outValue);
         }
 
         public interface IObscureDuckType
@@ -111,6 +127,10 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             void Add(string name, int obj);
 
             void Add(string name, string obj = "none");
+
+            void Pow2(ref int value);
+
+            void GetOutput(out int value);
         }
 
         public abstract class ObscureDuckTypeAbstractClass
@@ -135,6 +155,10 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             public abstract void Add(string name, int obj);
 
             public abstract void Add(string name, string obj = "none");
+
+            public abstract void Pow2(ref int value);
+
+            public abstract void GetOutput(out int value);
         }
 
         public class ObscureDuckType
@@ -164,6 +188,15 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
 
             public virtual void Add(string name, string obj = "none")
             {
+            }
+
+            public virtual void Pow2(ref int value)
+            {
+            }
+
+            public virtual void GetOutput(out int value)
+            {
+                value = default;
             }
         }
 
