@@ -114,6 +114,21 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
                 Assert.Null(duckInterface.GetDefault<string>());
                 Assert.Null(duckAbstract.GetDefault<string>());
                 Assert.Null(duckVirtual.GetDefault<string>());
+
+                // Wrap ints
+                Tuple<int, int> wrapper = duckInterface.Wrap(10, 20);
+                Assert.Equal(10, wrapper.Item1);
+                Assert.Equal(20, wrapper.Item2);
+
+                // Wrap string
+                Tuple<string, string> wrapper2 = duckAbstract.Wrap("Hello", "World");
+                Assert.Equal("Hello", wrapper2.Item1);
+                Assert.Equal("World", wrapper2.Item2);
+
+                // Wrap object
+                Tuple<object, string> wrapper3 = duckAbstract.Wrap<object, string>(null, "World");
+                Assert.Null(wrapper3.Item1);
+                Assert.Equal("World", wrapper3.Item2);
             }
             else
             {
@@ -233,16 +248,22 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
         public interface IDefaultGenericMethodDuckType
         {
             T GetDefault<T>();
+
+            Tuple<T1, T2> Wrap<T1, T2>(T1 a, T2 b);
         }
 
         public abstract class DefaultGenericMethodDuckTypeAbstractClass
         {
             public abstract T GetDefault<T>();
+
+            public abstract Tuple<T1, T2> Wrap<T1, T2>(T1 a, T2 b);
         }
 
         public class DefaultGenericMethodDuckType
         {
             public virtual T GetDefault<T>() => default;
+
+            public virtual Tuple<T1, T2> Wrap<T1, T2>(T1 a, T2 b) => null;
         }
     }
 }

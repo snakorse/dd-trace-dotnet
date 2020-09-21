@@ -60,11 +60,6 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
             List<MethodInfo> proxyMethodsDefinitions = GetMethods(proxyType);
             foreach (MethodInfo proxyMethodDefinition in proxyMethodsDefinitions)
             {
-                if (proxyMethodDefinition.Name == "Pow2")
-                {
-                    Debugger.Break();
-                }
-
                 // Extract the method parameters types
                 ParameterInfo[] proxyMethodDefinitionParameters = proxyMethodDefinition.GetParameters();
                 Type[] proxyMethodDefinitionParametersTypes = proxyMethodDefinitionParameters.Select(p => p.ParameterType).ToArray();
@@ -158,7 +153,10 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                         Type targetParamType = targetParamInfo.ParameterType;
 
                         // Check if the type can be converted of if we need to enable duck chaining
-                        if (proxyParamType != targetParamType && !proxyParamType.IsValueType && !proxyParamType.IsAssignableFrom(targetParamType))
+                        if (proxyParamType != targetParamType &&
+                            !proxyParamType.IsValueType &&
+                            !proxyParamType.IsGenericParameter &&
+                            !proxyParamType.IsAssignableFrom(targetParamType))
                         {
                             // Load the argument and cast it as Duck type
                             ILHelpers.WriteLoadArgument(idx, il, false);

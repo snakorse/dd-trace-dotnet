@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading.Tasks;
 using Datadog.Trace.ClrProfiler.DuckTyping;
@@ -449,6 +450,11 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
 
             public T GetDefault<T>() => default;
 
+            public Tuple<T1, T2> Wrap<T1, T2>(T1 a, T2 b)
+            {
+                return new Tuple<T1, T2>(a, b);
+            }
+
             public void Add(DummyFieldObject obj)
             {
             }
@@ -646,6 +652,11 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
 
             public T GetDefault<T>() => default;
 
+            public Tuple<T1, T2> Wrap<T1, T2>(T1 a, T2 b)
+            {
+                return new Tuple<T1, T2>(a, b);
+            }
+
             public void Add(DummyFieldObject obj)
             {
             }
@@ -841,6 +852,11 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             }
 
             public T GetDefault<T>() => default;
+
+            public Tuple<T1, T2> Wrap<T1, T2>(T1 a, T2 b)
+            {
+                return new Tuple<T1, T2>(a, b);
+            }
 
             public void Add(DummyFieldObject obj)
             {
