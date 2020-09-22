@@ -86,9 +86,12 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
                 bool hasInstanceContraint = genericInstanceConstraints.Length > 0;
                 List<Type> callGenericTypes = new List<Type>();
 
+                Type instanceProxyType = null;
+
                 if (hasInstanceContraint)
                 {
                     var result = DuckType.GetOrCreateProxyType(genericInstanceConstraints[0], typeof(TInstance));
+                    instanceProxyType = result.ProxyType;
                     callGenericTypes.Add(result.ProxyType);
                 }
                 else
@@ -101,16 +104,14 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
                     typeof(CallTargetState),
                     new Type[] { typeof(object), typeof(object[]) },
                     onMethodBeginMethodInfo.Module);
+
                 ILGenerator ilWriter = callMethod.GetILGenerator();
 
-                ParameterInfo[] parameters = onMethodBeginMethodInfo.GetParameters();
-
+                // Load the instance
                 ilWriter.Emit(OpCodes.Ldarg_0);
                 if (hasInstanceContraint)
                 {
-                    ilWriter.Emit(OpCodes.Ldtoken, genericInstanceConstraints[0]);
-                    ilWriter.EmitCall(OpCodes.Call, DuckTyping.Util.GetTypeFromHandleMethodInfo, null);
-                    ilWriter.EmitCall(OpCodes.Call, ConvertTypeMethodInfo, null);
+                    ilWriter.Emit(OpCodes.Newobj, instanceProxyType.GetConstructor(new Type[] { typeof(TInstance) }));
                 }
                 else
                 {
@@ -125,20 +126,17 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
                 }
 
                 // Load arguments
+                ParameterInfo[] parameters = onMethodBeginMethodInfo.GetParameters();
                 for (var i = 1; i < parameters.Length; i++)
                 {
-                    Type pType = parameters[i].ParameterType;
+                    Type parameterType = parameters[i].ParameterType;
 
-                    if (pType.IsGenericParameter)
+                    if (parameterType.IsGenericParameter)
                     {
-                        pType = genericArgumentsTypes[pType.GenericParameterPosition];
-                        Type[] genericConstraints = pType.GetGenericParameterConstraints();
-                        if (genericConstraints.Length > 0)
-                        {
-                            pType = genericConstraints[0];
-                            callGenericTypes.Add(pType);
-                        }
-                        else
+                        parameterType = genericArgumentsTypes[parameterType.GenericParameterPosition];
+
+                        Type parameterConstraint = parameterType.GetGenericParameterConstraints().FirstOrDefault(pType => pType != typeof(IDuckType));
+                        if (parameterConstraint is null)
                         {
                             ilWriter.Emit(OpCodes.Ldarg_1);
                             ILHelpers.WriteIlIntValue(ilWriter, i - 1);
@@ -146,45 +144,32 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
                             callGenericTypes.Add(typeof(object));
                             continue;
                         }
-                    }
-
-                    Type rType = DuckTyping.Util.GetRootType(pType);
-                    bool callEnum = false;
-                    if (rType.IsEnum)
-                    {
-                        ilWriter.Emit(OpCodes.Ldtoken, rType);
-                        ilWriter.EmitCall(OpCodes.Call, DuckTyping.Util.GetTypeFromHandleMethodInfo, null);
-                        callEnum = true;
+                        else
+                        {
+                            parameterType = parameterConstraint;
+                            callGenericTypes.Add(parameterType);
+                        }
                     }
 
                     ilWriter.Emit(OpCodes.Ldarg_1);
                     ILHelpers.WriteIlIntValue(ilWriter, i - 1);
                     ilWriter.Emit(OpCodes.Ldelem_Ref);
 
-                    if (callEnum)
-                    {
-                        ilWriter.EmitCall(OpCodes.Call, DuckTyping.Util.EnumToObjectMethodInfo, null);
-                    }
-                    else
-                    {
-                        ilWriter.Emit(OpCodes.Ldtoken, rType);
-                        ilWriter.EmitCall(OpCodes.Call, DuckTyping.Util.GetTypeFromHandleMethodInfo, null);
-                        ilWriter.EmitCall(OpCodes.Call, ConvertTypeMethodInfo, null);
-                    }
+                    ilWriter.Emit(OpCodes.Ldtoken, parameterType);
+                    ilWriter.EmitCall(OpCodes.Call, DuckTyping.Util.GetTypeFromHandleMethodInfo, null);
+                    ilWriter.EmitCall(OpCodes.Call, ConvertTypeMethodInfo, null);
 
-                    if (pType.IsValueType)
+                    if (parameterType.IsValueType)
                     {
-                        ilWriter.Emit(OpCodes.Unbox_Any, pType);
-                    }
-                    else if (pType != typeof(object))
-                    {
-                        ilWriter.Emit(OpCodes.Castclass, pType);
+                        ilWriter.Emit(OpCodes.Unbox_Any, parameterType);
                     }
                 }
 
                 // Call method
                 Log.Information("Generic Types: " + string.Join(", ", callGenericTypes.Select(t => t.FullName)));
+                Log.Information("Method: " + onMethodBeginMethodInfo);
                 onMethodBeginMethodInfo = onMethodBeginMethodInfo.MakeGenericMethod(callGenericTypes.ToArray());
+                Log.Information("Method: " + onMethodBeginMethodInfo);
                 ilWriter.EmitCall(OpCodes.Call, onMethodBeginMethodInfo, null);
                 ilWriter.Emit(OpCodes.Ret);
 
@@ -291,11 +276,6 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
             {
                 return value;
             }
-
-            // if (value is IConvertible)
-            // {
-            //     return Convert.ChangeType(value, conversionType, CultureInfo.CurrentCulture);
-            // }
 
             // Finally we try to duck type
             return DuckType.Create(conversionType, value);

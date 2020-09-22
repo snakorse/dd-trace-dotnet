@@ -144,12 +144,13 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
 
         private static FieldInfo CreateIDuckTypeImplementation(TypeBuilder proxyTypeBuilder, Type targetType)
         {
+            Type instanceType = targetType;
             if (!targetType.IsPublic && !targetType.IsNestedPublic)
             {
-                targetType = typeof(object);
+                instanceType = typeof(object);
             }
 
-            FieldBuilder instanceField = proxyTypeBuilder.DefineField("_currentInstance", targetType, FieldAttributes.Private | FieldAttributes.InitOnly);
+            FieldBuilder instanceField = proxyTypeBuilder.DefineField("_currentInstance", instanceType, FieldAttributes.Private | FieldAttributes.InitOnly);
 
             PropertyBuilder propInstance = proxyTypeBuilder.DefineProperty("Instance", PropertyAttributes.None, typeof(object), null);
             MethodBuilder getPropInstance = proxyTypeBuilder.DefineMethod(
@@ -160,9 +161,9 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
             ILGenerator il = getPropInstance.GetILGenerator();
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Ldfld, instanceField);
-            if (targetType.IsValueType)
+            if (instanceType.IsValueType)
             {
-                il.Emit(OpCodes.Box, targetType);
+                il.Emit(OpCodes.Box, instanceType);
             }
 
             il.Emit(OpCodes.Ret);
@@ -175,27 +176,14 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                 typeof(Type),
                 Type.EmptyTypes);
             il = getPropType.GetILGenerator();
-            il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Ldfld, instanceField);
-            il.EmitCall(OpCodes.Callvirt, targetType.GetMethod("GetType"), null);
+            il.Emit(OpCodes.Ldtoken, targetType);
+            il.EmitCall(OpCodes.Call, Util.GetTypeFromHandleMethodInfo, null);
+
+            // il.Emit(OpCodes.Ldarg_0);
+            // il.Emit(OpCodes.Ldfld, instanceField);
+            // il.EmitCall(OpCodes.Callvirt, targetType.GetMethod("GetType"), null);
             il.Emit(OpCodes.Ret);
             propType.SetGetMethod(getPropType);
-
-            PropertyBuilder propVersion = proxyTypeBuilder.DefineProperty("AssemblyVersion", PropertyAttributes.None, typeof(Version), null);
-            MethodBuilder getPropVersion = proxyTypeBuilder.DefineMethod(
-                "get_AssemblyVersion",
-                MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot,
-                typeof(Version),
-                Type.EmptyTypes);
-            il = getPropVersion.GetILGenerator();
-            il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Ldfld, instanceField);
-            il.EmitCall(OpCodes.Call, targetType.GetMethod("GetType"), null);
-            il.EmitCall(OpCodes.Callvirt, typeof(Type).GetProperty("Assembly").GetMethod, null);
-            il.EmitCall(OpCodes.Callvirt, typeof(Assembly).GetMethod("GetName", Type.EmptyTypes), null);
-            il.EmitCall(OpCodes.Callvirt, typeof(AssemblyName).GetProperty("Version").GetMethod, null);
-            il.Emit(OpCodes.Ret);
-            propVersion.SetGetMethod(getPropVersion);
 
             return instanceField;
         }

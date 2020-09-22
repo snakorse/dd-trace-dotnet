@@ -29,7 +29,7 @@ namespace Datadog.Trace.ClrProfiler.Integrations
 
         public static CallTargetState OnMethodBegin<TInstance, TArg1>(TInstance instance, TArg1 requestMessage, CancellationToken cancellationToken)
             where TInstance : IHttpClientHandler, IDuckType
-            where TArg1 : IHttpRequestMessage
+            where TArg1 : IHttpRequestMessage, IDuckType
         {
             Scope scope = null;
 
@@ -45,7 +45,7 @@ namespace Datadog.Trace.ClrProfiler.Integrations
                     scope.Span.SetTag("ducktype-proxy-name", instance.ToString());
 
                     // add distributed tracing headers to the HTTP request
-                    SpanContextPropagator.Instance.Inject(scope.Span.Context, new ReflectionHttpHeadersCollection(((IDuckType)requestMessage.Headers).Instance));
+                    SpanContextPropagator.Instance.Inject(scope.Span.Context, new ReflectionHttpHeadersCollection(requestMessage.Instance));
                 }
             }
 

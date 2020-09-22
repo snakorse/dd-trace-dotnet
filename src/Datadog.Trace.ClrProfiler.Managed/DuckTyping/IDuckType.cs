@@ -16,10 +16,5 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
         /// Gets instance Type
         /// </summary>
         Type Type { get; }
-
-        /// <summary>
-        /// Gets assembly version
-        /// </summary>
-        Version AssemblyVersion { get; }
     }
 }
