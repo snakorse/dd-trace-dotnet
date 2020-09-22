@@ -90,6 +90,38 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             duckVirtual.GetOutput(out outValue);
         }
 
+        [Fact]
+        public void DictionaryDuckType()
+        {
+            Dictionary<string, string> dictionary = new Dictionary<string, string>();
+
+            var duckInterface = dictionary.As<IDictioDuckType>();
+
+            duckInterface.Add("Key01", "Value01");
+            duckInterface.Add("Key02", "Value02");
+            duckInterface.Add("K", "V");
+
+            Assert.True(duckInterface.ContainsKey("K"));
+            if (duckInterface.ContainsKey("K"))
+            {
+                Assert.True(duckInterface.Remove("K"));
+            }
+
+            if (duckInterface.TryGetValue("Key01", out string value))
+            {
+                Assert.Equal("Value01", value);
+            }
+
+            Assert.Equal("Value02", duckInterface["Key02"]);
+
+            Assert.Equal(2, duckInterface.Count);
+
+            foreach (KeyValuePair<string, string> val in duckInterface)
+            {
+                Assert.NotNull(val.Key);
+            }
+        }
+
         [Theory]
         [MemberData(nameof(Data))]
         public void DefaultGenericsMethods(object obscureObject)
@@ -264,6 +296,27 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             public virtual T GetDefault<T>() => default;
 
             public virtual Tuple<T1, T2> Wrap<T1, T2>(T1 a, T2 b) => null;
+        }
+
+        public interface IDictioDuckType
+        {
+            public string this[string key] { get; set; }
+
+            public ICollection<string> Keys { get; }
+
+            public ICollection<string> Values { get; }
+
+            int Count { get; }
+
+            void Add(string key, string value);
+
+            bool ContainsKey(string key);
+
+            bool Remove(string key);
+
+            bool TryGetValue(string key, out string value);
+
+            IEnumerator<KeyValuePair<string, string>> GetEnumerator();
         }
     }
 }
