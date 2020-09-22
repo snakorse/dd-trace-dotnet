@@ -31,7 +31,7 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
         public const BindingFlags AllFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         /// <summary>
-        /// Gets or sets property Name
+        /// Gets or sets the underlying type member name
         /// </summary>
         public string Name { get; set; }
 
