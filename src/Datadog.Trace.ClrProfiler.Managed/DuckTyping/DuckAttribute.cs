@@ -44,5 +44,10 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
         /// Gets or sets duck kind
         /// </summary>
         public DuckKind Kind { get; set; } = DuckKind.Property;
+
+        /// <summary>
+        /// Gets or sets the generic parameter type names definition for a generic method call
+        /// </summary>
+        public string[] GenericParameterTypeNames { get; set; }
     }
 }

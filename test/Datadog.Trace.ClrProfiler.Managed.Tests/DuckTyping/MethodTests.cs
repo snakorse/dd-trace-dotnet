@@ -338,6 +338,42 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             }
         }
 
+        [Theory]
+        [MemberData(nameof(Data))]
+        public void GenericsWithAttributeResolution(object obscureObject)
+        {
+            var duckInterface = obscureObject.As<IGenericsWithAttribute>();
+            var duckAttribute = obscureObject.As<AbstractGenericsWithAttribute>();
+            var duckVirtual = obscureObject.As<VirtualGenericsWithAttribute>();
+
+            Tuple<int, string> result;
+
+            Assert.Equal(0, duckInterface.GetDefaultInt());
+            Assert.Null(duckInterface.GetDefaultString());
+
+            result = duckInterface.WrapIntString(42, "All");
+            Assert.Equal(42, result.Item1);
+            Assert.Equal("All", result.Item2);
+
+            // ...
+
+            Assert.Equal(0, duckAttribute.GetDefaultInt());
+            Assert.Null(duckAttribute.GetDefaultString());
+
+            result = duckAttribute.WrapIntString(42, "All");
+            Assert.Equal(42, result.Item1);
+            Assert.Equal("All", result.Item2);
+
+            // ...
+
+            Assert.Equal(0, duckVirtual.GetDefaultInt());
+            Assert.Null(duckVirtual.GetDefaultString());
+
+            result = duckVirtual.WrapIntString(42, "All");
+            Assert.Equal(42, result.Item1);
+            Assert.Equal("All", result.Item2);
+        }
+
         // ...
 
         public interface IObscureDuckType
@@ -575,6 +611,44 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             public virtual T GetDefault<T>() => default;
 
             public virtual Tuple<T1, T2> Wrap<T1, T2>(T1 a, T2 b) => null;
+        }
+
+        // ...
+
+        public interface IGenericsWithAttribute
+        {
+            [Duck(Name = "GetDefault", GenericParameterTypeNames = new[] { "System.Int32" })]
+            int GetDefaultInt();
+
+            [Duck(Name = "GetDefault", GenericParameterTypeNames = new[] { "System.String" })]
+            string GetDefaultString();
+
+            [Duck(Name = "Wrap", GenericParameterTypeNames = new[] { "System.Int32", "System.String" })]
+            Tuple<int, string> WrapIntString(int a, string b);
+        }
+
+        public abstract class AbstractGenericsWithAttribute
+        {
+            [Duck(Name = "GetDefault", GenericParameterTypeNames = new[] { "System.Int32" })]
+            public abstract int GetDefaultInt();
+
+            [Duck(Name = "GetDefault", GenericParameterTypeNames = new[] { "System.String" })]
+            public abstract string GetDefaultString();
+
+            [Duck(Name = "Wrap", GenericParameterTypeNames = new[] { "System.Int32", "System.String" })]
+            public abstract Tuple<int, string> WrapIntString(int a, string b);
+        }
+
+        public class VirtualGenericsWithAttribute
+        {
+            [Duck(Name = "GetDefault", GenericParameterTypeNames = new[] { "System.Int32" })]
+            public virtual int GetDefaultInt() => 100;
+
+            [Duck(Name = "GetDefault", GenericParameterTypeNames = new[] { "System.String" })]
+            public virtual string GetDefaultString() => string.Empty;
+
+            [Duck(Name = "Wrap", GenericParameterTypeNames = new[] { "System.Int32", "System.String" })]
+            public virtual Tuple<int, string> WrapIntString(int a, string b) => null;
         }
 
         // ...

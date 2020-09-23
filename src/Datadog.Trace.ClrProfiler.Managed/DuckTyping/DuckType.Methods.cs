@@ -73,6 +73,28 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                     throw new DuckTypeTargetMethodNotFoundException(proxyMethodDefinition);
                 }
 
+                // Gets the proxy method definition generic arguments
+                Type[] proxyMethodDefinitionGenericArguments = proxyMethodDefinition.GetGenericArguments();
+                string[] proxyMethodDefinitionGenericArgumentsNames = proxyMethodDefinitionGenericArguments.Select(a => a.Name).ToArray();
+
+                // Checks if the target method is a generic method while the proxy method is non generic (checks if the Duck attribute contains the generic parameters)
+                Type[] targetMethodGenericArguments = targetMethod.GetGenericArguments();
+                if (proxyMethodDefinitionGenericArguments.Length == 0 && targetMethodGenericArguments.Length > 0)
+                {
+                    DuckAttribute proxyDuckAttribute = proxyMethodDefinition.GetCustomAttributes<DuckAttribute>().FirstOrDefault();
+                    if (proxyDuckAttribute is null)
+                    {
+                        throw new DuckTypeTargetMethodNotFoundException(proxyMethodDefinition);
+                    }
+
+                    if (proxyDuckAttribute.GenericParameterTypeNames?.Length != targetMethodGenericArguments.Length)
+                    {
+                        throw new DuckTypeTargetMethodNotFoundException(proxyMethodDefinition);
+                    }
+
+                    targetMethod = targetMethod.MakeGenericMethod(proxyDuckAttribute.GenericParameterTypeNames.Select(name => Type.GetType(name)).ToArray());
+                }
+
                 // Gets target method parameters
                 ParameterInfo[] targetMethodParameters = targetMethod.GetParameters();
                 Type[] targetMethodParametersTypes = targetMethodParameters.Select(p => p.ParameterType).ToArray();
@@ -84,10 +106,6 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                 {
                     proxyMethodAttributes |= MethodAttributes.NewSlot;
                 }
-
-                // Gets the proxy method definition generic arguments
-                Type[] proxyMethodDefinitionGenericArguments = proxyMethodDefinition.GetGenericArguments();
-                string[] proxyMethodDefinitionGenericArgumentsNames = proxyMethodDefinitionGenericArguments.Select(a => a.Name).ToArray();
 
                 // Create the proxy method implementation
                 ParameterBuilder[] proxyMethodParametersBuilders = new ParameterBuilder[proxyMethodDefinitionParameters.Length];
