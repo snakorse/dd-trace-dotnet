@@ -211,6 +211,33 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
         }
 
         /// <summary>
+        /// Write load local
+        /// </summary>
+        /// <param name="index">Local index</param>
+        /// <param name="il">IlGenerator</param>
+        internal static void WriteLoadLocal(int index, ILGenerator il)
+        {
+            switch (index)
+            {
+                case 0:
+                    il.Emit(OpCodes.Ldloc_0);
+                    break;
+                case 1:
+                    il.Emit(OpCodes.Ldloc_1);
+                    break;
+                case 2:
+                    il.Emit(OpCodes.Ldloc_2);
+                    break;
+                case 3:
+                    il.Emit(OpCodes.Ldloc_3);
+                    break;
+                default:
+                    il.Emit(OpCodes.Ldloc_S, index);
+                    break;
+            }
+        }
+
+        /// <summary>
         /// Write int value
         /// </summary>
         /// <param name="il">ILGenerator</param>

@@ -113,6 +113,7 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                 ILGenerator il = proxyMethod.GetILGenerator();
                 bool publicInstance = targetType.IsPublic || targetType.IsNestedPublic;
                 Type returnType = targetMethod.ReturnType;
+                List<OutputParameterData> outputParameters = null;
 
                 // Load the instance if needed
                 if (!targetMethod.IsStatic)
@@ -152,29 +153,68 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                         Type proxyParamType = proxyParamInfo.ParameterType;
                         Type targetParamType = targetParamInfo.ParameterType;
 
-                        // Check if the type can be converted of if we need to enable duck chaining
-                        if (proxyParamType != targetParamType &&
-                            !proxyParamType.IsValueType &&
-                            !proxyParamType.IsGenericParameter &&
-                            !proxyParamType.IsAssignableFrom(targetParamType))
+                        // We check if we have to handle an output parameter, by ref parameter or a normal parameter
+                        if (proxyParamInfo.IsOut)
                         {
-                            // Load the argument and cast it as Duck type
-                            ILHelpers.WriteLoadArgument(idx, il, false);
-                            il.Emit(OpCodes.Castclass, typeof(IDuckType));
+                            // If is an output parameter with diferent types we need to handle differently
+                            // by creating a local var first to store the target parameter out value
+                            // and then try to set the output parameter of the proxy method by converting the value (a base class or a duck typing)
+                            if (proxyParamType != targetParamType)
+                            {
+                                LocalBuilder localTargetArg = il.DeclareLocal(targetParamType);
 
-                            // Call IDuckType.Instance property to get the actual value
-                            il.EmitCall(OpCodes.Callvirt, DuckTypeInstancePropertyInfo.GetMethod, null);
+                                // We need to store the output parameter data to set the proxy parameter value after we call the target method
+                                if (outputParameters is null)
+                                {
+                                    outputParameters = new List<OutputParameterData>();
+                                }
+
+                                outputParameters.Add(new OutputParameterData(localTargetArg.LocalIndex, targetParamType, idx, proxyParamType));
+
+                                il.Emit(OpCodes.Ldloca_S, localTargetArg.LocalIndex);
+                            }
+                            else
+                            {
+                                ILHelpers.WriteLoadArgument(idx, il, false);
+                            }
+                        }
+                        else if (proxyParamType.IsByRef)
+                        {
+                            if (proxyParamType != targetParamType)
+                            {
+                                throw new NotSupportedException();
+                            }
+                            else
+                            {
+                                ILHelpers.WriteLoadArgument(idx, il, false);
+                            }
                         }
                         else
                         {
-                            ILHelpers.WriteLoadArgument(idx, il, false);
+                            // Check if the type can be converted of if we need to enable duck chaining
+                            if (proxyParamType != targetParamType &&
+                                !proxyParamType.IsValueType &&
+                                !proxyParamType.IsGenericParameter &&
+                                !proxyParamType.IsAssignableFrom(targetParamType))
+                            {
+                                // Load the argument and cast it as Duck type
+                                ILHelpers.WriteLoadArgument(idx, il, false);
+                                il.Emit(OpCodes.Castclass, typeof(IDuckType));
+
+                                // Call IDuckType.Instance property to get the actual value
+                                il.EmitCall(OpCodes.Callvirt, DuckTypeInstancePropertyInfo.GetMethod, null);
+                            }
+                            else
+                            {
+                                ILHelpers.WriteLoadArgument(idx, il, false);
+                            }
+
+                            // If the target parameter type is public or if it's by ref we have to actually use the original target type.
+                            targetParamType = targetParamType.IsPublic || targetParamType.IsNestedPublic || targetParamType.IsByRef ? targetParamType : typeof(object);
+                            ILHelpers.TypeConversion(il, proxyParamType, targetParamType);
+
+                            targetMethodParametersTypes[idx] = targetParamType;
                         }
-
-                        // If the target parameter type is public or if it's by ref we have to actually use the original target type.
-                        targetParamType = targetParamType.IsPublic || targetParamType.IsNestedPublic || targetParamType.IsByRef ? targetParamType : typeof(object);
-                        ILHelpers.TypeConversion(il, proxyParamType, targetParamType);
-
-                        targetMethodParametersTypes[idx] = targetParamType;
                     }
                 }
 
@@ -271,6 +311,38 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                     il.Emit(OpCodes.Ldc_I8, (long)GetRuntimeHandle(dynMethod).GetFunctionPointer());
                     il.Emit(OpCodes.Conv_I);
                     il.EmitCalli(OpCodes.Calli, dynMethod.CallingConvention, dynMethod.ReturnType, dynParameters, null);
+                }
+
+                // We check if we have output parameters to set in the proxy method
+                if (outputParameters != null)
+                {
+                    foreach (OutputParameterData outputParameter in outputParameters)
+                    {
+                        // We load the argument to be set
+                        ILHelpers.WriteLoadArgument(outputParameter.ProxyArgumentIndex, il, false);
+
+                        // We load the value from the local
+                        ILHelpers.WriteLoadLocal(outputParameter.LocalIndex, il);
+
+                        // If we detect duck chaining we create a new proxy instance with the output of the original target method
+                        if (!outputParameter.ProxyArgumentType.IsValueType &&
+                            !outputParameter.ProxyArgumentType.IsGenericParameter &&
+                            !outputParameter.ProxyArgumentType.IsAssignableFrom(outputParameter.LocalType))
+                        {
+                            // If we are in a duck chaining scenario we convert the field value to an object and push it to the stack
+                            ILHelpers.TypeConversion(il, outputParameter.LocalType.GetElementType(), typeof(object));
+
+                            // Load the property type to the stack
+                            il.Emit(OpCodes.Ldtoken, outputParameter.ProxyArgumentType.GetElementType());
+                            il.EmitCall(OpCodes.Call, Util.GetTypeFromHandleMethodInfo, null);
+
+                            // We call DuckType.GetStructDuckTypeChainningValue() with the 2 loaded values from the stack: field value, property type
+                            il.EmitCall(OpCodes.Call, GetDuckTypeChainningValueMethodInfo, null);
+                        }
+
+                        // We store the value
+                        il.Emit(OpCodes.Stind_Ref);
+                    }
                 }
 
                 // Check if the target method returns something
@@ -522,6 +594,22 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
             }
 
             il.Emit(OpCodes.Ret);
+        }
+
+        private readonly struct OutputParameterData
+        {
+            public readonly Type LocalType;
+            public readonly Type ProxyArgumentType;
+            public readonly int LocalIndex;
+            public readonly int ProxyArgumentIndex;
+
+            public OutputParameterData(int localIndex, Type localType, int proxyArgumentIndex, Type proxyArgumentType)
+            {
+                LocalIndex = localIndex;
+                LocalType = localType;
+                ProxyArgumentIndex = proxyArgumentIndex;
+                ProxyArgumentType = proxyArgumentType;
+            }
         }
     }
 }

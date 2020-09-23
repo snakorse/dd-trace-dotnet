@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Datadog.Trace.ClrProfiler.DuckTyping;
 using Xunit;
+using static Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping.TypeChainingFieldTests;
 
 #pragma warning disable SA1201 // Elements must appear in the correct order
 
@@ -88,6 +89,19 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             duckInterface.GetOutput(out outValue);
             duckAbstract.GetOutput(out outValue);
             duckVirtual.GetOutput(out outValue);
+
+            IDummyFieldObject outDuckType;
+            Assert.True(duckInterface.TryGetObscure(out outDuckType));
+            Assert.NotNull(outDuckType);
+            Assert.Equal(99, outDuckType.MagicNumber);
+
+            Assert.True(duckAbstract.TryGetObscure(out outDuckType));
+            Assert.NotNull(outDuckType);
+            Assert.Equal(99, outDuckType.MagicNumber);
+
+            Assert.True(duckVirtual.TryGetObscure(out outDuckType));
+            Assert.NotNull(outDuckType);
+            Assert.Equal(99, outDuckType.MagicNumber);
         }
 
         [Fact]
@@ -119,6 +133,16 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             foreach (KeyValuePair<string, string> val in duckInterface)
             {
                 Assert.NotNull(val.Key);
+            }
+
+            if (duckInterface.TryGetValueInObject("Key02", out object objValue))
+            {
+                Assert.NotNull(objValue);
+            }
+
+            if (duckInterface.TryGetValueInDuckChaining("Key02", out IDictioValue dictioValue))
+            {
+                Assert.NotNull(dictioValue);
             }
         }
 
@@ -182,6 +206,8 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             }
         }
 
+        // ...
+
         public interface IObscureDuckType
         {
             int Sum(int a, int b);
@@ -206,6 +232,8 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             void Pow2(ref int value);
 
             void GetOutput(out int value);
+
+            bool TryGetObscure(out IDummyFieldObject obj);
         }
 
         public abstract class ObscureDuckTypeAbstractClass
@@ -232,6 +260,8 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             public abstract void Pow2(ref int value);
 
             public abstract void GetOutput(out int value);
+
+            public abstract bool TryGetObscure(out IDummyFieldObject obj);
         }
 
         public class ObscureDuckType
@@ -269,6 +299,12 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             {
                 value = default;
             }
+
+            public virtual bool TryGetObscure(out IDummyFieldObject obj)
+            {
+                obj = default;
+                return false;
+            }
         }
 
         public enum TestEnum2
@@ -276,6 +312,8 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             Primero,
             Segundo
         }
+
+        // ...
 
         public interface IDefaultGenericMethodDuckType
         {
@@ -298,6 +336,8 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             public virtual Tuple<T1, T2> Wrap<T1, T2>(T1 a, T2 b) => null;
         }
 
+        // ...
+
         public interface IDictioDuckType
         {
             public string this[string key] { get; set; }
@@ -316,7 +356,17 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
 
             bool TryGetValue(string key, out string value);
 
+            [Duck(Name = "TryGetValue")]
+            bool TryGetValueInObject(string key, out object value);
+
+            [Duck(Name = "TryGetValue")]
+            bool TryGetValueInDuckChaining(string key, out IDictioValue value);
+
             IEnumerator<KeyValuePair<string, string>> GetEnumerator();
+        }
+
+        public interface IDictioValue
+        {
         }
     }
 }

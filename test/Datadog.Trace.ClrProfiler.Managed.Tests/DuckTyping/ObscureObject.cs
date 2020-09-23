@@ -481,6 +481,12 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             {
                 value = 42;
             }
+
+            public bool TryGetObscure(out DummyFieldObject obj)
+            {
+                obj = new DummyFieldObject { MagicNumber = 99 };
+                return true;
+            }
         }
 
         internal class PropertyInternalObject
@@ -683,6 +689,12 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             {
                 value = 42;
             }
+
+            public bool TryGetObscure(out DummyFieldObject obj)
+            {
+                obj = new DummyFieldObject { MagicNumber = 99 };
+                return true;
+            }
         }
 
         private class PropertyPrivateObject
@@ -883,6 +895,12 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             public void GetOutput(out int value)
             {
                 value = 42;
+            }
+
+            public bool TryGetObscure(out DummyFieldObject obj)
+            {
+                obj = new DummyFieldObject { MagicNumber = 99 };
+                return true;
             }
         }
     }
