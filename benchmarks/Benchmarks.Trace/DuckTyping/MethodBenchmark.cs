@@ -21,9 +21,9 @@ namespace Benchmarks.Trace.DuckTyping
         {
             return new IMethodRunner[]
             {
-                ObscureObject.GetFieldPublicObject().As<IMethodRunner>(),
-                ObscureObject.GetFieldInternalObject().As<IMethodRunner>(),
-                ObscureObject.GetFieldPrivateObject().As<IMethodRunner>()
+                ObscureObject.GetPropertyPublicObject().As<IMethodRunner>(),
+                ObscureObject.GetPropertyInternalObject().As<IMethodRunner>(),
+                ObscureObject.GetPropertyPrivateObject().As<IMethodRunner>()
             };
         }
 
