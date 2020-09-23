@@ -14,21 +14,6 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
         internal static readonly MethodInfo EnumToObjectMethodInfo = typeof(Enum).GetMethod(nameof(Enum.ToObject), new[] { typeof(Type), typeof(object) });
 
         /// <summary>
-        /// Gets the root type
-        /// </summary>
-        /// <param name="type">Type</param>
-        /// <returns>Root type</returns>
-        public static Type GetRootType(Type type)
-        {
-            while (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
-            {
-                type = Nullable.GetUnderlyingType(type);
-            }
-
-            return type;
-        }
-
-        /// <summary>
         /// Convert a value to an expected type
         /// </summary>
         /// <param name="value">Current value</param>

@@ -211,11 +211,10 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
 
                 // Load the return value
                 Type pType = parameters[0].ParameterType;
-                Type rType = DuckTyping.Util.GetRootType(pType);
                 bool callEnum = false;
-                if (rType.IsEnum)
+                if (pType.IsEnum)
                 {
-                    ilWriter.Emit(OpCodes.Ldtoken, rType);
+                    ilWriter.Emit(OpCodes.Ldtoken, pType);
                     ilWriter.EmitCall(OpCodes.Call, DuckTyping.Util.GetTypeFromHandleMethodInfo, null);
                     callEnum = true;
                 }
@@ -227,7 +226,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
                 }
                 else
                 {
-                    ilWriter.Emit(OpCodes.Ldtoken, rType);
+                    ilWriter.Emit(OpCodes.Ldtoken, pType);
                     ilWriter.EmitCall(OpCodes.Call, DuckTyping.Util.GetTypeFromHandleMethodInfo, null);
                     ilWriter.EmitCall(OpCodes.Call, ConvertTypeMethodInfo, null);
                 }

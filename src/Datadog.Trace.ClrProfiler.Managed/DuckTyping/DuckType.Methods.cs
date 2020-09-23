@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -606,79 +605,6 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
             }
 
             return preselectedTargetMethods[0];
-        }
-
-        private static void CreateMethodAccessor(ILGenerator il, MethodInfo method, bool strict)
-        {
-            // Prepare instance
-            if (!method.IsStatic)
-            {
-                il.Emit(OpCodes.Ldarg_0);
-                if (method.DeclaringType!.IsValueType)
-                {
-                    il.Emit(OpCodes.Unbox_Any, method.DeclaringType);
-                    il.Emit(OpCodes.Stloc_0);
-                    il.Emit(OpCodes.Ldloca_S, 0);
-                }
-                else if (method.DeclaringType != typeof(object))
-                {
-                    il.Emit(OpCodes.Castclass, method.DeclaringType);
-                }
-            }
-
-            // Prepare arguments
-            ParameterInfo[] parameters = method.GetParameters();
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                Type pType = parameters[i].ParameterType;
-                Type rType = Util.GetRootType(pType);
-                bool callEnum = false;
-                if (rType.IsEnum)
-                {
-                    il.Emit(OpCodes.Ldtoken, rType);
-                    il.EmitCall(OpCodes.Call, Util.GetTypeFromHandleMethodInfo, null);
-                    callEnum = true;
-                }
-
-                il.Emit(OpCodes.Ldarg_1);
-                ILHelpers.WriteIlIntValue(il, i);
-                il.Emit(OpCodes.Ldelem_Ref);
-
-                if (callEnum)
-                {
-                    il.EmitCall(OpCodes.Call, Util.EnumToObjectMethodInfo, null);
-                }
-                else if (!strict && pType != typeof(object))
-                {
-                    il.Emit(OpCodes.Ldtoken, rType);
-                    il.EmitCall(OpCodes.Call, Util.GetTypeFromHandleMethodInfo, null);
-                    il.EmitCall(OpCodes.Call, Util.ConvertTypeMethodInfo, null);
-                }
-
-                if (pType.IsValueType)
-                {
-                    il.Emit(OpCodes.Unbox_Any, pType);
-                }
-                else if (pType != typeof(object))
-                {
-                    il.Emit(OpCodes.Castclass, pType);
-                }
-            }
-
-            // Call method
-            il.EmitCall(method.IsStatic ? OpCodes.Call : OpCodes.Callvirt, method, null);
-
-            // Prepare return
-            if (method.ReturnType == typeof(void))
-            {
-                il.Emit(OpCodes.Ldnull);
-            }
-            else if (method.ReturnType.IsValueType)
-            {
-                il.Emit(OpCodes.Box, method.ReturnType);
-            }
-
-            il.Emit(OpCodes.Ret);
         }
 
         private readonly struct OutputAndRefParameterData
