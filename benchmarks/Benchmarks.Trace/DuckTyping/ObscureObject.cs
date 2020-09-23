@@ -269,7 +269,7 @@ namespace Benchmarks.Trace.DuckTyping
 
         // ***
 
-        public class PropertyPublicObject : IObscureObject
+        public class PropertyPublicObject : IObscureObject, IBaseMethodRunner
         {
             private Dictionary<int, int> _dictioInt = new Dictionary<int, int> { [42] = 24 };
             private Dictionary<string, string> _dictioString = new Dictionary<string, string>();
@@ -419,6 +419,36 @@ namespace Benchmarks.Trace.DuckTyping
             }
 
             public override string ToString() => "Public";
+
+            public void Add(string key, string value)
+            {
+            }
+
+            private void AddPrivate(string key, string value)
+            {
+            }
+
+            public string Get(string key)
+            {
+                return string.Empty;
+            }
+
+            private string GetPrivate(string key)
+            {
+                return string.Empty;
+            }
+
+            public bool TryGetValue(string key, out string value)
+            {
+                value = default;
+                return true;
+            }
+
+            private bool TryGetValuePrivate(string key, out string value)
+            {
+                value = default;
+                return true;
+            }
         }
 
         internal class PropertyInternalObject
@@ -569,6 +599,36 @@ namespace Benchmarks.Trace.DuckTyping
             }
 
             public override string ToString() => "Internal";
+
+            public void Add(string key, string value)
+            {
+            }
+
+            private void AddPrivate(string key, string value)
+            {
+            }
+
+            public string Get(string key)
+            {
+                return string.Empty;
+            }
+
+            private string GetPrivate(string key)
+            {
+                return string.Empty;
+            }
+
+            public bool TryGetValue(string key, out string value)
+            {
+                value = default;
+                return true;
+            }
+
+            private bool TryGetValuePrivate(string key, out string value)
+            {
+                value = default;
+                return true;
+            }
         }
 
         private class PropertyPrivateObject
@@ -717,6 +777,36 @@ namespace Benchmarks.Trace.DuckTyping
                 set => _dictioString[index] = value;
             }
             public override string ToString() => "Private";
+
+            public void Add(string key, string value)
+            {
+            }
+
+            private void AddPrivate(string key, string value)
+            {
+            }
+
+            public string Get(string key)
+            {
+                return string.Empty;
+            }
+
+            private string GetPrivate(string key)
+            {
+                return string.Empty;
+            }
+
+            public bool TryGetValue(string key, out string value)
+            {
+                value = default;
+                return true;
+            }
+
+            private bool TryGetValuePrivate(string key, out string value)
+            {
+                value = default;
+                return true;
+            }
         }
 
 
@@ -731,6 +821,15 @@ namespace Benchmarks.Trace.DuckTyping
             int this[int index] { get; set; }
 
             string ToString();
+        }
+
+        public interface IBaseMethodRunner
+        {
+            void Add(string key, string value);
+
+            string Get(string key);
+
+            bool TryGetValue(string key, out string value);
         }
     }
 }
