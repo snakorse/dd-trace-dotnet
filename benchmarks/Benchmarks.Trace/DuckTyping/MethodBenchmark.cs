@@ -122,6 +122,8 @@ namespace Benchmarks.Trace.DuckTyping
             bool TryGetValue(string key, out string value);
 
             bool TryGetValuePrivate(string key, out string value);
+
+            string ToString();
         }
     }
 }
