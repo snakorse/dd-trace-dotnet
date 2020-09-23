@@ -53,6 +53,13 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             public int MagicNumber = 42;
         }
 
+        private class PrivateDummyFieldObject
+        {
+            internal static PrivateDummyFieldObject Default = new PrivateDummyFieldObject();
+
+            public int MagicNumber = 42;
+        }
+
         // ***
 
         public class FieldPublicObject
@@ -482,7 +489,7 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
                 value = 42;
             }
 
-            public bool TryGetObscure(out DummyFieldObject obj)
+            private bool TryGetObscure(out DummyFieldObject obj)
             {
                 obj = new DummyFieldObject { MagicNumber = 99 };
                 return true;
@@ -493,9 +500,21 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
                 value *= value;
             }
 
-            public bool TryGetReference(ref DummyFieldObject obj)
+            private bool TryGetReference(ref DummyFieldObject obj)
             {
                 obj = new DummyFieldObject { MagicNumber = (obj?.MagicNumber ?? 99) + 1 };
+                return true;
+            }
+
+            private bool TryGetPrivateObscure(out PrivateDummyFieldObject obj)
+            {
+                obj = new PrivateDummyFieldObject { MagicNumber = 99 };
+                return true;
+            }
+
+            private bool TryGetPrivateReference(ref PrivateDummyFieldObject obj)
+            {
+                obj = new PrivateDummyFieldObject { MagicNumber = (obj?.MagicNumber ?? 99) + 1 };
                 return true;
             }
         }
@@ -701,7 +720,7 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
                 value = 42;
             }
 
-            public bool TryGetObscure(out DummyFieldObject obj)
+            private bool TryGetObscure(out DummyFieldObject obj)
             {
                 obj = new DummyFieldObject { MagicNumber = 99 };
                 return true;
@@ -712,9 +731,21 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
                 value *= value;
             }
 
-            public bool TryGetReference(ref DummyFieldObject obj)
+            private bool TryGetReference(ref DummyFieldObject obj)
             {
                 obj = new DummyFieldObject { MagicNumber = (obj?.MagicNumber ?? 99) + 1 };
+                return true;
+            }
+
+            private bool TryGetPrivateObscure(out PrivateDummyFieldObject obj)
+            {
+                obj = new PrivateDummyFieldObject { MagicNumber = 99 };
+                return true;
+            }
+
+            private bool TryGetPrivateReference(ref PrivateDummyFieldObject obj)
+            {
+                obj = new PrivateDummyFieldObject { MagicNumber = (obj?.MagicNumber ?? 99) + 1 };
                 return true;
             }
         }
@@ -919,7 +950,7 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
                 value = 42;
             }
 
-            public bool TryGetObscure(out DummyFieldObject obj)
+            private bool TryGetObscure(out DummyFieldObject obj)
             {
                 obj = new DummyFieldObject { MagicNumber = 99 };
                 return true;
@@ -930,9 +961,21 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
                 value *= value;
             }
 
-            public bool TryGetReference(ref DummyFieldObject obj)
+            private bool TryGetReference(ref DummyFieldObject obj)
             {
                 obj = new DummyFieldObject { MagicNumber = (obj?.MagicNumber ?? 99) + 1 };
+                return true;
+            }
+
+            private bool TryGetPrivateObscure(out PrivateDummyFieldObject obj)
+            {
+                obj = new PrivateDummyFieldObject { MagicNumber = 99 };
+                return true;
+            }
+
+            private bool TryGetPrivateReference(ref PrivateDummyFieldObject obj)
+            {
+                obj = new PrivateDummyFieldObject { MagicNumber = (obj?.MagicNumber ?? 99) + 1 };
                 return true;
             }
         }

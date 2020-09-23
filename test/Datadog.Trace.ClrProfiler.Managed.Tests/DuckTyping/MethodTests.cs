@@ -135,6 +135,24 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             Assert.Equal(101, refObject.As<IDummyFieldObject>().MagicNumber);
             Assert.True(duckVirtual.TryGetReferenceObject(ref refObject));
             Assert.Equal(102, refObject.As<IDummyFieldObject>().MagicNumber);
+
+            // Private internal parameter type with duck type output
+            refDuckType = null;
+            Assert.True(duckInterface.TryGetPrivateReference(ref refDuckType));
+            Assert.Equal(100, refDuckType.MagicNumber);
+            Assert.True(duckAbstract.TryGetPrivateReference(ref refDuckType));
+            Assert.Equal(101, refDuckType.MagicNumber);
+            Assert.True(duckVirtual.TryGetPrivateReference(ref refDuckType));
+            Assert.Equal(102, refDuckType.MagicNumber);
+
+            // Private internal parameter type object output
+            refObject = null;
+            Assert.True(duckInterface.TryGetPrivateReferenceObject(ref refObject));
+            Assert.Equal(100, refObject.As<IDummyFieldObject>().MagicNumber);
+            Assert.True(duckAbstract.TryGetPrivateReferenceObject(ref refObject));
+            Assert.Equal(101, refObject.As<IDummyFieldObject>().MagicNumber);
+            Assert.True(duckVirtual.TryGetPrivateReferenceObject(ref refObject));
+            Assert.Equal(102, refObject.As<IDummyFieldObject>().MagicNumber);
         }
 
         [Theory]
@@ -188,6 +206,32 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             Assert.Equal(99, outObject.As<IDummyFieldObject>().MagicNumber);
 
             Assert.True(duckVirtual.TryGetObscureObject(out outObject));
+            Assert.NotNull(outObject);
+            Assert.Equal(99, outObject.As<IDummyFieldObject>().MagicNumber);
+
+            // Private internal parameter type with duck type output
+            Assert.True(duckInterface.TryGetPrivateObscure(out outDuckType));
+            Assert.NotNull(outDuckType);
+            Assert.Equal(99, outDuckType.MagicNumber);
+
+            Assert.True(duckAbstract.TryGetPrivateObscure(out outDuckType));
+            Assert.NotNull(outDuckType);
+            Assert.Equal(99, outDuckType.MagicNumber);
+
+            Assert.True(duckVirtual.TryGetPrivateObscure(out outDuckType));
+            Assert.NotNull(outDuckType);
+            Assert.Equal(99, outDuckType.MagicNumber);
+
+            // Private internal parameter type object output
+            Assert.True(duckInterface.TryGetPrivateObscureObject(out outObject));
+            Assert.NotNull(outObject);
+            Assert.Equal(99, outObject.As<IDummyFieldObject>().MagicNumber);
+
+            Assert.True(duckAbstract.TryGetPrivateObscureObject(out outObject));
+            Assert.NotNull(outObject);
+            Assert.Equal(99, outObject.As<IDummyFieldObject>().MagicNumber);
+
+            Assert.True(duckVirtual.TryGetPrivateObscureObject(out outObject));
             Assert.NotNull(outObject);
             Assert.Equal(99, outObject.As<IDummyFieldObject>().MagicNumber);
         }
@@ -338,6 +382,16 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
 
             [Duck(Name = "TryGetReference")]
             bool TryGetReferenceObject(ref object obj);
+
+            bool TryGetPrivateObscure(out IDummyFieldObject obj);
+
+            [Duck(Name = "TryGetPrivateObscure")]
+            bool TryGetPrivateObscureObject(out object obj);
+
+            bool TryGetPrivateReference(ref IDummyFieldObject obj);
+
+            [Duck(Name = "TryGetPrivateReference")]
+            bool TryGetPrivateReferenceObject(ref object obj);
         }
 
         public abstract class ObscureDuckTypeAbstractClass
@@ -382,6 +436,16 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
 
             [Duck(Name = "TryGetReference")]
             public abstract bool TryGetReferenceObject(ref object obj);
+
+            public abstract bool TryGetPrivateObscure(out IDummyFieldObject obj);
+
+            [Duck(Name = "TryGetPrivateObscure")]
+            public abstract bool TryGetPrivateObscureObject(out object obj);
+
+            public abstract bool TryGetPrivateReference(ref IDummyFieldObject obj);
+
+            [Duck(Name = "TryGetPrivateReference")]
+            public abstract bool TryGetPrivateReferenceObject(ref object obj);
         }
 
         public class ObscureDuckType
@@ -455,6 +519,30 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
 
             [Duck(Name = "TryGetReference")]
             public virtual bool TryGetReferenceObject(ref object obj)
+            {
+                return false;
+            }
+
+            public virtual bool TryGetPrivateObscure(out IDummyFieldObject obj)
+            {
+                obj = default;
+                return false;
+            }
+
+            [Duck(Name = "TryGetPrivateObscure")]
+            public virtual bool TryGetPrivateObscureObject(out object obj)
+            {
+                obj = default;
+                return false;
+            }
+
+            public virtual bool TryGetPrivateReference(ref IDummyFieldObject obj)
+            {
+                return false;
+            }
+
+            [Duck(Name = "TryGetPrivateReference")]
+            public virtual bool TryGetPrivateReferenceObject(ref object obj)
             {
                 return false;
             }

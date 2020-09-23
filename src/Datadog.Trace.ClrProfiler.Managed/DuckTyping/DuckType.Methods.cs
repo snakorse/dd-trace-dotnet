@@ -190,6 +190,12 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                                 Type proxyParamTypeElementType = proxyParamType.GetElementType();
                                 Type targetParamTypeElementType = targetParamType.GetElementType();
 
+                                if (!targetParamTypeElementType.IsPublic && !targetParamTypeElementType.IsNestedPublic)
+                                {
+                                    targetParamType = typeof(object).MakeByRefType();
+                                    targetParamTypeElementType = typeof(object);
+                                }
+
                                 LocalBuilder localTargetArg = il.DeclareLocal(targetParamType);
 
                                 // We need to store the ref parameter data to set the proxy parameter value after we call the target method
@@ -264,7 +270,7 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                             }
 
                             // If the target parameter type is public or if it's by ref we have to actually use the original target type.
-                            targetParamType = targetParamType.IsPublic || targetParamType.IsNestedPublic || targetParamType.IsByRef ? targetParamType : typeof(object);
+                            targetParamType = targetParamType.IsPublic || targetParamType.IsNestedPublic ? targetParamType : typeof(object);
                             ILHelpers.TypeConversion(il, proxyParamType, targetParamType);
 
                             targetMethodParametersTypes[idx] = targetParamType;
