@@ -26,7 +26,7 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
 
         [Theory]
         [MemberData(nameof(Data))]
-        public void BasicMethods(object obscureObject)
+        public void ReturnMethods(object obscureObject)
         {
             var duckInterface = obscureObject.As<IObscureDuckType>();
             var duckAbstract = obscureObject.As<ObscureDuckTypeAbstractClass>();
@@ -61,6 +61,15 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             Assert.Equal(20, duckInterface.InternalSum(10, 10));
             Assert.Equal(20, duckAbstract.InternalSum(10, 10));
             Assert.Equal(20, duckVirtual.InternalSum(10, 10));
+        }
+
+        [Theory]
+        [MemberData(nameof(Data))]
+        public void VoidMethods(object obscureObject)
+        {
+            var duckInterface = obscureObject.As<IObscureDuckType>();
+            var duckAbstract = obscureObject.As<ObscureDuckTypeAbstractClass>();
+            var duckVirtual = obscureObject.As<ObscureDuckType>();
 
             // Void with object
             duckInterface.Add("Key01", new ObscureObject.DummyFieldObject());
@@ -76,6 +85,15 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             duckInterface.Add("KeyString01", "Value01");
             duckAbstract.Add("KeyString02", "Value02");
             duckVirtual.Add("KeyString03", "Value03");
+        }
+
+        [Theory]
+        [MemberData(nameof(Data))]
+        public void RefParametersMethods(object obscureObject)
+        {
+            var duckInterface = obscureObject.As<IObscureDuckType>();
+            var duckAbstract = obscureObject.As<ObscureDuckTypeAbstractClass>();
+            var duckVirtual = obscureObject.As<ObscureDuckType>();
 
             // Ref parameter
             int value = 4;
@@ -84,12 +102,68 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             duckVirtual.Pow2(ref value);
             Assert.Equal(65536, value);
 
+            value = 4;
+            duckInterface.GetReference(ref value);
+            duckAbstract.GetReference(ref value);
+            duckVirtual.GetReference(ref value);
+            Assert.Equal(65536, value);
+
+            // Ref object parameter
+            object objValue = 4;
+            object objValue2 = objValue;
+            duckInterface.GetReferenceObject(ref objValue);
+            duckAbstract.GetReferenceObject(ref objValue);
+            duckVirtual.GetReferenceObject(ref objValue);
+            Assert.Equal(65536, (int)objValue);
+
+            // Ref DuckType
+            IDummyFieldObject refDuckType;
+            refDuckType = null;
+            Assert.True(duckInterface.TryGetReference(ref refDuckType));
+            Assert.Equal(100, refDuckType.MagicNumber);
+            Assert.True(duckAbstract.TryGetReference(ref refDuckType));
+            Assert.Equal(101, refDuckType.MagicNumber);
+            Assert.True(duckVirtual.TryGetReference(ref refDuckType));
+            Assert.Equal(102, refDuckType.MagicNumber);
+
+            // Ref object
+            object refObject;
+            refObject = null;
+            Assert.True(duckInterface.TryGetReferenceObject(ref refObject));
+            Assert.Equal(100, refObject.As<IDummyFieldObject>().MagicNumber);
+            Assert.True(duckAbstract.TryGetReferenceObject(ref refObject));
+            Assert.Equal(101, refObject.As<IDummyFieldObject>().MagicNumber);
+            Assert.True(duckVirtual.TryGetReferenceObject(ref refObject));
+            Assert.Equal(102, refObject.As<IDummyFieldObject>().MagicNumber);
+        }
+
+        [Theory]
+        [MemberData(nameof(Data))]
+        public void OutParametersMethods(object obscureObject)
+        {
+            var duckInterface = obscureObject.As<IObscureDuckType>();
+            var duckAbstract = obscureObject.As<ObscureDuckTypeAbstractClass>();
+            var duckVirtual = obscureObject.As<ObscureDuckType>();
+
             // Out parameter
             int outValue;
             duckInterface.GetOutput(out outValue);
+            Assert.Equal(42, outValue);
             duckAbstract.GetOutput(out outValue);
+            Assert.Equal(42, outValue);
             duckVirtual.GetOutput(out outValue);
+            Assert.Equal(42, outValue);
 
+            // Out object parameter
+            object outObjectValue;
+            duckInterface.GetOutputObject(out outObjectValue);
+            Assert.Equal(42, (int)outObjectValue);
+            duckAbstract.GetOutputObject(out outObjectValue);
+            Assert.Equal(42, (int)outObjectValue);
+            duckVirtual.GetOutputObject(out outObjectValue);
+            Assert.Equal(42, (int)outObjectValue);
+
+            // Duck type output
             IDummyFieldObject outDuckType;
             Assert.True(duckInterface.TryGetObscure(out outDuckType));
             Assert.NotNull(outDuckType);
@@ -102,10 +176,24 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             Assert.True(duckVirtual.TryGetObscure(out outDuckType));
             Assert.NotNull(outDuckType);
             Assert.Equal(99, outDuckType.MagicNumber);
+
+            // Object output
+            object outObject;
+            Assert.True(duckInterface.TryGetObscureObject(out outObject));
+            Assert.NotNull(outObject);
+            Assert.Equal(99, outObject.As<IDummyFieldObject>().MagicNumber);
+
+            Assert.True(duckAbstract.TryGetObscureObject(out outObject));
+            Assert.NotNull(outObject);
+            Assert.Equal(99, outObject.As<IDummyFieldObject>().MagicNumber);
+
+            Assert.True(duckVirtual.TryGetObscureObject(out outObject));
+            Assert.NotNull(outObject);
+            Assert.Equal(99, outObject.As<IDummyFieldObject>().MagicNumber);
         }
 
         [Fact]
-        public void DictionaryDuckType()
+        public void DictionaryDuckTypeExample()
         {
             Dictionary<string, string> dictionary = new Dictionary<string, string>();
 
@@ -233,7 +321,23 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
 
             void GetOutput(out int value);
 
+            [Duck(Name = "GetOutput")]
+            void GetOutputObject(out object value);
+
             bool TryGetObscure(out IDummyFieldObject obj);
+
+            [Duck(Name = "TryGetObscure")]
+            bool TryGetObscureObject(out object obj);
+
+            void GetReference(ref int value);
+
+            [Duck(Name = "GetReference")]
+            void GetReferenceObject(ref object value);
+
+            bool TryGetReference(ref IDummyFieldObject obj);
+
+            [Duck(Name = "TryGetReference")]
+            bool TryGetReferenceObject(ref object obj);
         }
 
         public abstract class ObscureDuckTypeAbstractClass
@@ -261,7 +365,23 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
 
             public abstract void GetOutput(out int value);
 
+            [Duck(Name = "GetOutput")]
+            public abstract void GetOutputObject(out object value);
+
             public abstract bool TryGetObscure(out IDummyFieldObject obj);
+
+            [Duck(Name = "TryGetObscure")]
+            public abstract bool TryGetObscureObject(out object obj);
+
+            public abstract void GetReference(ref int value);
+
+            [Duck(Name = "GetReference")]
+            public abstract void GetReferenceObject(ref object value);
+
+            public abstract bool TryGetReference(ref IDummyFieldObject obj);
+
+            [Duck(Name = "TryGetReference")]
+            public abstract bool TryGetReferenceObject(ref object obj);
         }
 
         public class ObscureDuckType
@@ -300,9 +420,42 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
                 value = default;
             }
 
+            [Duck(Name = "GetOutput")]
+            public virtual void GetOutputObject(out object value)
+            {
+                value = default;
+            }
+
             public virtual bool TryGetObscure(out IDummyFieldObject obj)
             {
                 obj = default;
+                return false;
+            }
+
+            [Duck(Name = "TryGetObscure")]
+            public virtual bool TryGetObscureObject(out object obj)
+            {
+                obj = default;
+                return false;
+            }
+
+            public virtual void GetReference(ref int value)
+            {
+            }
+
+            [Duck(Name = "GetReference")]
+            public virtual void GetReferenceObject(ref object value)
+            {
+            }
+
+            public virtual bool TryGetReference(ref IDummyFieldObject obj)
+            {
+                return false;
+            }
+
+            [Duck(Name = "TryGetReference")]
+            public virtual bool TryGetReferenceObject(ref object obj)
+            {
                 return false;
             }
         }

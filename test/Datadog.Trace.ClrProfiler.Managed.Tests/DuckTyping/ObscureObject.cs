@@ -487,6 +487,17 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
                 obj = new DummyFieldObject { MagicNumber = 99 };
                 return true;
             }
+
+            public void GetReference(ref int value)
+            {
+                value *= value;
+            }
+
+            public bool TryGetReference(ref DummyFieldObject obj)
+            {
+                obj = new DummyFieldObject { MagicNumber = (obj?.MagicNumber ?? 99) + 1 };
+                return true;
+            }
         }
 
         internal class PropertyInternalObject
@@ -695,6 +706,17 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
                 obj = new DummyFieldObject { MagicNumber = 99 };
                 return true;
             }
+
+            public void GetReference(ref int value)
+            {
+                value *= value;
+            }
+
+            public bool TryGetReference(ref DummyFieldObject obj)
+            {
+                obj = new DummyFieldObject { MagicNumber = (obj?.MagicNumber ?? 99) + 1 };
+                return true;
+            }
         }
 
         private class PropertyPrivateObject
@@ -900,6 +922,17 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             public bool TryGetObscure(out DummyFieldObject obj)
             {
                 obj = new DummyFieldObject { MagicNumber = 99 };
+                return true;
+            }
+
+            public void GetReference(ref int value)
+            {
+                value *= value;
+            }
+
+            public bool TryGetReference(ref DummyFieldObject obj)
+            {
+                obj = new DummyFieldObject { MagicNumber = (obj?.MagicNumber ?? 99) + 1 };
                 return true;
             }
         }
