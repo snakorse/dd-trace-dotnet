@@ -204,6 +204,33 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                         il.Emit(OpCodes.Box, actualType);
                         il.Emit(OpCodes.Castclass, expectedType);
                     }
+                    else if (expectedUnderlyingType.IsAssignableFrom(actualUnderlyingType))
+                    {
+                        // WARNING: The actual type instance can't be detected at this point, we have to check it at runtime.
+                        /*
+                         * In this case we emit something like:
+                         * {
+                         *      if (!(value is [expectedType])) {
+                         *          throw new InvalidCastException();
+                         *      }
+                         *
+                         *      return ([expectedType])value;
+                         * }
+                         */
+                        Label lblIsExpected = il.DefineLabel();
+
+                        il.Emit(OpCodes.Box, actualType);
+                        il.Emit(OpCodes.Dup);
+
+                        il.Emit(OpCodes.Isinst, expectedType);
+                        il.Emit(OpCodes.Brtrue_S, lblIsExpected);
+
+                        il.Emit(OpCodes.Pop);
+                        il.ThrowException(typeof(InvalidCastException));
+
+                        il.MarkLabel(lblIsExpected);
+                        il.Emit(OpCodes.Castclass, expectedType);
+                    }
                     else
                     {
                         throw new InvalidCastException();
@@ -218,9 +245,40 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                     // if not we should throw.
                     if (actualUnderlyingType == typeof(object) || actualUnderlyingType.IsAssignableFrom(expectedUnderlyingType))
                     {
-                        il.Emit(OpCodes.Ldtoken, expectedUnderlyingType);
-                        il.EmitCall(OpCodes.Call, Util.GetTypeFromHandleMethodInfo, null);
-                        il.EmitCall(OpCodes.Call, Util.CheckExpectedTypeMethodInfo, null);
+                        // WARNING: The actual type instance can't be detected at this point, we have to check it at runtime.
+                        /*
+                         * In this case we emit something like:
+                         * {
+                         *      if (value is null)
+                         *      {
+                         *          throw new InvalidCastException();
+                         *      }
+                         *
+                         *      if (!(value is [expectedType])) {
+                         *          throw new InvalidCastException();
+                         *      }
+                         *
+                         *      return ([expectedType])value;
+                         * }
+                         */
+                        Label lblNotNull = il.DefineLabel();
+                        Label lblIsExpected = il.DefineLabel();
+
+                        il.Emit(OpCodes.Dup);
+                        il.Emit(OpCodes.Brtrue_S, lblNotNull);
+
+                        il.Emit(OpCodes.Pop);
+                        il.ThrowException(typeof(InvalidCastException));
+
+                        il.MarkLabel(lblNotNull);
+                        il.Emit(OpCodes.Dup);
+                        il.Emit(OpCodes.Isinst, expectedType);
+                        il.Emit(OpCodes.Brtrue_S, lblIsExpected);
+
+                        il.Emit(OpCodes.Pop);
+                        il.ThrowException(typeof(InvalidCastException));
+
+                        il.MarkLabel(lblIsExpected);
                         il.Emit(OpCodes.Unbox_Any, expectedType);
                     }
                     else

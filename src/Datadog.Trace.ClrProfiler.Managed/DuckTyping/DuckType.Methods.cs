@@ -415,7 +415,7 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
 
                             // Load the property type to the stack
                             il.Emit(OpCodes.Ldtoken, proxyArgumentType);
-                            il.EmitCall(OpCodes.Call, Util.GetTypeFromHandleMethodInfo, null);
+                            il.EmitCall(OpCodes.Call, GetTypeFromHandleMethodInfo, null);
 
                             // We call DuckType.GetStructDuckTypeChainningValue() with the 2 loaded values from the stack: field value, property type
                             il.EmitCall(OpCodes.Call, GetDuckTypeChainningValueMethodInfo, null);
@@ -442,7 +442,7 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
 
                         // Load the property type to the stack
                         il.Emit(OpCodes.Ldtoken, proxyMethodDefinition.ReturnType);
-                        il.EmitCall(OpCodes.Call, Util.GetTypeFromHandleMethodInfo, null);
+                        il.EmitCall(OpCodes.Call, GetTypeFromHandleMethodInfo, null);
 
                         // We call DuckType.GetStructDuckTypeChainningValue() with the 2 loaded values from the stack: field value, property type
                         il.EmitCall(OpCodes.Call, GetDuckTypeChainningValueMethodInfo, null);

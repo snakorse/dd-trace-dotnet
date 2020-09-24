@@ -178,7 +178,7 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                 Type.EmptyTypes);
             il = getPropType.GetILGenerator();
             il.Emit(OpCodes.Ldtoken, targetType);
-            il.EmitCall(OpCodes.Call, Util.GetTypeFromHandleMethodInfo, null);
+            il.EmitCall(OpCodes.Call, GetTypeFromHandleMethodInfo, null);
 
             // il.Emit(OpCodes.Ldarg_0);
             // il.Emit(OpCodes.Ldfld, instanceField);

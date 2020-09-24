@@ -156,7 +156,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
                     ilWriter.Emit(OpCodes.Ldelem_Ref);
 
                     ilWriter.Emit(OpCodes.Ldtoken, parameterType);
-                    ilWriter.EmitCall(OpCodes.Call, DuckTyping.Util.GetTypeFromHandleMethodInfo, null);
+                    ilWriter.EmitCall(OpCodes.Call, DuckTyping.DuckType.GetTypeFromHandleMethodInfo, null);
                     ilWriter.EmitCall(OpCodes.Call, ConvertTypeMethodInfo, null);
 
                     if (parameterType.IsValueType)
@@ -215,19 +215,19 @@ namespace Datadog.Trace.ClrProfiler.CallTarget
                 if (pType.IsEnum)
                 {
                     ilWriter.Emit(OpCodes.Ldtoken, pType);
-                    ilWriter.EmitCall(OpCodes.Call, DuckTyping.Util.GetTypeFromHandleMethodInfo, null);
+                    ilWriter.EmitCall(OpCodes.Call, DuckTyping.DuckType.GetTypeFromHandleMethodInfo, null);
                     callEnum = true;
                 }
 
                 ILHelpers.WriteLoadArgument(0, ilWriter, true);
                 if (callEnum)
                 {
-                    ilWriter.EmitCall(OpCodes.Call, DuckTyping.Util.EnumToObjectMethodInfo, null);
+                    ilWriter.EmitCall(OpCodes.Call, DuckTyping.DuckType.EnumToObjectMethodInfo, null);
                 }
                 else
                 {
                     ilWriter.Emit(OpCodes.Ldtoken, pType);
-                    ilWriter.EmitCall(OpCodes.Call, DuckTyping.Util.GetTypeFromHandleMethodInfo, null);
+                    ilWriter.EmitCall(OpCodes.Call, DuckTyping.DuckType.GetTypeFromHandleMethodInfo, null);
                     ilWriter.EmitCall(OpCodes.Call, ConvertTypeMethodInfo, null);
                 }
 

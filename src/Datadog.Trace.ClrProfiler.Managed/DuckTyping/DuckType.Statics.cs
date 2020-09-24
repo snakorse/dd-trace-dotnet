@@ -35,6 +35,16 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static Func<DynamicMethod, RuntimeMethodHandle> _dynamicGetMethodDescriptor;
 
+        /// <summary>
+        /// Gets the Type.GetTypeFromHandle method info
+        /// </summary>
+        public static readonly MethodInfo GetTypeFromHandleMethodInfo = typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle));
+
+        /// <summary>
+        /// Gets the Enum.ToObject method info
+        /// </summary>
+        public static readonly MethodInfo EnumToObjectMethodInfo = typeof(Enum).GetMethod(nameof(Enum.ToObject), new[] { typeof(Type), typeof(object) });
+
         private static RuntimeMethodHandle GetRuntimeHandle(DynamicMethod dynamicMethod)
         {
             _dynamicGetMethodDescriptor ??= (Func<DynamicMethod, RuntimeMethodHandle>)typeof(DynamicMethod)
