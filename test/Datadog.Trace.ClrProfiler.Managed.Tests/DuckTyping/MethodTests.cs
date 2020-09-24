@@ -388,7 +388,6 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
 
             TestEnum2 ShowEnum(TestEnum2 val);
 
-            [Duck(BindingFlags = BindingFlags.Instance | BindingFlags.NonPublic)]
             object InternalSum(int a, int b);
 
             [Duck(ParameterTypeNames = new string[] { "System.String", "Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping.ObscureObject+DummyFieldObject, Datadog.Trace.ClrProfiler.Managed.Tests" })]
@@ -443,7 +442,6 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
 
             public abstract TestEnum2 ShowEnum(TestEnum2 val);
 
-            [Duck(BindingFlags = BindingFlags.Instance | BindingFlags.NonPublic)]
             public abstract object InternalSum(int a, int b);
 
             [Duck(ParameterTypeNames = new string[] { "System.String", "Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping.ObscureObject+DummyFieldObject, Datadog.Trace.ClrProfiler.Managed.Tests" })]
@@ -498,7 +496,6 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
 
             public virtual TestEnum2 ShowEnum(TestEnum2 val) => default;
 
-            [Duck(BindingFlags = BindingFlags.Instance | BindingFlags.NonPublic)]
             public virtual object InternalSum(int a, int b) => default;
 
             [Duck(ParameterTypeNames = new string[] { "System.String", "Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping.ObscureObject+DummyFieldObject, Datadog.Trace.ClrProfiler.Managed.Tests" })]

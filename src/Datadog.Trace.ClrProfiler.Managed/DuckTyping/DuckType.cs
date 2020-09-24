@@ -105,6 +105,7 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                     }
                 }
 
+                // Create a valid type name that can be used as a member of a class. (BenchmarkDotNet fails if is an invalid name)
                 string proxyTypeName = $"{proxyType.FullName.Replace(".", "_").Replace("+", "__")}___{targetType.FullName.Replace(".", "_").Replace("+", "__")}";
                 Log.Information("Creating type proxy: " + proxyTypeName);
 
@@ -252,10 +253,12 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                         PropertyInfo targetProperty = null;
                         try
                         {
-                            targetProperty = targetType.GetProperty(duckAttribute.Name, duckAttribute.BindingFlags);
+                            targetProperty = targetType.GetProperty(duckAttribute.Name, DefaultFlags);
                         }
                         catch
                         {
+                            // This will run only when multiple indexers are defined in a class, that way we can end up with multiple properties with the same name.
+                            // In this case we make sure we select the indexer we want
                             targetProperty = targetType.GetProperty(duckAttribute.Name, proxyProperty.PropertyType, proxyProperty.GetIndexParameters().Select(i => i.ParameterType).ToArray());
                         }
 
@@ -297,7 +300,7 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                         break;
 
                     case DuckKind.Field:
-                        FieldInfo targetField = targetType.GetField(duckAttribute.Name, duckAttribute.BindingFlags);
+                        FieldInfo targetField = targetType.GetField(duckAttribute.Name, DefaultFlags);
                         if (targetField is null)
                         {
                             break;

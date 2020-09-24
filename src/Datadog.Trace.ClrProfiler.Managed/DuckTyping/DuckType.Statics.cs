@@ -13,6 +13,8 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
     /// </summary>
     public static partial class DuckType
     {
+        private const BindingFlags DefaultFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.FlattenHierarchy;
+
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static readonly Vendors.Serilog.ILogger Log = DatadogLogging.GetLogger(typeof(DuckType));
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
