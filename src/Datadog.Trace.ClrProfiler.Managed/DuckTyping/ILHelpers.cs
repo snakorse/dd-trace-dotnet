@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Reflection;
 using System.Reflection.Emit;
 
 namespace Datadog.Trace.ClrProfiler.DuckTyping
@@ -10,143 +8,6 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
     /// </summary>
     internal static class ILHelpers
     {
-        private static readonly OpCode[] EmptyOpcodes = new OpCode[0];
-        private static readonly OpCode[] ConvI1Opcode = new[] { OpCodes.Conv_I1 };
-        private static readonly OpCode[] ConvU1Opcode = new[] { OpCodes.Conv_U1 };
-        private static readonly OpCode[] ConvI2Opcode = new[] { OpCodes.Conv_I2 };
-        private static readonly OpCode[] ConvU2Opcode = new[] { OpCodes.Conv_U2 };
-        private static readonly OpCode[] ConvI4Opcode = new[] { OpCodes.Conv_I4 };
-        private static readonly OpCode[] ConvU4Opcode = new[] { OpCodes.Conv_U4 };
-        private static readonly OpCode[] ConvI8Opcode = new[] { OpCodes.Conv_I8 };
-        private static readonly OpCode[] ConvU8Opcode = new[] { OpCodes.Conv_U8 };
-        private static readonly OpCode[] ConvR4Opcode = new[] { OpCodes.Conv_R4 };
-        private static readonly OpCode[] ConvR8Opcode = new[] { OpCodes.Conv_R8 };
-        private static readonly OpCode[] ConvRUnR4Opcode = new[] { OpCodes.Conv_R_Un, OpCodes.Conv_R4 };
-        private static readonly OpCode[] ConvRUnR8Opcode = new[] { OpCodes.Conv_R_Un, OpCodes.Conv_R8 };
-        private static readonly Dictionary<VTuple<Type, Type>, OpCode[]> ConversionTable = new Dictionary<VTuple<Type, Type>, OpCode[]>
-        {
-            { new VTuple<Type, Type>(typeof(double), typeof(sbyte)), ConvI1Opcode },
-            { new VTuple<Type, Type>(typeof(float), typeof(sbyte)), ConvI1Opcode },
-            { new VTuple<Type, Type>(typeof(char), typeof(sbyte)), ConvI1Opcode },
-            { new VTuple<Type, Type>(typeof(ulong), typeof(sbyte)), ConvI1Opcode },
-            { new VTuple<Type, Type>(typeof(long), typeof(sbyte)), ConvI1Opcode },
-            { new VTuple<Type, Type>(typeof(uint), typeof(sbyte)), ConvI1Opcode },
-            { new VTuple<Type, Type>(typeof(int), typeof(sbyte)), ConvI1Opcode },
-            { new VTuple<Type, Type>(typeof(ushort), typeof(sbyte)), ConvI1Opcode },
-            { new VTuple<Type, Type>(typeof(short), typeof(sbyte)), ConvI1Opcode },
-            { new VTuple<Type, Type>(typeof(byte), typeof(sbyte)), ConvI1Opcode },
-            // ...
-            { new VTuple<Type, Type>(typeof(double), typeof(byte)), ConvU1Opcode },
-            { new VTuple<Type, Type>(typeof(float), typeof(byte)), ConvU1Opcode },
-            { new VTuple<Type, Type>(typeof(char), typeof(byte)), ConvU1Opcode },
-            { new VTuple<Type, Type>(typeof(ulong), typeof(byte)), ConvU1Opcode },
-            { new VTuple<Type, Type>(typeof(long), typeof(byte)), ConvU1Opcode },
-            { new VTuple<Type, Type>(typeof(uint), typeof(byte)), ConvU1Opcode },
-            { new VTuple<Type, Type>(typeof(int), typeof(byte)), ConvU1Opcode },
-            { new VTuple<Type, Type>(typeof(ushort), typeof(byte)), ConvU1Opcode },
-            { new VTuple<Type, Type>(typeof(short), typeof(byte)), ConvU1Opcode },
-            { new VTuple<Type, Type>(typeof(sbyte), typeof(byte)), ConvU1Opcode },
-            // ...
-            { new VTuple<Type, Type>(typeof(double), typeof(short)), ConvI2Opcode },
-            { new VTuple<Type, Type>(typeof(float), typeof(short)), ConvI2Opcode },
-            { new VTuple<Type, Type>(typeof(char), typeof(short)), ConvI2Opcode },
-            { new VTuple<Type, Type>(typeof(ulong), typeof(short)), ConvI2Opcode },
-            { new VTuple<Type, Type>(typeof(long), typeof(short)), ConvI2Opcode },
-            { new VTuple<Type, Type>(typeof(uint), typeof(short)), ConvI2Opcode },
-            { new VTuple<Type, Type>(typeof(int), typeof(short)), ConvI2Opcode },
-            { new VTuple<Type, Type>(typeof(ushort), typeof(short)), ConvI2Opcode },
-            { new VTuple<Type, Type>(typeof(byte), typeof(short)), EmptyOpcodes },
-            { new VTuple<Type, Type>(typeof(sbyte), typeof(short)), EmptyOpcodes },
-            // ...
-            { new VTuple<Type, Type>(typeof(double), typeof(ushort)), ConvU2Opcode },
-            { new VTuple<Type, Type>(typeof(float), typeof(ushort)), ConvU2Opcode },
-            { new VTuple<Type, Type>(typeof(char), typeof(ushort)), EmptyOpcodes },
-            { new VTuple<Type, Type>(typeof(ulong), typeof(ushort)), ConvU2Opcode },
-            { new VTuple<Type, Type>(typeof(long), typeof(ushort)), ConvU2Opcode },
-            { new VTuple<Type, Type>(typeof(uint), typeof(ushort)), ConvU2Opcode },
-            { new VTuple<Type, Type>(typeof(int), typeof(ushort)), ConvU2Opcode },
-            { new VTuple<Type, Type>(typeof(short), typeof(ushort)), ConvU2Opcode },
-            { new VTuple<Type, Type>(typeof(byte), typeof(ushort)), EmptyOpcodes },
-            { new VTuple<Type, Type>(typeof(sbyte), typeof(ushort)), EmptyOpcodes },
-            // ...
-            { new VTuple<Type, Type>(typeof(double), typeof(int)), ConvI4Opcode },
-            { new VTuple<Type, Type>(typeof(float), typeof(int)), ConvI4Opcode },
-            { new VTuple<Type, Type>(typeof(char), typeof(int)), EmptyOpcodes },
-            { new VTuple<Type, Type>(typeof(ulong), typeof(int)), ConvI4Opcode },
-            { new VTuple<Type, Type>(typeof(long), typeof(int)), ConvI4Opcode },
-            { new VTuple<Type, Type>(typeof(uint), typeof(int)), ConvI4Opcode },
-            { new VTuple<Type, Type>(typeof(ushort), typeof(int)), EmptyOpcodes },
-            { new VTuple<Type, Type>(typeof(short), typeof(int)), EmptyOpcodes },
-            { new VTuple<Type, Type>(typeof(byte), typeof(int)), EmptyOpcodes },
-            { new VTuple<Type, Type>(typeof(sbyte), typeof(int)), EmptyOpcodes },
-            // ...
-            { new VTuple<Type, Type>(typeof(double), typeof(uint)), ConvU4Opcode },
-            { new VTuple<Type, Type>(typeof(float), typeof(uint)), ConvU4Opcode },
-            { new VTuple<Type, Type>(typeof(char), typeof(uint)), EmptyOpcodes },
-            { new VTuple<Type, Type>(typeof(ulong), typeof(uint)), ConvU4Opcode },
-            { new VTuple<Type, Type>(typeof(long), typeof(uint)), ConvU4Opcode },
-            { new VTuple<Type, Type>(typeof(int), typeof(uint)), EmptyOpcodes },
-            { new VTuple<Type, Type>(typeof(ushort), typeof(uint)), EmptyOpcodes },
-            { new VTuple<Type, Type>(typeof(short), typeof(uint)), EmptyOpcodes },
-            { new VTuple<Type, Type>(typeof(byte), typeof(uint)), EmptyOpcodes },
-            { new VTuple<Type, Type>(typeof(sbyte), typeof(uint)), EmptyOpcodes },
-            // ...
-            { new VTuple<Type, Type>(typeof(double), typeof(long)), ConvI8Opcode },
-            { new VTuple<Type, Type>(typeof(float), typeof(long)), ConvI8Opcode },
-            { new VTuple<Type, Type>(typeof(char), typeof(long)), ConvU8Opcode },
-            { new VTuple<Type, Type>(typeof(ulong), typeof(long)), EmptyOpcodes },
-            { new VTuple<Type, Type>(typeof(uint), typeof(long)), ConvU8Opcode },
-            { new VTuple<Type, Type>(typeof(int), typeof(long)), ConvI8Opcode },
-            { new VTuple<Type, Type>(typeof(ushort), typeof(long)), ConvU8Opcode },
-            { new VTuple<Type, Type>(typeof(short), typeof(long)), ConvI8Opcode },
-            { new VTuple<Type, Type>(typeof(byte), typeof(long)), ConvU8Opcode },
-            { new VTuple<Type, Type>(typeof(sbyte), typeof(long)), ConvI8Opcode },
-            // ...
-            { new VTuple<Type, Type>(typeof(double), typeof(ulong)), ConvU8Opcode },
-            { new VTuple<Type, Type>(typeof(float), typeof(ulong)), ConvU8Opcode },
-            { new VTuple<Type, Type>(typeof(char), typeof(ulong)), ConvU8Opcode },
-            { new VTuple<Type, Type>(typeof(long), typeof(ulong)), EmptyOpcodes },
-            { new VTuple<Type, Type>(typeof(uint), typeof(ulong)), ConvU8Opcode },
-            { new VTuple<Type, Type>(typeof(int), typeof(ulong)), ConvI8Opcode },
-            { new VTuple<Type, Type>(typeof(ushort), typeof(ulong)), ConvU8Opcode },
-            { new VTuple<Type, Type>(typeof(short), typeof(ulong)), ConvI8Opcode },
-            { new VTuple<Type, Type>(typeof(byte), typeof(ulong)), ConvU8Opcode },
-            { new VTuple<Type, Type>(typeof(sbyte), typeof(ulong)), ConvI8Opcode },
-            // ...
-            { new VTuple<Type, Type>(typeof(double), typeof(char)), ConvU2Opcode },
-            { new VTuple<Type, Type>(typeof(float), typeof(char)), ConvU2Opcode },
-            { new VTuple<Type, Type>(typeof(ulong), typeof(char)), ConvU2Opcode },
-            { new VTuple<Type, Type>(typeof(long), typeof(char)), ConvU2Opcode },
-            { new VTuple<Type, Type>(typeof(uint), typeof(char)), ConvU2Opcode },
-            { new VTuple<Type, Type>(typeof(int), typeof(char)), ConvU2Opcode },
-            { new VTuple<Type, Type>(typeof(ushort), typeof(char)), EmptyOpcodes },
-            { new VTuple<Type, Type>(typeof(short), typeof(char)), ConvU2Opcode },
-            { new VTuple<Type, Type>(typeof(byte), typeof(char)), EmptyOpcodes },
-            { new VTuple<Type, Type>(typeof(sbyte), typeof(char)), ConvU2Opcode },
-            // ...
-            { new VTuple<Type, Type>(typeof(double), typeof(float)), ConvR4Opcode },
-            { new VTuple<Type, Type>(typeof(char), typeof(float)), ConvR4Opcode },
-            { new VTuple<Type, Type>(typeof(ulong), typeof(float)), ConvRUnR4Opcode },
-            { new VTuple<Type, Type>(typeof(long), typeof(float)), ConvR4Opcode },
-            { new VTuple<Type, Type>(typeof(uint), typeof(float)), ConvRUnR4Opcode },
-            { new VTuple<Type, Type>(typeof(int), typeof(float)), ConvR4Opcode },
-            { new VTuple<Type, Type>(typeof(ushort), typeof(float)), ConvR4Opcode },
-            { new VTuple<Type, Type>(typeof(short), typeof(float)), ConvR4Opcode },
-            { new VTuple<Type, Type>(typeof(byte), typeof(float)), ConvR4Opcode },
-            { new VTuple<Type, Type>(typeof(sbyte), typeof(float)), ConvR4Opcode },
-            // ...
-            { new VTuple<Type, Type>(typeof(float), typeof(double)), ConvR8Opcode },
-            { new VTuple<Type, Type>(typeof(char), typeof(double)), ConvR8Opcode },
-            { new VTuple<Type, Type>(typeof(ulong), typeof(double)), ConvRUnR8Opcode },
-            { new VTuple<Type, Type>(typeof(long), typeof(double)), ConvR8Opcode },
-            { new VTuple<Type, Type>(typeof(uint), typeof(double)), ConvRUnR8Opcode },
-            { new VTuple<Type, Type>(typeof(int), typeof(double)), ConvR8Opcode },
-            { new VTuple<Type, Type>(typeof(ushort), typeof(double)), ConvR8Opcode },
-            { new VTuple<Type, Type>(typeof(short), typeof(double)), ConvR8Opcode },
-            { new VTuple<Type, Type>(typeof(byte), typeof(double)), ConvR8Opcode },
-            { new VTuple<Type, Type>(typeof(sbyte), typeof(double)), ConvR8Opcode },
-        };
-
         /// <summary>
         /// Load instance argument
         /// </summary>
@@ -329,63 +190,49 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
 
             if (actualUnderlyingType.IsValueType)
             {
-                if (expectedUnderlyingType.IsValueType)
+                if (expectedUnderlyingType.IsValueType && actualUnderlyingType != expectedUnderlyingType)
                 {
-                    if (ConvertValueTypes(il, actualUnderlyingType, expectedUnderlyingType))
-                    {
-                        return;
-                    }
-
-                    il.Emit(OpCodes.Box, actualUnderlyingType);
-                    il.Emit(OpCodes.Unbox_Any, expectedUnderlyingType);
+                    // If both underlying types are value types then both must be of the same type.
+                    throw new InvalidCastException();
                 }
-                else
+                else if (!expectedUnderlyingType.IsValueType)
                 {
-                    il.Emit(OpCodes.Box, actualType);
-                    il.Emit(OpCodes.Castclass, expectedType);
+                    // An underlying type can be boxed and converted to an object or interface type if the actual type support this
+                    // if not we should throw.
+                    if (expectedUnderlyingType == typeof(object) || expectedUnderlyingType.IsAssignableFrom(actualUnderlyingType))
+                    {
+                        il.Emit(OpCodes.Box, actualType);
+                        il.Emit(OpCodes.Castclass, expectedType);
+                    }
+                    else
+                    {
+                        throw new InvalidCastException();
+                    }
                 }
             }
             else
             {
-                if (expectedType.IsValueType)
+                if (expectedUnderlyingType.IsValueType)
                 {
-                    il.Emit(OpCodes.Ldtoken, expectedUnderlyingType);
-                    il.EmitCall(OpCodes.Call, Util.GetTypeFromHandleMethodInfo, null);
-                    il.EmitCall(OpCodes.Call, Util.ConvertTypeMethodInfo, null);
-                    il.Emit(OpCodes.Unbox_Any, expectedType);
+                    // We only allow conversions from objects or interface type if the actual type support this
+                    // if not we should throw.
+                    if (actualUnderlyingType == typeof(object) || actualUnderlyingType.IsAssignableFrom(expectedUnderlyingType))
+                    {
+                        il.Emit(OpCodes.Ldtoken, expectedUnderlyingType);
+                        il.EmitCall(OpCodes.Call, Util.GetTypeFromHandleMethodInfo, null);
+                        il.EmitCall(OpCodes.Call, Util.CheckExpectedTypeMethodInfo, null);
+                        il.Emit(OpCodes.Unbox_Any, expectedType);
+                    }
+                    else
+                    {
+                        throw new InvalidCastException();
+                    }
                 }
-                else if (expectedType != typeof(object))
+                else if (expectedUnderlyingType != typeof(object))
                 {
-                    il.Emit(OpCodes.Castclass, expectedType);
+                    il.Emit(OpCodes.Castclass, expectedUnderlyingType);
                 }
             }
-        }
-
-        /// <summary>
-        /// Converts basic value types using the conversion OpCodes
-        /// </summary>
-        /// <param name="il">ILGenerator</param>
-        /// <param name="currentType">Current value type</param>
-        /// <param name="expectedType">Expected value type</param>
-        /// <returns>True if the conversion was made; otherwise, false</returns>
-        private static bool ConvertValueTypes(ILGenerator il, Type currentType, Type expectedType)
-        {
-            if (currentType == expectedType)
-            {
-                return true;
-            }
-
-            if (ConversionTable.TryGetValue(new VTuple<Type, Type>(currentType, expectedType), out OpCode[] codes))
-            {
-                foreach (OpCode opCode in codes)
-                {
-                    il.Emit(opCode);
-                }
-
-                return true;
-            }
-
-            return false;
         }
     }
 }
