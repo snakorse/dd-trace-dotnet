@@ -47,7 +47,7 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
         /// <param name="proxyType">ProxyType interface</param>
         /// <param name="targetType">Target type</param>
         /// <returns>CreateTypeResult instance</returns>
-        internal static CreateTypeResult GetOrCreateProxyType(Type proxyType, Type targetType)
+        public static CreateTypeResult GetOrCreateProxyType(Type proxyType, Type targetType)
         {
             VTuple<Type, Type> key = new VTuple<Type, Type>(proxyType, targetType);
 
@@ -243,8 +243,7 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
                     propertyBuilder = proxyTypeBuilder.DefineProperty(proxyProperty.Name, PropertyAttributes.None, proxyProperty.PropertyType, null);
                 }
 
-                IEnumerable<DuckAttribute> duckAttributes = proxyProperty.GetCustomAttributes<DuckAttribute>(true);
-                DuckAttribute duckAttribute = duckAttributes.FirstOrDefault() ?? new DuckAttribute();
+                DuckAttribute duckAttribute = proxyProperty.GetCustomAttribute<DuckAttribute>(true) ?? new DuckAttribute();
                 duckAttribute.Name ??= proxyProperty.Name;
 
                 switch (duckAttribute.Kind)
@@ -348,19 +347,34 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
             }
         }
 
-        internal readonly struct CreateTypeResult
+        /// <summary>
+        /// Struct to store the result of creating a proxy type
+        /// </summary>
+        public readonly struct CreateTypeResult
         {
             private readonly Type _proxyType;
             private readonly ExceptionDispatchInfo _exceptionInfo;
+
+            /// <summary>
+            /// Gets if the proxy type creation was successful
+            /// </summary>
             public readonly bool Success;
 
-            public CreateTypeResult(Type proxyType, ExceptionDispatchInfo exceptionInfo)
+            /// <summary>
+            /// Initializes a new instance of the <see cref="CreateTypeResult"/> struct.
+            /// </summary>
+            /// <param name="proxyTypeDefinition">Proxy type definition class</param>
+            /// <param name="exceptionInfo">Exception dispatch info instance</param>
+            internal CreateTypeResult(Type proxyTypeDefinition, ExceptionDispatchInfo exceptionInfo)
             {
-                _proxyType = proxyType;
+                _proxyType = proxyTypeDefinition;
                 _exceptionInfo = exceptionInfo;
-                Success = proxyType != null && exceptionInfo == null;
+                Success = proxyTypeDefinition != null && exceptionInfo == null;
             }
 
+            /// <summary>
+            /// Gets the created ProxyType
+            /// </summary>
             public Type ProxyType
             {
                 get

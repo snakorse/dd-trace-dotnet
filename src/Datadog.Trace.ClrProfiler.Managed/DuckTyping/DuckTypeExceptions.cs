@@ -158,4 +158,15 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
         {
         }
     }
+
+    /// <summary>
+    /// DuckType proxy method has an ambiguous match in the target type exception
+    /// </summary>
+    public class DuckTypeTargetMethodAmbiguousMatchException : DuckTypeException
+    {
+        internal DuckTypeTargetMethodAmbiguousMatchException(MethodInfo proxyMethod, MethodInfo targetMethod, MethodInfo targetMethod2)
+            : base($"The proxy method '{proxyMethod}' matches at least two methods in the target type. Method1 = '{targetMethod}' and Method2 = '{targetMethod2}'")
+        {
+        }
+    }
 }

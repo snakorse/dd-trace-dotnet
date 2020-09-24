@@ -49,5 +49,10 @@ namespace Datadog.Trace.ClrProfiler.DuckTyping
         /// Gets or sets the generic parameter type names definition for a generic method call
         /// </summary>
         public string[] GenericParameterTypeNames { get; set; }
+
+        /// <summary>
+        /// Gets or sets the parameter type names of the target method
+        /// </summary>
+        public string[] ParameterTypeNames { get; set; }
     }
 }

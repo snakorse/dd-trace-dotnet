@@ -391,6 +391,7 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             [Duck(BindingFlags = BindingFlags.Instance | BindingFlags.NonPublic)]
             object InternalSum(int a, int b);
 
+            [Duck(ParameterTypeNames = new string[] { "System.String", "Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping.ObscureObject+DummyFieldObject, Datadog.Trace.ClrProfiler.Managed.Tests" })]
             void Add(string name, object obj);
 
             void Add(string name, int obj);
@@ -445,6 +446,7 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             [Duck(BindingFlags = BindingFlags.Instance | BindingFlags.NonPublic)]
             public abstract object InternalSum(int a, int b);
 
+            [Duck(ParameterTypeNames = new string[] { "System.String", "Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping.ObscureObject+DummyFieldObject, Datadog.Trace.ClrProfiler.Managed.Tests" })]
             public abstract void Add(string name, object obj);
 
             public abstract void Add(string name, int obj);
@@ -499,6 +501,7 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             [Duck(BindingFlags = BindingFlags.Instance | BindingFlags.NonPublic)]
             public virtual object InternalSum(int a, int b) => default;
 
+            [Duck(ParameterTypeNames = new string[] { "System.String", "Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping.ObscureObject+DummyFieldObject, Datadog.Trace.ClrProfiler.Managed.Tests" })]
             public virtual void Add(string name, object obj)
             {
             }

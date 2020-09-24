@@ -466,7 +466,6 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             {
             }
 
-            [Duck(Name = "Void Add(System.String, System.Object)")]
             public void Add(string name, DummyFieldObject obj)
             {
             }
@@ -697,7 +696,6 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             {
             }
 
-            [Duck(Name = "Void Add(System.String, System.Object)")]
             public void Add(string name, DummyFieldObject obj)
             {
             }
@@ -927,7 +925,6 @@ namespace Datadog.Trace.ClrProfiler.Managed.Tests.DuckTyping
             {
             }
 
-            [Duck(Name = "Void Add(System.String, System.Object)")]
             public void Add(string name, DummyFieldObject obj)
             {
             }
