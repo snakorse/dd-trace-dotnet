@@ -22,6 +22,8 @@
 
   <ItemGroup>
     <PackageReference Include="LibLog" Version="5.0.6" PrivateAssets="All" />
+
+    <ProjectReference Include="..\Datadog.Trace.Core\Datadog.Trace.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
