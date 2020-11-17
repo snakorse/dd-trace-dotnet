@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using Datadog.Trace.Agent.MessagePack;
+using Datadog.Trace.Agent.Transports;
 using Datadog.Trace.DogStatsd;
 using Datadog.Trace.Logging;
 using Datadog.Trace.PlatformHelpers;
@@ -22,7 +23,7 @@ namespace Datadog.Trace.Agent
         private readonly FormatterResolverWrapper _formatterResolver = new FormatterResolverWrapper(SpanFormatterResolver.Instance);
         private readonly string _containerId;
         private readonly FrameworkDescription _frameworkDescription;
-        private Uri _tracesEndpoint; // The Uri may be reassigned dynamically so that retry attempts may attempt updated Agent ports
+        private readonly Uri _tracesEndpoint;
         private string _cachedResponse;
 
         public Api(Uri baseEndpoint, IApiRequestFactory apiRequestFactory, IDogStatsd statsd)
@@ -48,11 +49,6 @@ namespace Datadog.Trace.Agent
             {
                 Log.SafeLogError(e, "Error getting framework description");
             }
-        }
-
-        public void SetBaseEndpoint(Uri baseEndpoint)
-        {
-            _tracesEndpoint = new Uri(baseEndpoint, TracesPath);
         }
 
         public async Task<bool> SendTracesAsync(Span[][] traces)
@@ -139,20 +135,12 @@ namespace Datadog.Trace.Agent
                     if (isSocketException)
                     {
                         Log.Debug(exception, "Unable to communicate with the trace agent at {0}", _tracesEndpoint);
-                        TracingProcessManager.TryForceTraceAgentRefresh();
                     }
 
                     // Execute retry delay
                     await Task.Delay(sleepDuration).ConfigureAwait(false);
                     retryCount++;
                     sleepDuration *= 2;
-
-                    // After retry delay
-                    if (isSocketException)
-                    {
-                        // Ensure we have the most recent port before trying again
-                        TracingProcessManager.TraceAgentMetadata.ForcePortFileRead();
-                    }
 
                     continue;
                 }
@@ -164,10 +152,13 @@ namespace Datadog.Trace.Agent
 
         private static IApiRequestFactory CreateRequestFactory()
         {
-            // return new HttpStreamRequestFactory(new TcpStreamFactory("localhost", 8126));
-            return new HttpStreamRequestFactory(new NamedPipeClientStreamFactory());
-            // return new HttpClientRequestFactory();
-            // return new ApiWebRequestFactory();
+#if NETCOREAPP
+            Log.Information("Using {0} for trace transport.", nameof(HttpClientRequestFactory));
+            return new HttpClientRequestFactory();
+#else
+            Log.Information("Using {0} for trace transport.", nameof(ApiWebRequestFactory));
+            return new ApiWebRequestFactory();
+#endif
         }
 
         private async Task<bool> SendTracesAsync(Span[][] traces, IApiRequest request, bool finalTry)
@@ -196,12 +187,6 @@ namespace Datadog.Trace.Agent
 
                     // count every response, grouped by status code
                     _statsd?.Increment(TracerMetricNames.Api.Responses, tags: tags);
-                }
-
-                if (response == null)
-                {
-                    // TODO: GET RID OF ME
-                    return true;
                 }
 
                 // Attempt a retry if the status code is not SUCCESS
