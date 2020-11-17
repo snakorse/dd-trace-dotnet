@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -231,12 +232,23 @@ namespace Datadog.Trace.DuckTyping
         /// <param name="methodParameters">Method parameters (to avoid the allocations of calculating it)</param>
         internal static void WriteMethodCalli(this ILGenerator il, MethodInfo method, Type[] methodParameters = null)
         {
+            methodParameters ??= method.GetParameters().Select(p => p.ParameterType).ToArray();
+
             IntPtr fnPointer = IntPtr.Zero;
             if (method is DynamicMethod dynMethod)
             {
                 // Dynamic methods doesn't expose the internal function pointer
                 // so we have to get it using a delegate from reflection.
-                fnPointer = _dynamicGetMethodDescriptor(dynMethod).GetFunctionPointer();
+                var runtimeMethodHandle = _dynamicGetMethodDescriptor(dynMethod);
+
+                var internalHandle = runtimeMethodHandle.GetType().GetField("m_value", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(runtimeMethodHandle);
+
+                var keepAlive = internalHandle.GetType().GetField("m_keepalive", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(internalHandle);
+
+                DuckType.ReferenceBag.Enqueue(internalHandle);
+                DuckType.ReferenceBag.Enqueue(keepAlive);
+
+                fnPointer = runtimeMethodHandle.GetFunctionPointer();
             }
             else
             {
@@ -249,7 +261,7 @@ namespace Datadog.Trace.DuckTyping
                 OpCodes.Calli,
                 method.CallingConvention,
                 method.ReturnType,
-                methodParameters ?? method.GetParameters().Select(p => p.ParameterType).ToArray(),
+                methodParameters,
                 null);
         }
     }
