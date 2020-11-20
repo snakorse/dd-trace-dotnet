@@ -1,4 +1,6 @@
-#pragma once
+#ifndef DD_CLR_PROFILER_CONSTANTS_H_
+#define DD_CLR_PROFILER_CONSTANTS_H_
+
 #include <string>
 
 #include "environment_variables.h"
@@ -65,3 +67,5 @@ namespace trace {
   WSTRING managed_profiler_full_assembly_version = "Datadog.Trace.ClrProfiler.Managed, Version=1.20.1.0, Culture=neutral, PublicKeyToken=def86d061d0d2eeb"_W;
 
 }  // namespace trace
+
+#endif

@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿#ifndef DD_CLR_PROFILER_METADATA_BUILDER_H_
+#define DD_CLR_PROFILER_METADATA_BUILDER_H_
 
 #include <corhlpr.h>
 
@@ -40,3 +41,5 @@ class MetadataBuilder {
 };
 
 }  // namespace trace
+
+#endif

@@ -1,3 +1,6 @@
-#pragma once
+#ifndef DD_CLR_PROFILER_VERSION_H_
+#define DD_CLR_PROFILER_VERSION_H_
 
 constexpr auto PROFILER_VERSION = "1.20.1";
+
+#endif  // DD_CLR_PROFILER_VERSION_H_
