@@ -52,20 +52,22 @@ if (OSX)
     )
 
     add_library("Datadog.Trace.ClrProfiler.Native.static" STATIC
-            class_factory.cpp
-            clr_helpers.cpp
-            cor_profiler_base.cpp
-            cor_profiler.cpp
-            il_rewriter_wrapper.cpp
-            il_rewriter.cpp
-            integration_loader.cpp
-            integration.cpp
-            logging.cpp
-            metadata_builder.cpp
             miniutf.cpp
-            sig_helpers.cpp
             string.cpp
             util.cpp
+            il_rewriter.cpp
+            sig_helpers.cpp
+            logging.cpp
+            cor_profiler_base.cpp
+
+            integration_loader.cpp
+            cor_profiler.cpp
+            clr_helpers.cpp
+            class_factory.cpp
+            il_rewriter_wrapper.cpp
+            integration.cpp
+            metadata_builder.cpp
+
             ${GENERATED_OBJ_FILES}
     )
 

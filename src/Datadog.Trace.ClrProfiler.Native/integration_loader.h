@@ -1,14 +1,14 @@
 #ifndef DD_CLR_PROFILER_INTEGRATION_LOADER_H_
 #define DD_CLR_PROFILER_INTEGRATION_LOADER_H_
 
-#include <fstream>
-#include <locale>
-#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 
+#include <fstream>
+#include <locale>
+#include <nlohmann/json.hpp>
+
 #include "integration.h"
-#include "macros.h"
 
 namespace trace {
 

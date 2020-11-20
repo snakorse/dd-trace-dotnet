@@ -6,6 +6,7 @@
 #include "environment_variables.h"
 #include "logging.h"
 #include "util.h"
+#include "macros.h"
 
 namespace trace {
 
