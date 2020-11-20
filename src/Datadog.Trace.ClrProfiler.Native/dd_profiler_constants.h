@@ -2,9 +2,7 @@
 #define DD_CLR_PROFILER_CONSTANTS_H_
 
 #include <string>
-
 #include "environment_variables.h"
-#include "logging.h"
 
 namespace trace {
 

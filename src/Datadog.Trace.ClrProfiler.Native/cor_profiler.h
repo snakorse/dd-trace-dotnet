@@ -8,12 +8,8 @@
 #include <unordered_map>
 #include "cor.h"
 #include "corprof.h"
-
 #include "cor_profiler_base.h"
-#include "environment_variables.h"
-#include "integration.h"
 #include "module_metadata.h"
-#include "pal.h"
 #include "il_rewriter.h"
 
 namespace trace {

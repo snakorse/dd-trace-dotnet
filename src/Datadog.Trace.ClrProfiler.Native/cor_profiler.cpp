@@ -4,6 +4,7 @@
 #include <string>
 #include "corhlpr.h"
 
+#include "integration.h"
 #include "version.h"
 #include "clr_helpers.h"
 #include "dd_profiler_constants.h"
@@ -12,13 +13,14 @@
 #include "il_rewriter.h"
 #include "il_rewriter_wrapper.h"
 #include "integration_loader.h"
-#include "logging.h"
-#include "metadata_builder.h"
 #include "module_metadata.h"
-#include "pal.h"
 #include "sig_helpers.h"
 #include "resource.h"
+
 #include "util.h"
+#include "logging.h"
+#include "metadata_builder.h"
+#include "pal.h"
 
 namespace trace {
 
@@ -38,7 +40,7 @@ CorProfiler::Initialize(IUnknown* cor_profiler_info_unknown) {
   }
 
   // check if dump il rewrite is enabled
-  const auto dump_il_rewrite_enabled_value = 
+  const auto dump_il_rewrite_enabled_value =
       GetEnvironmentValue(environment::dump_il_rewrite_enabled);
 
   if (dump_il_rewrite_enabled_value == "1"_W ||
@@ -1305,7 +1307,7 @@ std::string CorProfiler::GetILCodes(std::string title, ILRewriter* rewriter,
   orig_sstream << ")" << std::endl;
   for (ILInstr* cInstr = rewriter->GetILList()->m_pNext;
        cInstr != rewriter->GetILList(); cInstr = cInstr->m_pNext) {
-    
+
     orig_sstream << cInstr;
     orig_sstream << ": ";
     if (cInstr->m_opcode < opcodes_names.size()) {
@@ -1336,7 +1338,7 @@ std::string CorProfiler::GetILCodes(std::string title, ILRewriter* rewriter,
           orig_sstream << "()";
         }
       } else if (cInstr->m_opcode == CEE_CASTCLASS || cInstr->m_opcode == CEE_BOX ||
-          cInstr->m_opcode == CEE_UNBOX_ANY || cInstr->m_opcode == CEE_NEWARR || 
+          cInstr->m_opcode == CEE_UNBOX_ANY || cInstr->m_opcode == CEE_NEWARR ||
           cInstr->m_opcode == CEE_INITOBJ) {
         const auto typeInfo = GetTypeInfo(module_metadata->metadata_import,
                                       (mdTypeRef)cInstr->m_Arg32);
