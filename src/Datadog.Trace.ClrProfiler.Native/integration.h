@@ -2,8 +2,6 @@
 #define DD_CLR_PROFILER_INTEGRATION_H_
 
 #include <corhlpr.h>
-#include <iomanip>
-#include <sstream>
 #include <vector>
 
 #include "string.h"
@@ -33,14 +31,8 @@ struct PublicKey {
     return true;
   }
 
-  inline WSTRING str() const {
-    std::stringstream ss;
-    for (int i = 0; i < kPublicKeySize; i++) {
-      ss << std::setfill('0') << std::setw(2) << std::hex
-         << static_cast<int>(data[i]);
-    }
-    return ToWSTRING(ss.str());
-  }
+  WSTRING str() const;
+
 };
 
 // Version is an Assembly version in the form Major.Minor.Build.Revision
@@ -61,11 +53,7 @@ struct Version {
            build == other.build && revision == other.revision;
   }
 
-  inline WSTRING str() const {
-    WSTRINGSTREAM ss;
-    ss << major << "."_W << minor << "."_W << build << "."_W << revision;
-    return ss.str();
-  }
+  WSTRING str() const;
 
   inline bool operator<(const Version& other) const {
     if (major < other.major) {
@@ -104,7 +92,7 @@ struct AssemblyReference {
   const WSTRING locale;
   const PublicKey public_key;
 
-  AssemblyReference() {}
+  AssemblyReference(): name(""_W), locale(""_W) {}
   AssemblyReference(const WSTRING& str);
 
   inline bool operator==(const AssemblyReference& other) const {
@@ -112,12 +100,7 @@ struct AssemblyReference {
            locale == other.locale && public_key == other.public_key;
   }
 
-  inline WSTRING str() const {
-    WSTRINGSTREAM ss;
-    ss << name << ", Version="_W << version.str() << ", Culture="_W << locale
-       << ", PublicKeyToken="_W << public_key.str();
-    return ss.str();
-  }
+  WSTRING str() const;
 };
 
 // A MethodSignature is a byte array. The format is:
@@ -180,13 +163,7 @@ struct MethodSignature {
     return 0;
   }
 
-  WSTRING str() const {
-    WSTRINGSTREAM ss;
-    for (auto& b : data) {
-      ss << std::hex << std::setfill('0'_W) << std::setw(2) << static_cast<int>(b);
-    }
-    return ss.str();
-  }
+  WSTRING str() const;
 
   BOOL IsInstanceMethod() const {
     return (CallingConvention() & IMAGE_CEE_CS_CALLCONV_HASTHIS) != 0;

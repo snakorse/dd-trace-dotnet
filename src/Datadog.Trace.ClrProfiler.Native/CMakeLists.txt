@@ -56,18 +56,17 @@ if (OSX)
             string.cpp
             util.cpp
             il_rewriter.cpp
+            il_rewriter_wrapper.cpp
             sig_helpers.cpp
             logging.cpp
             cor_profiler_base.cpp
-
             integration_loader.cpp
-            cor_profiler.cpp
             clr_helpers.cpp
-            class_factory.cpp
-            il_rewriter_wrapper.cpp
-            integration.cpp
             metadata_builder.cpp
+            class_factory.cpp
 
+            cor_profiler.cpp
+            integration.cpp
             ${GENERATED_OBJ_FILES}
     )
 

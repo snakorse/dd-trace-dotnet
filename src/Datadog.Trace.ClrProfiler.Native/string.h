@@ -2,7 +2,6 @@
 #define DD_CLR_PROFILER_STRING_H_
 
 #include <corhlpr.h>
-#include <sstream>
 #include <string>
 
 namespace trace {

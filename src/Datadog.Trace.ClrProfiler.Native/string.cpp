@@ -1,4 +1,7 @@
 #include "string.h"
+
+#include <sstream>
+
 #include "miniutf.hpp"
 
 namespace trace {
