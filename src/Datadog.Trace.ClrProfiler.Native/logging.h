@@ -4,9 +4,6 @@
 
 #include <spdlog/spdlog.h>
 
-#include <iostream>
-#include <memory>
-
 namespace trace {
 
 extern bool debug_logging_enabled;
@@ -31,32 +28,14 @@ class Logger : public Singleton<Logger> {
   static void Shutdown() { spdlog::shutdown(); }
 };
 
-template <typename Arg>
-std::string LogToString(Arg const& arg) {
-  return ToString(arg);
-}
+template <typename... Args>
+void Debug(const Args... args);
 
 template <typename... Args>
-std::string LogToString(Args const&... args) {
-  std::ostringstream oss;
-  int a[] = {0, ((void)(oss << LogToString(args)), 0)...};
-  return oss.str();
-}
+void Info(const Args... args);
 
 template <typename... Args>
-void Debug(const Args... args) {
-  Logger::Instance()->Debug(LogToString(args...));
-}
-
-template <typename... Args>
-void Info(const Args... args) {
-  Logger::Instance()->Info(LogToString(args...));
-}
-
-template <typename... Args>
-void Warn(const Args... args) {
-  Logger::Instance()->Warn(LogToString(args...));
-}
+void Warn(const Args... args);
 
 }  // namespace trace
 

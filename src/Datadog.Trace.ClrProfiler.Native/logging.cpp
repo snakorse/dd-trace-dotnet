@@ -1,5 +1,9 @@
 #include "logging.h"
 
+#include <iostream>
+#include <memory>
+#include <sstream>
+
 #include "pal.h"
 
 #include "spdlog/sinks/null_sink.h"
@@ -93,4 +97,33 @@ void Logger::Warn(const std::string& str) { m_fileout->warn(str); }
 void Logger::Error(const std::string& str) { m_fileout->error(str); }
 void Logger::Critical(const std::string& str) { m_fileout->critical(str); }
 void Logger::Flush() { m_fileout->flush(); }
+
+    template <typename Arg>
+    std::string LogToString(Arg const& arg) {
+        return ToString(arg);
+    }
+
+    template <typename... Args>
+    std::string LogToString(Args const&... args) {
+        std::ostringstream oss;
+        int a[] = {0, ((void)(oss << LogToString(args)), 0)...};
+        return oss.str();
+    }
+
+    template <typename... Args>
+    void Debug(const Args... args) {
+        Logger::Instance()->Debug(LogToString(args...));
+    }
+
+    template <typename... Args>
+    void Info(const Args... args) {
+        Logger::Instance()->Info(LogToString(args...));
+    }
+
+    template <typename... Args>
+    void Warn(const Args... args) {
+        Logger::Instance()->Warn(LogToString(args...));
+    }
+
+
 }  // namespace trace

@@ -64,6 +64,7 @@ if (OSX)
             clr_helpers.cpp
             metadata_builder.cpp
             class_factory.cpp
+            pal.cpp
 
             cor_profiler.cpp
             integration.cpp

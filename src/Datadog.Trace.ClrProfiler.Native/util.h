@@ -1,10 +1,10 @@
 #ifndef DD_CLR_PROFILER_UTIL_H_
 #define DD_CLR_PROFILER_UTIL_H_
 
-#include <algorithm>
-#include <sstream>
+//#include <algorithm>
+//#include <sstream>
 #include <string>
-#include <vector>
+//#include <vector>
 
 #include "string.h"
 

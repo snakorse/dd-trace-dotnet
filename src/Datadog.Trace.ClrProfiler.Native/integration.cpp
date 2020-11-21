@@ -1,7 +1,5 @@
 #include "integration.h"
 
-#include <cwctype>
-#include <iterator>
 #include <sstream>
 #include <iomanip>
 

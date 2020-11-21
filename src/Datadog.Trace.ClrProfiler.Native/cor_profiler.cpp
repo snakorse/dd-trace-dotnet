@@ -2,6 +2,9 @@
 
 #include <corprof.h>
 #include <string>
+#include <sstream>
+#include <iomanip>
+
 #include "corhlpr.h"
 
 #include "integration.h"
@@ -16,7 +19,6 @@
 #include "module_metadata.h"
 #include "sig_helpers.h"
 #include "resource.h"
-
 #include "util.h"
 #include "logging.h"
 #include "metadata_builder.h"
