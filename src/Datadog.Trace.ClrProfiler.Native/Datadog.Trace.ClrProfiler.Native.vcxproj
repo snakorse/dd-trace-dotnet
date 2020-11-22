@@ -219,6 +219,7 @@
     <ClCompile Include="logging.cpp" />
     <ClCompile Include="metadata_builder.cpp" />
     <ClCompile Include="miniutf.cpp" />
+    <ClCompile Include="pal.cpp" />
     <ClCompile Include="sig_helpers.cpp" />
     <ClCompile Include="string.cpp" />
     <ClCompile Include="util.cpp" />

@@ -2,7 +2,6 @@
 
 #include <iostream>
 #include <memory>
-#include <sstream>
 
 #include "pal.h"
 
@@ -15,115 +14,87 @@ typedef struct stat Stat;
 
 namespace trace {
 
-bool debug_logging_enabled = false;
-bool dump_il_rewrite_enabled = false;
+    bool debug_logging_enabled = false;
+    bool dump_il_rewrite_enabled = false;
 
 #ifndef _WIN32
-// for linux we need a function to get the path from a filepath
-std::string getPathName(const std::string& s) {
-  char sep = '/';
-  size_t i = s.rfind(sep, s.length());
-  if (i != std::string::npos) {
-    return s.substr(0, i);
-  }
-  return "";
-}
+    // for linux we need a function to get the path from a filepath
+    std::string getPathName(const std::string& s) {
+        char sep = '/';
+        size_t i = s.rfind(sep, s.length());
+        if (i != std::string::npos) {
+            return s.substr(0, i);
+        }
+        return "";
+    }
 #endif
 
-std::string Logger::GetLogPath() {
-  const auto path = ToString(DatadogLogFilePath());
+    std::string Logger::GetLogPath() {
+        const auto path = ToString(DatadogLogFilePath());
 
 #ifdef _WIN32
-  // on VC++, use std::filesystem (C++ 17) to
-  // create directory if missing
-  const auto log_path = std::filesystem::path(path);
+        // on VC++, use std::filesystem (C++ 17) to
+        // create directory if missing
+        const auto log_path = std::filesystem::path(path);
 
-  if (log_path.has_parent_path()) {
-    const auto parent_path = log_path.parent_path();
+        if (log_path.has_parent_path()) {
+          const auto parent_path = log_path.parent_path();
 
-    if (!std::filesystem::exists(parent_path)) {
-      std::filesystem::create_directories(parent_path);
-    }
-  }
+          if (!std::filesystem::exists(parent_path)) {
+            std::filesystem::create_directories(parent_path);
+          }
+        }
 #else
-  // on linux we use the basic C approach
-  const auto log_path = getPathName(path);
-  Stat st;
-  if (log_path != "" && stat(log_path.c_str(), &st) != 0) {
-    mkdir(log_path.c_str(), 0777);
-  }
+        // on linux we use the basic C approach
+        const auto log_path = getPathName(path);
+        Stat st;
+        if (log_path != "" && stat(log_path.c_str(), &st) != 0) {
+            mkdir(log_path.c_str(), 0777);
+        }
 #endif
 
-  return path;
-}
-
-Logger::Logger() {
-  spdlog::set_error_handler([](const std::string& msg) {
-    std::cerr << "Logger Handler: " << msg << std::endl;
-  });
-
-  spdlog::flush_every(std::chrono::seconds(3));
-
-  try {
-    m_fileout = spdlog::basic_logger_mt("Logger", GetLogPath());
-  }
-  catch (...) {
-    std::cerr << "Logger Handler: Error creating native log file." << std::endl;
-    m_fileout = spdlog::null_logger_mt("Logger");
-  }
-
-  m_fileout->set_level(spdlog::level::debug);
-
-  static auto current_process_name = ToString(GetCurrentProcessName());
-
-  m_fileout->set_pattern("%D %I:%M:%S.%e %p [" + current_process_name +
-                         "|%P|%t] [%l] %v");
-
-  m_fileout->flush_on(spdlog::level::info);
-};
-
-Logger::~Logger() {
-  m_fileout->flush();
-  spdlog::shutdown();
-};
-
-void Logger::Debug(const std::string& str) {
-  if (debug_logging_enabled) {
-    m_fileout->debug(str);
-  }
-}
-void Logger::Info(const std::string& str) { m_fileout->info(str); }
-void Logger::Warn(const std::string& str) { m_fileout->warn(str); }
-void Logger::Error(const std::string& str) { m_fileout->error(str); }
-void Logger::Critical(const std::string& str) { m_fileout->critical(str); }
-void Logger::Flush() { m_fileout->flush(); }
-
-    template <typename Arg>
-    std::string LogToString(Arg const& arg) {
-        return ToString(arg);
+        return path;
     }
 
-    template <typename... Args>
-    std::string LogToString(Args const&... args) {
-        std::ostringstream oss;
-        int a[] = {0, ((void)(oss << LogToString(args)), 0)...};
-        return oss.str();
-    }
+    Logger::Logger() {
+        spdlog::set_error_handler([](const std::string& msg) {
+            std::cerr << "Logger Handler: " << msg << std::endl;
+        });
 
-    template <typename... Args>
-    void Debug(const Args... args) {
-        Logger::Instance()->Debug(LogToString(args...));
-    }
+        spdlog::flush_every(std::chrono::seconds(3));
 
-    template <typename... Args>
-    void Info(const Args... args) {
-        Logger::Instance()->Info(LogToString(args...));
-    }
+        try {
+            m_fileout = spdlog::basic_logger_mt("Logger", GetLogPath());
+        }
+        catch (...) {
+            std::cerr << "Logger Handler: Error creating native log file." << std::endl;
+            m_fileout = spdlog::null_logger_mt("Logger");
+        }
 
-    template <typename... Args>
-    void Warn(const Args... args) {
-        Logger::Instance()->Warn(LogToString(args...));
-    }
+        m_fileout->set_level(spdlog::level::debug);
 
+        static auto current_process_name = ToString(GetCurrentProcessName());
+
+        m_fileout->set_pattern("%D %I:%M:%S.%e %p [" + current_process_name +
+                               "|%P|%t] [%l] %v");
+
+        m_fileout->flush_on(spdlog::level::info);
+    };
+
+    Logger::~Logger() {
+        m_fileout->flush();
+        spdlog::shutdown();
+    };
+
+    void Logger::Debug(const std::string& str) {
+        if (debug_logging_enabled) {
+            m_fileout->debug(str);
+        }
+    }
+    void Logger::Info(const std::string& str) { m_fileout->info(str); }
+    void Logger::Warn(const std::string& str) { m_fileout->warn(str); }
+    void Logger::Error(const std::string& str) { m_fileout->error(str); }
+    void Logger::Critical(const std::string& str) { m_fileout->critical(str); }
+    void Logger::Flush() { m_fileout->flush(); }
 
 }  // namespace trace

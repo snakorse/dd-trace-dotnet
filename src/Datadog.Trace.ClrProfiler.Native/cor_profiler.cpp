@@ -287,12 +287,12 @@ HRESULT STDMETHODCALLTYPE CorProfiler::AssemblyLoadFinished(AssemblyID assembly_
 
   if (assembly_info.name == "Datadog.Trace.ClrProfiler.Managed"_W) {
     // Configure a version string to compare with the profiler version
-    WSTRINGSTREAM ws;
-    ws << ToWSTRING(assembly_metadata.version.major) << '.'_W
-       << ToWSTRING(assembly_metadata.version.minor) << '.'_W
-       << ToWSTRING(assembly_metadata.version.build);
+    std::stringstream ss;
+      ss << ToString(assembly_metadata.version.major) << '.'
+       << ToString(assembly_metadata.version.minor) << '.'
+       << ToString(assembly_metadata.version.build);
 
-    auto assembly_version = ws.str();
+    auto assembly_version = ToWSTRING(ss.str());
 
     // Check that Major.Minor.Build match the profiler version
     if (assembly_version == ToWSTRING(PROFILER_VERSION)) {
@@ -1978,7 +1978,7 @@ Debug("GenerateVoidILStartupMethod: Linux: Setting the PInvoke native profiler l
   return S_OK;
 }
 
-#ifndef _WIN32
+#ifdef LINUX
 extern uint8_t dll_start[] asm("_binary_Datadog_Trace_ClrProfiler_Managed_Loader_dll_start");
 extern uint8_t dll_end[] asm("_binary_Datadog_Trace_ClrProfiler_Managed_Loader_dll_end");
 
@@ -2009,12 +2009,14 @@ void CorProfiler::GetAssemblyAndSymbolsBytes(BYTE** pAssemblyArray, int* assembl
   HGLOBAL hResSymbols = LoadResource(hInstance, hResSymbolsInfo);
   *symbolsSize = SizeofResource(hInstance, hResSymbolsInfo);
   *pSymbolsArray = (LPBYTE)LockResource(hResSymbols);
-#else
+#elif LINUX
   *assemblySize = dll_end - dll_start;
   *pAssemblyArray = (BYTE*)dll_start;
 
   *symbolsSize = pdb_end - pdb_start;
   *pSymbolsArray = (BYTE*)pdb_start;
+#else
+
 #endif
   return;
 }

@@ -65,9 +65,8 @@ if (OSX)
             metadata_builder.cpp
             class_factory.cpp
             pal.cpp
-
-            cor_profiler.cpp
             integration.cpp
+            cor_profiler.cpp
             ${GENERATED_OBJ_FILES}
     )
 
@@ -76,8 +75,6 @@ if (OSX)
     target_link_libraries("Datadog.Trace.ClrProfiler.Native.static"
             /opt/re2/obj/libre2.a
             /opt/fmt/libfmt.a
-            -static-libgcc
-            -static-libstdc++
     )
 
     add_library("Datadog.Trace.ClrProfiler.Native" SHARED
@@ -92,7 +89,7 @@ else()
     message(STATUS "Preparing Linux build.")
 
     add_compile_options(-std=c++11 -fPIC -fms-extensions)
-    add_compile_options(-DBIT64 -DPAL_STDCPP_COMPAT -DPLATFORM_UNIX -DUNICODE)
+    add_compile_options(-DBIT64 -DPAL_STDCPP_COMPAT -DPLATFORM_UNIX -DUNICODE -DLINUX)
     add_compile_options(-Wno-invalid-noreturn -Wno-macro-redefined -Wno-pragma-pack)
 
     add_custom_command(
@@ -131,6 +128,7 @@ else()
         sig_helpers.cpp
         string.cpp
         util.cpp
+        pal.cpp
         ${GENERATED_OBJ_FILES}
     )
     set_target_properties("Datadog.Trace.ClrProfiler.Native.static" PROPERTIES PREFIX "")
