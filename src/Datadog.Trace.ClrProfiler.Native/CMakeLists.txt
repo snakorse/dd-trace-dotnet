@@ -18,13 +18,13 @@ if (OSX)
 
     add_custom_command(
             OUTPUT Datadog.Trace.ClrProfiler.Managed.Loader.dll.o
-            COMMAND touch stub.c && gcc -o stub.o -c stub.c && cp "${MANAGED_LOADER_DIRECTORY}/Datadog.Trace.ClrProfiler.Managed.Loader.dll" Datadog.Trace.ClrProfiler.Managed.Loader.dll && ld -r -sectcreate binary dll Datadog.Trace.ClrProfiler.Managed.Loader.dll stub.o && mv stub.o Datadog.Trace.ClrProfiler.Managed.Loader.dll.o
+            COMMAND touch stub.c && gcc -o stub.o -c stub.c && cp "${MANAGED_LOADER_DIRECTORY}/Datadog.Trace.ClrProfiler.Managed.Loader.dll" Datadog.Trace.ClrProfiler.Managed.Loader.dll && ld -r -o Datadog.Trace.ClrProfiler.Managed.Loader.dll.o -sectcreate binary dll Datadog.Trace.ClrProfiler.Managed.Loader.dll stub.o
             DEPENDS ${MANAGED_LOADER_DIRECTORY}/Datadog.Trace.ClrProfiler.Managed.Loader.dll
     )
 
     add_custom_command(
             OUTPUT Datadog.Trace.ClrProfiler.Managed.Loader.pdb.o
-            COMMAND touch stub.c && gcc -o stub.o -c stub.c && cp "${MANAGED_LOADER_DIRECTORY}/Datadog.Trace.ClrProfiler.Managed.Loader.pdb" Datadog.Trace.ClrProfiler.Managed.Loader.pdb && ld -r -sectcreate binary pdb Datadog.Trace.ClrProfiler.Managed.Loader.pdb stub.o && mv stub.o Datadog.Trace.ClrProfiler.Managed.Loader.pdb.o
+            COMMAND touch stub.c && gcc -o stub.o -c stub.c && cp "${MANAGED_LOADER_DIRECTORY}/Datadog.Trace.ClrProfiler.Managed.Loader.pdb" Datadog.Trace.ClrProfiler.Managed.Loader.pdb && ld -r -o Datadog.Trace.ClrProfiler.Managed.Loader.pdb.o -sectcreate binary pdb Datadog.Trace.ClrProfiler.Managed.Loader.pdb stub.o
             DEPENDS ${MANAGED_LOADER_DIRECTORY}/Datadog.Trace.ClrProfiler.Managed.Loader.pdb
     )
 
@@ -80,6 +80,7 @@ if (OSX)
     add_library("Datadog.Trace.ClrProfiler.Native" SHARED
             dllmain.cpp
             interop.cpp
+            ${GENERATED_OBJ_FILES}
     )
 
     set_target_properties("Datadog.Trace.ClrProfiler.Native" PROPERTIES PREFIX "")

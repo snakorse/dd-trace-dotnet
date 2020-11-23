@@ -39,18 +39,18 @@ namespace trace {
 
 #ifdef _WIN32
         char* p_program_data;
-  size_t length;
-  const errno_t result = _dupenv_s(&p_program_data, &length, "PROGRAMDATA");
-  std::string program_data;
+        size_t length;
+        const errno_t result = _dupenv_s(&p_program_data, &length, "PROGRAMDATA");
+        std::string program_data;
 
-  if (SUCCEEDED(result) && p_program_data != nullptr && length > 0) {
-    program_data = std::string(p_program_data);
-  } else {
-    program_data = R"(C:\ProgramData)";
-  }
+        if (SUCCEEDED(result) && p_program_data != nullptr && length > 0) {
+          program_data = std::string(p_program_data);
+        } else {
+          program_data = R"(C:\ProgramData)";
+        }
 
-  return ToWSTRING(program_data +
-                   R"(\Datadog .NET Tracer\logs\dotnet-tracer-native.log)");
+        return ToWSTRING(program_data +
+                         R"(\Datadog .NET Tracer\logs\dotnet-tracer-native.log)");
 #else
         return "/var/log/datadog/dotnet/dotnet-tracer-native.log"_W;
 #endif
@@ -64,6 +64,8 @@ namespace trace {
   const DWORD len = GetModuleFileName(nullptr, buffer, length);
   const WSTRING current_process_path(buffer);
   return std::filesystem::path(current_process_path).filename();
+#elif OSX
+        return "unknown"_W;
 #else
         std::fstream comm("/proc/self/comm");
         std::string name;

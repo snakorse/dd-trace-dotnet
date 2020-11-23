@@ -24,6 +24,11 @@
 #include "metadata_builder.h"
 #include "pal.h"
 
+#ifdef OSX
+#include <mach-o/getsect.h>
+#include <mach-o/dyld.h>
+#endif
+
 namespace trace {
 
 CorProfiler* profiler = nullptr;
@@ -2016,6 +2021,27 @@ void CorProfiler::GetAssemblyAndSymbolsBytes(BYTE** pAssemblyArray, int* assembl
   *symbolsSize = pdb_end - pdb_start;
   *pSymbolsArray = (BYTE*)pdb_start;
 #else
+
+    const auto imgCount = _dyld_image_count();
+
+    for(auto i = 0; i < imgCount; i++) {
+        const auto name = std::string(_dyld_get_image_name(i));
+
+        if (name.rfind("Datadog.Trace.ClrProfiler.Native.dylib") != std::string::npos) {
+            const auto header = (const struct mach_header_64 *) _dyld_get_image_header(i);
+
+            unsigned long dllSize;
+            const auto dllData = getsectiondata(header, "binary", "dll", &dllSize);
+            *assemblySize = dllSize;
+            *pAssemblyArray = (BYTE*)dllData;
+
+            unsigned long pdbSize;
+            const auto pdbData = getsectiondata(header, "binary", "pdb", &pdbSize);
+            *symbolsSize = pdbSize;
+            *pSymbolsArray = (BYTE*)pdbData;
+            break;
+        }
+    }
 
 #endif
   return;
