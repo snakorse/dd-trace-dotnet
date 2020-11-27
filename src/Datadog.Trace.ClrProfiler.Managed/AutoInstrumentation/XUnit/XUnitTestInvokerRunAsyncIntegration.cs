@@ -5,7 +5,6 @@ using Datadog.Trace.Ci;
 using Datadog.Trace.ClrProfiler.CallTarget;
 using Datadog.Trace.DuckTyping;
 using Datadog.Trace.ExtensionMethods;
-using Datadog.Trace.Logging;
 
 namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.XUnit
 {
@@ -126,6 +125,7 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.XUnit
                 }
             }
 
+            scope.Span.ResetStartTime();
             return new CallTargetState(scope);
         }
 
