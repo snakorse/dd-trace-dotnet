@@ -172,7 +172,7 @@ jobs:
       buildConfiguration: $(buildConfiguration)
     condition: succeededOrFailed()
 
-- job: macos profiler
+- job: macos_profiler
   pool:
     vmImage: macOS-10.15
   steps:
