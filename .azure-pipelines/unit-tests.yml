@@ -208,3 +208,41 @@ jobs:
       cmake ../../.. -DOSX=1
       make
     displayName: build_profiler
+
+
+- job: linux_profiler
+  pool:
+    vmImage: ubuntu-18.04
+  steps:
+
+  - task: UseDotNet@2
+    displayName: install dotnet core sdk 3.1
+    inputs:
+      packageType: sdk
+      version: $(dotnetCoreSdkVersion)
+
+  - task: DotNetCoreCLI@2
+    displayName: dotnet build
+    inputs:
+      command: build
+      configuration: $(buildConfiguration)
+      projects: |
+        src/Datadog.Trace.ClrProfiler.Managed.Loader/Datadog.Trace.ClrProfiler.Managed.Loader.csproj
+  
+  - script: |
+      mkdir -p /opt
+      sudo chmod -R 777 /opt
+      cd /opt && git clone --depth 1 --branch v3.3.0 https://github.com/nlohmann/json.git
+      cd /opt && git clone --depth 1 --branch 2018-10-01 https://github.com/google/re2.git
+      cd /opt/re2 && env CXXFLAGS="-O3 -g -fPIC" make 
+      cd /opt && git clone --depth 1 --branch 5.3.0 https://github.com/fmtlib/fmt.git
+      cd /opt/fmt && cmake -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE . && make
+    displayName: build_dependencies
+
+  - script: |
+      cd ./src/Datadog.Trace.ClrProfiler.Native
+      mkdir -p ./obj/Debug/x64
+      cd ./obj/Debug/x64
+      cmake ../../.. -DOSX=1
+      make
+    displayName: build_profiler
