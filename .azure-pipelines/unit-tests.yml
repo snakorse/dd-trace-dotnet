@@ -191,3 +191,10 @@ jobs:
       projects: |
         src/Datadog.Trace.ClrProfiler.Managed.Loader/Datadog.Trace.ClrProfiler.Managed.Loader.csproj
         sample-libs/**/Samples.ExampleLibrary*.csproj
+  
+  - script: |
+      mkdir -p /opt
+      cd /opt && git clone --depth 1 --branch v3.3.0 https://github.com/nlohmann/json.git
+      cd /opt && git clone --depth 1 --branch 2018-10-01 https://github.com/google/re2.git
+      cd /opt/re2 && env CXXFLAGS="-O3 -g -fPIC" make 
+    displayName: dependencies
