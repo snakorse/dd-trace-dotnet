@@ -248,6 +248,6 @@ jobs:
       cd ./src/Datadog.Trace.ClrProfiler.Native
       mkdir -p ./obj/Debug/x64
       cd ./obj/Debug/x64
-      CXX=clang++-3.9 CC=clang-3.9 cmake ../../.. -DOSX=1
+      CXX=clang++-3.9 CC=clang-3.9 cmake ../../..
       make
     displayName: build_profiler
