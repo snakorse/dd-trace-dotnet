@@ -230,6 +230,7 @@ jobs:
         src/Datadog.Trace.ClrProfiler.Managed.Loader/Datadog.Trace.ClrProfiler.Managed.Loader.csproj
   
   - script: |
+      sudo apt-get install -y clang-3.9
       mkdir -p /opt
       sudo chmod -R 777 /opt
       cd /opt && git clone --depth 1 --branch v3.3.0 https://github.com/nlohmann/json.git
