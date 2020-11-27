@@ -99,7 +99,7 @@ jobs:
     env:
       DD_SERVICE_NAME: dd-tracer-dotnet
 
-- job: native_windows
+- job: windows_profiler
   strategy:
     matrix:
       x64:
