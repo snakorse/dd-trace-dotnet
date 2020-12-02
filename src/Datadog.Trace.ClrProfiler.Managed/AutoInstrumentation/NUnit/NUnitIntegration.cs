@@ -20,7 +20,7 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.NUnit
             _runtimeDescription = FrameworkDescription.Create();
         }
 
-        internal static Scope CreateScope<TContext>(TContext executionContext)
+        internal static Scope CreateScope<TContext>(TContext executionContext, Type targetType)
             where TContext : ITestExecutionContext
         {
             ITest currentTest = executionContext.CurrentTest;
@@ -33,7 +33,7 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.NUnit
                 return null;
             }
 
-            string testFramework = "NUnit " + typeof(TContext).Assembly.GetName().Version;
+            string testFramework = "NUnit " + targetType?.Assembly?.GetName().Version;
             string testSuite = testMethod.DeclaringType?.FullName;
             string testName = testMethod.Name;
             string skipReason = null;

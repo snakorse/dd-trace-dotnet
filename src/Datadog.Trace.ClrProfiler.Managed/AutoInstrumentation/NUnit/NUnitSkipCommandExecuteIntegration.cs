@@ -34,7 +34,7 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.NUnit
                 return CallTargetState.GetDefault();
             }
 
-            return new CallTargetState(NUnitIntegration.CreateScope(executionContext));
+            return new CallTargetState(NUnitIntegration.CreateScope(executionContext, typeof(TTarget)));
         }
     }
 }
