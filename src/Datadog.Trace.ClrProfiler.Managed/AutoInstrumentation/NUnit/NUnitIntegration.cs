@@ -37,24 +37,40 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.NUnit
             string testSuite = testMethod.DeclaringType?.FullName;
             string testName = testMethod.Name;
             string skipReason = null;
-            List<KeyValuePair<string, string>> testArguments = null;
-            List<KeyValuePair<string, string>> testTraits = null;
+
+            Tracer tracer = Tracer.Instance;
+            Scope scope = tracer.StartActive("nunit.test");
+            Span span = scope.Span;
+
+            span.Type = SpanTypes.Test;
+            span.SetMetric(Tags.Analytics, 1.0d);
+            span.SetTraceSamplingPriority(SamplingPriority.AutoKeep);
+            span.ResourceName = $"{testSuite}.{testName}";
+            span.SetTag(TestTags.Suite, testSuite);
+            span.SetTag(TestTags.Name, testName);
+            span.SetTag(TestTags.Framework, testFramework);
+            span.SetTag(TestTags.Type, TestTags.TypeTest);
+            CIEnvironmentValues.DecorateSpan(span);
+
+            span.SetTag(CommonTags.RuntimeName, _runtimeDescription.Name);
+            span.SetTag(CommonTags.RuntimeOSArchitecture, _runtimeDescription.OSArchitecture);
+            span.SetTag(CommonTags.RuntimeOSPlatform, _runtimeDescription.OSPlatform);
+            span.SetTag(CommonTags.RuntimeProcessArchitecture, _runtimeDescription.ProcessArchitecture);
+            span.SetTag(CommonTags.RuntimeVersion, _runtimeDescription.ProductVersion);
 
             // Get test parameters
             ParameterInfo[] methodParameters = testMethod.GetParameters();
             if (methodParameters?.Length > 0)
             {
-                testArguments = new List<KeyValuePair<string, string>>();
-
                 for (int i = 0; i < methodParameters.Length; i++)
                 {
                     if (testMethodArguments != null && i < testMethodArguments.Length)
                     {
-                        testArguments.Add(new KeyValuePair<string, string>($"{TestTags.Arguments}.{methodParameters[i].Name}", testMethodArguments[i]?.ToString() ?? "(null)"));
+                        span.SetTag($"{TestTags.Arguments}.{methodParameters[i].Name}", testMethodArguments[i]?.ToString() ?? "(null)");
                     }
                     else
                     {
-                        testArguments.Add(new KeyValuePair<string, string>($"{TestTags.Arguments}.{methodParameters[i].Name}", "(default)"));
+                        span.SetTag($"{TestTags.Arguments}.{methodParameters[i].Name}", "(default)");
                     }
                 }
             }
@@ -63,8 +79,6 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.NUnit
             if (testMethodProperties != null)
             {
                 skipReason = (string)testMethodProperties.Get("_SKIPREASON");
-                testTraits = new List<KeyValuePair<string, string>>();
-
                 foreach (var key in testMethodProperties.Keys)
                 {
                     if (key == "_SKIPREASON")
@@ -90,43 +104,7 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.NUnit
                         values = lstValues;
                     }
 
-                    testTraits.Add(new KeyValuePair<string, string>($"{TestTags.Traits}.{key}", string.Join(", ", values) ?? "(null)"));
-                }
-            }
-
-            Tracer tracer = Tracer.Instance;
-            Scope scope = tracer.StartActive("nunit.test");
-            Span span = scope.Span;
-
-            span.Type = SpanTypes.Test;
-            span.SetMetric(Tags.Analytics, 1.0d);
-            span.SetTraceSamplingPriority(SamplingPriority.AutoKeep);
-            span.ResourceName = $"{testSuite}.{testName}";
-            span.SetTag(TestTags.Suite, testSuite);
-            span.SetTag(TestTags.Name, testName);
-            span.SetTag(TestTags.Framework, testFramework);
-            span.SetTag(TestTags.Type, TestTags.TypeTest);
-            CIEnvironmentValues.DecorateSpan(span);
-
-            span.SetTag(CommonTags.RuntimeName, _runtimeDescription.Name);
-            span.SetTag(CommonTags.RuntimeOSArchitecture, _runtimeDescription.OSArchitecture);
-            span.SetTag(CommonTags.RuntimeOSPlatform, _runtimeDescription.OSPlatform);
-            span.SetTag(CommonTags.RuntimeProcessArchitecture, _runtimeDescription.ProcessArchitecture);
-            span.SetTag(CommonTags.RuntimeVersion, _runtimeDescription.ProductVersion);
-
-            if (testArguments != null)
-            {
-                foreach (KeyValuePair<string, string> argument in testArguments)
-                {
-                    span.SetTag(argument.Key, argument.Value);
-                }
-            }
-
-            if (testTraits != null)
-            {
-                foreach (KeyValuePair<string, string> trait in testTraits)
-                {
-                    span.SetTag(trait.Key, trait.Value);
+                    span.SetTag($"{TestTags.Traits}.{key}", string.Join(", ", values) ?? "(null)");
                 }
             }
 
