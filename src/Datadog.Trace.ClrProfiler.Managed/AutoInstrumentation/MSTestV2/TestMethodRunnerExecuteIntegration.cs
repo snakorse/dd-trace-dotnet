@@ -139,6 +139,7 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.MSTestV2
                             case UnitTestResultOutcome.NotFound:
                             case UnitTestResultOutcome.Timeout:
                                 scope.Span.SetTag(TestTags.Status, TestTags.StatusFail);
+                                scope.Span.Error = true;
                                 scope.Span.SetTag(Tags.ErrorMsg, unitTestResult.ErrorMessage);
                                 scope.Span.SetTag(Tags.ErrorStack, unitTestResult.ErrorStackTrace);
                                 break;

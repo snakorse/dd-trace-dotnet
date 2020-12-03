@@ -1,3 +1,4 @@
+using System;
 using Datadog.Trace.DuckTyping;
 
 namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.MSTestV2
