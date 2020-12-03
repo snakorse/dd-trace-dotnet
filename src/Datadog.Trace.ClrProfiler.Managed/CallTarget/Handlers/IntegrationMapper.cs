@@ -25,7 +25,8 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.Handlers
             MethodInfo onMethodBeginMethodInfo = integrationType.GetMethod(BeginMethodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
             if (onMethodBeginMethodInfo is null)
             {
-                throw new NullReferenceException($"Couldn't find the method: {BeginMethodName} in type: {integrationType.FullName}");
+                Log.Debug($"Couldn't find the method: {BeginMethodName} in type: {integrationType.FullName}");
+                return null;
             }
 
             if (onMethodBeginMethodInfo.ReturnType != typeof(CallTargetState))
@@ -143,7 +144,8 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.Handlers
             MethodInfo onMethodBeginMethodInfo = integrationType.GetMethod(BeginMethodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
             if (onMethodBeginMethodInfo is null)
             {
-                throw new NullReferenceException($"Couldn't find the method: {BeginMethodName} in type: {integrationType.FullName}");
+                Log.Debug($"Couldn't find the method: {BeginMethodName} in type: {integrationType.FullName}");
+                return null;
             }
 
             if (onMethodBeginMethodInfo.ReturnType != typeof(CallTargetState))
@@ -250,6 +252,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.Handlers
             MethodInfo onMethodEndMethodInfo = integrationType.GetMethod(EndMethodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
             if (onMethodEndMethodInfo is null)
             {
+                Log.Debug($"Couldn't find the method: {EndMethodName} in type: {integrationType.FullName}");
                 return null;
             }
 
@@ -343,6 +346,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.Handlers
             MethodInfo onMethodEndMethodInfo = integrationType.GetMethod(EndMethodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
             if (onMethodEndMethodInfo is null)
             {
+                Log.Debug($"Couldn't find the method: {EndMethodName} in type: {integrationType.FullName}");
                 return null;
             }
 
@@ -474,7 +478,7 @@ namespace Datadog.Trace.ClrProfiler.CallTarget.Handlers
             MethodInfo onAsyncMethodEndMethodInfo = integrationType.GetMethod(EndAsyncMethodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
             if (onAsyncMethodEndMethodInfo is null)
             {
-                Log.Warning($"Couldn't find the method: {EndAsyncMethodName} in type: {integrationType.FullName}");
+                Log.Debug($"Couldn't find the method: {EndAsyncMethodName} in type: {integrationType.FullName}");
                 return null;
             }
 

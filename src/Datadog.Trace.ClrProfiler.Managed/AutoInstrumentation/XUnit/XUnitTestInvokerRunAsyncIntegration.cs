@@ -50,40 +50,6 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.XUnit
 
             string testSuite = invokerInstance.TestClass.ToString();
             string testName = invokerInstance.TestMethod.Name;
-            List<KeyValuePair<string, string>> testArguments = null;
-            List<KeyValuePair<string, string>> testTraits = null;
-
-            // Get test parameters
-            object[] testMethodArguments = invokerInstance.TestMethodArguments;
-            ParameterInfo[] methodParameters = invokerInstance.TestMethod.GetParameters();
-            if (methodParameters?.Length > 0 && testMethodArguments?.Length > 0)
-            {
-                testArguments = new List<KeyValuePair<string, string>>();
-
-                for (int i = 0; i < methodParameters.Length; i++)
-                {
-                    if (i < testMethodArguments.Length)
-                    {
-                        testArguments.Add(new KeyValuePair<string, string>($"{TestTags.Arguments}.{methodParameters[i].Name}", testMethodArguments[i]?.ToString() ?? "(null)"));
-                    }
-                    else
-                    {
-                        testArguments.Add(new KeyValuePair<string, string>($"{TestTags.Arguments}.{methodParameters[i].Name}", "(default)"));
-                    }
-                }
-            }
-
-            // Get traits
-            Dictionary<string, List<string>> traits = invokerInstance.TestCase.Traits;
-            if (traits.Count > 0)
-            {
-                testTraits = new List<KeyValuePair<string, string>>();
-
-                foreach (KeyValuePair<string, List<string>> traitValue in traits)
-                {
-                    testTraits.Add(new KeyValuePair<string, string>($"{TestTags.Traits}.{traitValue.Key}", string.Join(", ", traitValue.Value) ?? "(null)"));
-                }
-            }
 
             AssemblyName testInvokerAssemblyName = instance.GetType().Assembly.GetName();
 
@@ -109,19 +75,31 @@ namespace Datadog.Trace.ClrProfiler.AutoInstrumentation.XUnit
             span.SetTag(CommonTags.RuntimeProcessArchitecture, _runtimeDescription.ProcessArchitecture);
             span.SetTag(CommonTags.RuntimeVersion, _runtimeDescription.ProductVersion);
 
-            if (testArguments != null)
+            // Get test parameters
+            object[] testMethodArguments = invokerInstance.TestMethodArguments;
+            ParameterInfo[] methodParameters = invokerInstance.TestMethod.GetParameters();
+            if (methodParameters?.Length > 0 && testMethodArguments?.Length > 0)
             {
-                foreach (KeyValuePair<string, string> argument in testArguments)
+                for (int i = 0; i < methodParameters.Length; i++)
                 {
-                    span.SetTag(argument.Key, argument.Value);
+                    if (i < testMethodArguments.Length)
+                    {
+                        span.SetTag($"{TestTags.Arguments}.{methodParameters[i].Name}", testMethodArguments[i]?.ToString() ?? "(null)");
+                    }
+                    else
+                    {
+                        span.SetTag($"{TestTags.Arguments}.{methodParameters[i].Name}", "(default)");
+                    }
                 }
             }
 
-            if (testTraits != null)
+            // Get traits
+            Dictionary<string, List<string>> traits = invokerInstance.TestCase.Traits;
+            if (traits.Count > 0)
             {
-                foreach (KeyValuePair<string, string> trait in testTraits)
+                foreach (KeyValuePair<string, List<string>> traitValue in traits)
                 {
-                    span.SetTag(trait.Key, trait.Value);
+                    span.SetTag($"{TestTags.Traits}.{traitValue.Key}", string.Join(", ", traitValue.Value) ?? "(null)");
                 }
             }
 
