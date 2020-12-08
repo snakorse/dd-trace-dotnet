@@ -19,7 +19,7 @@ namespace Datadog.Trace.Tests.RuntimeMetrics
             listener.Setup(l => l.Refresh())
                 .Callback(() => mutex.Set());
 
-            using (new RuntimeMetricsWriter(Mock.Of<IDogStatsd>(), 10, _ => listener.Object))
+            using (new RuntimeMetricsWriter(Mock.Of<IDogStatsd>(), 10, (_, d) => listener.Object))
             {
                 Assert.True(mutex.Wait(10000), "Method Refresh() wasn't called on the listener");
             }
@@ -28,7 +28,7 @@ namespace Datadog.Trace.Tests.RuntimeMetrics
         [Fact]
         public void ShouldSwallowFactoryExceptions()
         {
-            Func<IDogStatsd, IRuntimeMetricsListener> factory = _ => throw new InvalidOperationException("This exception should be caught");
+            Func<IDogStatsd, int, IRuntimeMetricsListener> factory = (_, d) => throw new InvalidOperationException("This exception should be caught");
 
             var writer = new RuntimeMetricsWriter(Mock.Of<IDogStatsd>(), 10, factory);
             writer.Dispose();
@@ -39,7 +39,7 @@ namespace Datadog.Trace.Tests.RuntimeMetrics
         {
             var statsd = new Mock<IDogStatsd>();
 
-            using (var writer = new RuntimeMetricsWriter(statsd.Object, Timeout.Infinite, _ => Mock.Of<IRuntimeMetricsListener>()))
+            using (var writer = new RuntimeMetricsWriter(statsd.Object, Timeout.Infinite, (_, d) => Mock.Of<IRuntimeMetricsListener>()))
             {
                 for (int i = 0; i < 10; i++)
                 {
@@ -96,7 +96,7 @@ namespace Datadog.Trace.Tests.RuntimeMetrics
             var statsd = new Mock<IDogStatsd>();
             var runtimeListener = new Mock<IRuntimeMetricsListener>();
 
-            var writer = new RuntimeMetricsWriter(statsd.Object, Timeout.Infinite, _ => runtimeListener.Object);
+            var writer = new RuntimeMetricsWriter(statsd.Object, Timeout.Infinite, (_, d) => runtimeListener.Object);
             writer.Dispose();
 
             runtimeListener.Verify(l => l.Dispose(), Times.Once);
