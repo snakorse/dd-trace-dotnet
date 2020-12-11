@@ -509,7 +509,7 @@ namespace Datadog.Trace
                     writer.WriteValue(Environment.OSVersion.ToString());
 
                     writer.WritePropertyName("version");
-                    writer.WriteValue(TracerConstants.Version);
+                    writer.WriteValue(TracerConstants.AssemblyVersion);
 
                     writer.WritePropertyName("platform");
                     writer.WriteValue(frameworkDescription.ProcessArchitecture);
@@ -651,7 +651,7 @@ namespace Datadog.Trace
                                        "lang:.NET",
                                        $"lang_interpreter:{frameworkDescription.Name}",
                                        $"lang_version:{frameworkDescription.ProductVersion}",
-                                       $"tracer_version:{TracerConstants.Version}",
+                                       $"tracer_version:{TracerConstants.AssemblyVersion}",
                                        $"service:{serviceName}"
                                    };
 
