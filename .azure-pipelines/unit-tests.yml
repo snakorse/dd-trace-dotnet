@@ -191,7 +191,7 @@ jobs:
 
   - script: |
       cd ./src/Datadog.Trace.ClrProfiler.Native
-      cmake
+      cmake .
       make
     displayName: build_profiler
 
@@ -227,7 +227,7 @@ jobs:
 
   - script: |
       cd ./src/Datadog.Trace.ClrProfiler.Native
-      cmake
+      cmake .
       make
     displayName: build_profiler
 
