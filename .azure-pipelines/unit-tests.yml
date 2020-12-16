@@ -280,11 +280,6 @@ jobs:
         src/Datadog.Trace.ClrProfiler.Managed.Loader/Datadog.Trace.ClrProfiler.Managed.Loader.csproj
   
   - script: |
-      sudo apt-get update
-      sudo apt-get install -y llvm clang
-    displayName: install_dependencies
-
-  - script: |
       cd ./src/Datadog.Trace.ClrProfiler.Native
       CXX=clang++ CC=clang cmake .
       make
