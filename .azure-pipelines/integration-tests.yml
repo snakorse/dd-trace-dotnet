@@ -539,7 +539,7 @@ jobs:
       dockerComposeCommand: run Profiler
 
   - publish: $(System.DefaultWorkingDirectory)/src/Datadog.Trace.ClrProfiler.Native/bin/$(buildConfiguration)/x64
-    artifact: linux-tracer-home
+    artifact: linux-tracer-home_arm
 
 - job: Linux_arm64
   pool: Arm64
@@ -560,11 +560,11 @@ jobs:
 
   steps:
   - download: current
-    artifact: linux-tracer-home
+    artifact: linux-tracer-home_arm
 
   - task: CopyFiles@2
     inputs:
-      sourceFolder: $(Pipeline.Workspace)/linux-tracer-home
+      sourceFolder: $(Pipeline.Workspace)/linux-tracer-home_arm
       targetFolder: $(System.DefaultWorkingDirectory)/src/Datadog.Trace.ClrProfiler.Native/bin/$(buildConfiguration)/x64
 
   - task: DockerCompose@0
