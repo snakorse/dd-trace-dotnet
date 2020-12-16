@@ -568,16 +568,24 @@ jobs:
       targetFolder: $(System.DefaultWorkingDirectory)/src/Datadog.Trace.ClrProfiler.Native/bin/$(buildConfiguration)/x64
 
   - task: DockerCompose@0
-    displayName: docker-compose run build
+    displayName: docker-compose run build.arm64
     inputs:
       containerregistrytype: Container Registry
-      dockerComposeCommand: run -e TestAllPackageVersions=true -e buildConfiguration=$(buildConfiguration) -e publishTargetFramework=$(publishTargetFramework) build
+      dockerComposeCommand: run -e TestAllPackageVersions=true -e buildConfiguration=$(buildConfiguration) -e publishTargetFramework=$(publishTargetFramework) build.arm64
 
   - task: DockerCompose@0
-    displayName: docker-compose run IntegrationTests
+    displayName: docker-compose run IntegrationTests.ARM64.Core31
+    condition: eq(variables['publishTargetFramework'], 'netcoreapp3.1')
     inputs:
       containerregistrytype: Container Registry
-      dockerComposeCommand: run -e TestAllPackageVersions=true -e buildConfiguration=$(buildConfiguration) -e publishTargetFramework=$(publishTargetFramework) IntegrationTests
+      dockerComposeCommand: run -e TestAllPackageVersions=true -e buildConfiguration=$(buildConfiguration) IntegrationTests.ARM64.Core31
+
+  - task: DockerCompose@0
+    displayName: docker-compose run IntegrationTests.ARM64.Core50
+    condition: eq(variables['publishTargetFramework'], 'net5.0')
+    inputs:
+      containerregistrytype: Container Registry
+      dockerComposeCommand: run -e TestAllPackageVersions=true -e buildConfiguration=$(buildConfiguration) IntegrationTests.ARM64.Core50
 
   - task: PublishTestResults@2
     displayName: publish test results
