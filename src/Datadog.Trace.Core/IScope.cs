@@ -1,9 +1,11 @@
 using System;
 
-namespace Datadog.Trace.Abstractions
+namespace Datadog.Trace
 {
     internal interface IScope : IDisposable
     {
         ISpan Span { get; }
+
+        IScope Parent { get; }
     }
 }

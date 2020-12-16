@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using Datadog.Trace.Logging;
 
 namespace Datadog.Trace.Sampling
@@ -22,12 +20,12 @@ namespace Datadog.Trace.Sampling
         /// </summary>
         public int Priority => 0;
 
-        public bool IsMatch(Span span)
+        public bool IsMatch(ISpan span)
         {
             return true;
         }
 
-        public float GetSamplingRate(Span span)
+        public float GetSamplingRate(ISpan span)
         {
             Log.Debug("Using the global sampling rate: {0}", _globalRate);
             span.SetMetric(Metrics.SamplingRuleDecision, _globalRate);

@@ -1,7 +1,6 @@
 using System;
 using System.Globalization;
 using System.Text;
-using Datadog.Trace.Abstractions;
 using Datadog.Trace.ExtensionMethods;
 using Datadog.Trace.Logging;
 using Datadog.Trace.Tagging;
@@ -286,6 +285,29 @@ namespace Datadog.Trace
             }
         }
 
+        /// <summary>
+        /// Gets the value of the specified metric.
+        /// </summary>
+        /// <param name="key">The metric name.</param>
+        /// <returns>The value of the metric, or null if not found.</returns>
+        double? ISpan.GetMetric(string key)
+        {
+            return Tags.GetMetric(key);
+        }
+
+        /// <summary>
+        /// Sets the value of the specified metric.
+        /// </summary>
+        /// <param name="key">The metric name.</param>
+        /// <param name="value">The metric's new value.</param>
+        /// <returns>This span.</returns>
+        ISpan ISpan.SetMetric(string key, double? value)
+        {
+            Tags.SetMetric(key, value);
+
+            return this;
+        }
+
         internal void Finish(TimeSpan duration)
         {
             var shouldCloseSpan = false;
@@ -323,11 +345,6 @@ namespace Datadog.Trace
                         Tags);
                 }
             }
-        }
-
-        internal double? GetMetric(string key)
-        {
-            return Tags.GetMetric(key);
         }
 
         internal Span SetMetric(string key, double? value)

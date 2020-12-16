@@ -1,5 +1,3 @@
-using Datadog.Trace.Abstractions;
-
 namespace Datadog.Trace
 {
     /// <summary>
@@ -28,11 +26,18 @@ namespace Datadog.Trace
 
         /// <summary>
         /// Gets the active span wrapped in this scope
-        /// Proxy to Span without concrete return value
         /// </summary>
         ISpan IScope.Span => Span;
 
-        internal Scope Parent { get; }
+        /// <summary>
+        /// Gets the parent scope
+        /// </summary>
+        IScope IScope.Parent => Parent;
+
+        /// <summary>
+        /// Gets the parent scope
+        /// </summary>
+        internal IScope Parent { get; }
 
         /// <summary>
         /// Closes the current scope and makes its parent scope active

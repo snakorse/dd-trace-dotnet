@@ -17,12 +17,12 @@ namespace Datadog.Trace.Sampling
         /// </summary>
         public int Priority => int.MinValue;
 
-        public bool IsMatch(Span span)
+        public bool IsMatch(ISpan span)
         {
             return true;
         }
 
-        public float GetSamplingRate(Span span)
+        public float GetSamplingRate(ISpan span)
         {
             Log.Debug("Using the default sampling logic");
 

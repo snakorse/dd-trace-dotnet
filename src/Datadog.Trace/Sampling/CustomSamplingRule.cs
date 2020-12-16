@@ -62,7 +62,7 @@ namespace Datadog.Trace.Sampling
             return Enumerable.Empty<CustomSamplingRule>();
         }
 
-        public bool IsMatch(Span span)
+        public bool IsMatch(ISpan span)
         {
             if (_hasPoisonedRegex)
             {
@@ -82,7 +82,7 @@ namespace Datadog.Trace.Sampling
             return true;
         }
 
-        public float GetSamplingRate(Span span)
+        public float GetSamplingRate(ISpan span)
         {
             span.SetMetric(Metrics.SamplingRuleDecision, _samplingRate);
             return _samplingRate;
