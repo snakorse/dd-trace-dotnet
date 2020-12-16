@@ -565,7 +565,7 @@ jobs:
   - task: CopyFiles@2
     inputs:
       sourceFolder: $(Pipeline.Workspace)/linux-tracer-home_arm
-      targetFolder: $(System.DefaultWorkingDirectory)/src/Datadog.Trace.ClrProfiler.Native/bin/$(buildConfiguration)/x64
+      targetFolder: $(System.DefaultWorkingDirectory)/src/Datadog.Trace.ClrProfiler.Native/bin/$(buildConfiguration)/arm64
 
   - task: DockerCompose@0
     displayName: docker-compose run build.arm64
